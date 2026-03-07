@@ -91,7 +91,8 @@ def reg_user():
     #crear nuevo usuario
     new_user = User(
         email=email,
-        password=hashed_password
+        password=hashed_password,
+        is_active=True
     )
     ##guardar en DB
     try:
