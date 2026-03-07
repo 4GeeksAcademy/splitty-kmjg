@@ -1,6 +1,130 @@
-### Proyecto : Splitty
+
+# Nombre de proyecto : Splitty
+
+## Concepto general : 
+
+La aplicación permite que un grupo de personas (amigos, roomies, viajeros) registre gastos comunes y que el sistema calcule automáticamente quién le debe a quién y cuánto, buscando siempre la "ruta mínima" de pagos para saldar las deudas. 
+
+## ¿Cómo se vería el flujo? 
+
+Frontend (React/Angular/Vue): El usuario llena un formulario: "Cena Pizza - $60 - Pagó: Tú - Dividir entre: Ana y Luis". 
+Backend (Node/Python/Java): Recibe el dato, calcula que Ana debe 20 y Luis debe 20, y actualiza los balances generales del grupo. 
+Base de Datos: Guarda el registro histórico para que nadie pueda decir "yo no sabía". 
+
+### Funcionalidades : 
+
+- Recordatorios: "Faltan 2 días para pagar el alquiler". 
+
+## Modelo de datos:
+
+Users: ID, nombre, email, avatar. 
+
+Groups: ID, nombre, descripción. 
+
+Expenses: ID, monto, descripción, pagado_por (User_ID), Group_ID. 
+
+Debt_Splits: La tabla intermedia que conecta quién debe cuánto en cada gasto. 
+
+## El Reto Técnico:
+
+Lo más difícil y valioso de este proyecto es el Algoritmo de Simplificación de Deudas. 
+
+Ejemplo: Si Ana le debe 10 a Beto, y Beto le debe 10 a Carlos, el sistema debe ser capaz de decir: "Ana le paga 10 directamente a Carlos" para evitar transacciones innecesarias. 
+
+Implementar esta lógica en tu Backend demuestra que tienes capacidad de resolución de algoritmos complejos. 
+
+## Diseño de Línea de Tiempo – Historias de Usuario (Splitty) 
+
+### Línea de Tiempo del Desarrollo de Funcionalidades 
+
+#### Fase 1: Creación y Organización Inicial 
+##### 🟩 HU01 – Crear Grupo 
+Tarjeta: 
+
+Nombre del grupo 
+
+Categoría 
+
+Enlace de invitación 
+
+Añadir miembros 
+
+##### 🟩 HU02 – Añadir Gasto 
+Tarjeta: 
+
+Monto, descripción, quién pagó 
+
+División automática 
+
+Fecha editable 
+
+#### Fase 2: Gestión de Evidencias y Visualización 
+##### 🟦 HU03 – Adjuntar Recibo 
+Tarjeta: 
+
+Subida de JPG/PNG/PDF 
+
+Visualización completa 
+
+Almacenamiento en la nube 
+
+##### 🟦 HU04 – Ver Saldos 
+Tarjeta: 
+
+Saldo total visible 
+
+Colores (Rojo/Verde) 
+
+Desglose por persona 
+
+#### Fase 3: Personalización y Ajustes Financieros 
+##### 🟨 HU05 – División Desigual 
+Tarjeta: 
+
+División por porcentaje, monto o partes 
+
+Validación de suma total 
+
+##### 🟨 HU06 – Registrar Pago 
+Tarjeta: 
+
+Selección de receptor 
+
+Notificación push 
+
+Actualización de saldo 
+
+#### Fase 4: Optimización y Funcionalidades Avanzadas 
+#### 🟧 HU07 – Simplificar Deudas 
+Tarjeta: 
+
+Algoritmo de liquidación cruzada 
+
+Activar/desactivar por grupo 
 
 
+#### 🟧 HU08 – Multimoneda 
+Tarjeta: 
+
+Selector de divisa 
+
+API de tipo de cambio 
+
+Conversión automática 
+
+#### Fase 5: Control y Auditoría 
+#### 🟥 HU09 – Historial/Log 
+Tarjeta: 
+
+Registro cronológico 
+
+Usuario, acción y hora 
+
+Opción de “Deshacer” 
+
+Representación Visual (Esquema Lineal) 
+
+### Inicio → [HU01] → [HU02] → [HU03] → [HU04] → [HU05] → [HU06] → [HU07] → [HU08] → [HU09] → Fin 
 
 
 
@@ -53,22 +177,8 @@ Frontend: Alguien debe maquetar el formulario de "Añadir Gasto", que es la part
 
 
 
-## 5. ¿Cómo se vería el flujo? 
+------------------------------------------------------------------------------------------------------------------------------------------
 
-Frontend (React/Angular/Vue): El usuario llena un formulario: "Cena Pizza - $60 - Pagó: Tú - Dividir entre: Ana y Luis". 
-Backend (Node/Python/Java): Recibe el dato, calcula que Ana debe 20 y Luis debe 20, y actualiza los balances generales del grupo. 
-Base de Datos: Guarda el registro histórico para que nadie pueda decir "yo no sabía". 
-
-### Nombre de proyecto : 
-
-Nombre de proyecto : Splitty
-
-### Concepto general : 
-
-### Funcionalidades : 
-
-
-- Recordatorios: "Faltan 2 días para pagar el alquiler". 
 
 # Plantilla de WebApp con React JS y Flask API
 
