@@ -53,6 +53,22 @@ Frontend: Alguien debe maquetar el formulario de "Añadir Gasto", que es la part
 
 
 
+## 5. ¿Cómo se vería el flujo? 
+
+Frontend (React/Angular/Vue): El usuario llena un formulario: "Cena Pizza - $60 - Pagó: Tú - Dividir entre: Ana y Luis". 
+Backend (Node/Python/Java): Recibe el dato, calcula que Ana debe 20 y Luis debe 20, y actualiza los balances generales del grupo. 
+Base de Datos: Guarda el registro histórico para que nadie pueda decir "yo no sabía". 
+
+### Nombre de proyecto : 
+
+Nombre de proyecto : Splitty
+
+### Concepto general : 
+
+### Funcionalidades : 
+
+
+- Recordatorios: "Faltan 2 días para pagar el alquiler". 
 
 # Plantilla de WebApp con React JS y Flask API
 
@@ -135,3 +151,5 @@ Esta plantilla está 100% lista para desplegarse con Render.com y Heroku en cues
 Esta plantilla fue construida como parte del [Coding Bootcamp](https://4geeksacademy.com/us/coding-bootcamp) de 4Geeks Academy por [Alejandro Sanchez](https://twitter.com/alesanchezr) y muchos otros contribuyentes. Descubre más sobre nuestro [Curso de Desarrollador Full Stack](https://4geeksacademy.com/us/coding-bootcamps/part-time-full-stack-developer) y [Bootcamp de Ciencia de Datos](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning).
 
 Puedes encontrar otras plantillas y recursos como este en la [página de github de la escuela](https://github.com/4geeksacademy/).
+
+
