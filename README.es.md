@@ -1,3 +1,13 @@
+# Modelo de datos:
+
+Users: ID, nombre, email, avatar. 
+
+Groups: ID, nombre, descripción. 
+
+Expenses: ID, monto, descripción, pagado_por (User_ID), Group_ID. 
+
+Debt_Splits: La tabla intermedia que conecta quién debe cuánto en cada gasto. 
+
 # Plantilla de WebApp con React JS y Flask API
 
 Construye aplicaciones web usando React.js para el front end y python/flask para tu API backend.
