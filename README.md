@@ -1,3 +1,16 @@
+### Nombre de proyecto : 
+
+Nombre de proyecto : Splitty
+
+### Concepto general : 
+
+
+
+### Funcionalidades : 
+
+
+- Recordatorios: "Faltan 2 días para pagar el alquiler". 
+
 # WebApp boilerplate with React JS and Flask API
 
 Build web applications using React.js for the front end and python/flask for your backend API.
