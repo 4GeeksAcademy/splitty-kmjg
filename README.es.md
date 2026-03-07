@@ -1,3 +1,16 @@
+### Nombre de proyecto : 
+
+Nombre de proyecto : Splitty
+
+### Concepto general : 
+
+
+
+### Funcionalidades : 
+
+
+- Recordatorios: "Faltan 2 días para pagar el alquiler". 
+
 # Plantilla de WebApp con React JS y Flask API
 
 Construye aplicaciones web usando React.js para el front end y python/flask para tu API backend.
@@ -79,3 +92,5 @@ Esta plantilla está 100% lista para desplegarse con Render.com y Heroku en cues
 Esta plantilla fue construida como parte del [Coding Bootcamp](https://4geeksacademy.com/us/coding-bootcamp) de 4Geeks Academy por [Alejandro Sanchez](https://twitter.com/alesanchezr) y muchos otros contribuyentes. Descubre más sobre nuestro [Curso de Desarrollador Full Stack](https://4geeksacademy.com/us/coding-bootcamps/part-time-full-stack-developer) y [Bootcamp de Ciencia de Datos](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning).
 
 Puedes encontrar otras plantillas y recursos como este en la [página de github de la escuela](https://github.com/4geeksacademy/).
+
+
