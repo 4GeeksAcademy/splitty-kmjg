@@ -5,7 +5,7 @@ import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
-
+from flask_jwt_extended import JWTManager,create_access_token,jwt_required,get_jwt_identity
 from api.utils import APIException, generate_sitemap
 from api.models import db,User,bcrypt
 from api.routes import api
@@ -29,9 +29,11 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 bcrypt.init_app(app)
+jwt=JWTManager(app)
 
 # add the admin
 setup_admin(app)
@@ -70,7 +72,7 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
-
+################################################################################
 #endPoint Registro usuario 
 @app.route('/register',methods=['POST'])
 def reg_user():
@@ -99,6 +101,28 @@ def reg_user():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error":"Error interno de servidor","details":str(e)}),500
+
+
+@app.route('/login',methods=['POST'])
+def login_user():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error":"email y password requeridos"}),400
+    
+    user = User.query.filter_by(email=email).first()
+
+    if not user or not bcrypt.check_password_hash(user.password,password):
+        return jsonify({"error":"Correo o password incorrectos"}),401
+    
+    acces_token = create_access_token(identity=str(user.id))
+
+    return jsonify({
+        "message" : "Login correcto",
+        "access_token": acces_token
+    }),200
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
