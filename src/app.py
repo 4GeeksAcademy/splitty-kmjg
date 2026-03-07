@@ -5,8 +5,9 @@ import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
 from flask_migrate import Migrate
 from flask_swagger import swagger
+
 from api.utils import APIException, generate_sitemap
-from api.models import db
+from api.models import db,User,bcrypt
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
@@ -30,6 +31,7 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
+bcrypt.init_app(app)
 
 # add the admin
 setup_admin(app)
@@ -41,6 +43,9 @@ setup_commands(app)
 app.register_blueprint(api, url_prefix='/api')
 
 # Handle/serialize errors like a JSON object
+
+#incializar bcrypt
+
 
 
 @app.errorhandler(APIException)
@@ -65,6 +70,35 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
+
+#endPoint Registro usuario 
+@app.route('/register',methods=['POST'])
+def reg_user():
+    #traer datos del bodyy
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    if not email or not password : 
+        return jsonify ({"error":"Email y contrasena obligatorios"}),400
+    #verificar si el correo ya esta registrado 
+    email_exist=User.query.filter_by(email=email).first()
+    if email_exist:
+        return jsonify({"error":"El correo previamente registrado en la DB"}),409
+    #hashear la password
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+    #crear nuevo usuario
+    new_user = User(
+        email=email,
+        password=hashed_password
+    )
+    ##guardar en DB
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify({"message" :"Usuario creado con exito"}),201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error":"Error interno de servidor","details":str(e)}),500
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
