@@ -1,5 +1,134 @@
+# Project Name: Splitty
+## General Concept:
+The application allows groups of people (friends, roommates, travelers) to track shared expenses. The system automatically calculates "who owes whom" and how much, always seeking the "minimum payment path" to settle debts efficiently.
 
+## How would the flow look?
+Frontend (React/Angular/Vue): The user fills out a form: "Pizza Night - $60 - Paid by: You - Split among: Ana and Luis."
 
+Backend (Node/Python/Java): Receives the data, calculates that Ana owes 20 and Luis owes 20, and updates the group's general balances.
+
+## Database: Maintains a historical record so there are no "I didn't know" excuses.
+
+## Features:
+Reminders: "Rent is due in 2 days."
+
+## Data Model:
+Users: ID, name, email, avatar.
+
+Groups: ID, name, description.
+
+Expenses: ID, amount, description, paid_by (User_ID), Group_ID.
+
+Debt_Splits: The junction table connecting who owes what for each specific expense.
+
+## The Technical Challenge:
+The most difficult and valuable part of this project is the Debt Simplification Algorithm.
+
+## Example: 
+If Ana owes Beto $10, and Beto owes Carlos $10, the system should be able to say: "Ana pays Carlos $10 directly" to avoid unnecessary transactions.
+
+Implementing this logic in your Backend demonstrates high-level complex algorithm resolution skills.
+
+# Roadmap – User Stories (Splitty)
+## Feature Development Timeline
+### Phase 1: Creation and Initial Organization
+#### 🟩 US01 – Create Group
+Group name
+
+Category
+
+Invitation link
+
+Add members
+
+#### 🟩 US02 – Add Expense
+Amount, description, "who paid"
+
+Automatic equal split
+
+Editable date
+
+### Phase 2: Evidence Management and Visualization
+#### 🟦 US03 – Attach Receipt
+JPG/PNG/PDF upload
+
+Full-size viewing
+
+Cloud storage integration
+
+#### 🟦 US04 – View Balances
+Total balance visible
+
+Color coding (Red/Green)
+
+Breakdown by person
+
+### Phase 3: Personalization and Financial Adjustments
+#### 🟨 US05 – Unequal Split
+Split by percentage, exact amount, or shares
+
+Total sum validation
+
+#### 🟨 US06 – Record Payment
+Select recipient
+
+Push notification
+
+Real-time balance update
+
+### Phase 4: Optimization and Advanced Features
+#### 🟧 US07 – Simplify Debts
+Cross-settlement algorithm
+
+Toggle on/off per group
+
+#### 🟧 US08 – Multi-currency
+Currency selector
+
+Exchange rate API
+
+Automatic conversion
+
+### Phase 5: Control and Auditing
+#### 🟥 US09 – History/Activity Log
+Chronological record
+
+User, action, and timestamp
+
+"Undo" option
+
+## Visual Representation (Linear Schema)
+Start → [US01] → [US02] → [US03] → [US04] → [US05] → [US06] → [US07] → [US08] → [US09] → End
+
+## Potential External APIs:
+### 1. Image Management (Receipts & Avatars)
+Cloudinary (Recommended): The "gold standard" for student projects. It has an easy-to-use Python SDK and can handle resizing automatically.
+
+Firebase Storage: A solid alternative if you are already using Firebase for Authentication.
+
+### 2. Currency Conversion (US08)
+ExchangeRate-API: Very stable with a generous free plan (1,500 requests/month).
+
+Fixer.io: Professional grade, though the free plan is sometimes restricted to EUR as the base currency.
+
+### 3. Notifications and Real-Time (US06)
+Pusher (Recommended): Perfect for final projects as it eliminates the complexity of manual WebSockets.
+
+Brevo (Email): Great for invitation emails; the free tier allows 300 emails per day.
+
+### 4. Payment Gateway (Optional but "Pro")
+PayPal Sandbox: Universal for demonstrating international payment flows.
+
+Stripe (Test Mode): Best documentation in the world. Even if restricted for live accounts in some regions, Test Mode works perfectly for a project defense.
+
+Where to start?
+My advice is to divide the work immediately:
+
+Backend: Someone should start defining the SQLAlchemy models and Auth routes (JWT).
+
+Frontend: Someone should mockup the "Add Expense" form, which is the most complex part of the UI due to the unequal split logic.
+
+-------------------------------------------------------------------------------------------------------------------------------------------
 # WebApp boilerplate with React JS and Flask API
 
 Build web applications using React.js for the front end and python/flask for your backend API.
