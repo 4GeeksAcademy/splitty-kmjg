@@ -1,19 +1,183 @@
-## 5. ¿Cómo se vería el flujo? 
+# Nombre de proyecto : Splitty
+
+## Concepto general : 
+
+La aplicación permite que un grupo de personas (amigos, roomies, viajeros) registre gastos comunes y que el sistema calcule automáticamente quién le debe a quién y cuánto, buscando siempre la "ruta mínima" de pagos para saldar las deudas. 
+
+## ¿Cómo se vería el flujo? 
 
 Frontend (React/Angular/Vue): El usuario llena un formulario: "Cena Pizza - $60 - Pagó: Tú - Dividir entre: Ana y Luis". 
 Backend (Node/Python/Java): Recibe el dato, calcula que Ana debe 20 y Luis debe 20, y actualiza los balances generales del grupo. 
 Base de Datos: Guarda el registro histórico para que nadie pueda decir "yo no sabía". 
 
-### Nombre de proyecto : 
-
-Nombre de proyecto : Splitty
-
-### Concepto general : 
-
 ### Funcionalidades : 
 
-
 - Recordatorios: "Faltan 2 días para pagar el alquiler". 
+
+## Modelo de datos:
+
+Users: ID, nombre, email, avatar. 
+
+Groups: ID, nombre, descripción. 
+
+Expenses: ID, monto, descripción, pagado_por (User_ID), Group_ID. 
+
+Debt_Splits: La tabla intermedia que conecta quién debe cuánto en cada gasto. 
+
+## El Reto Técnico:
+
+Lo más difícil y valioso de este proyecto es el Algoritmo de Simplificación de Deudas. 
+
+Ejemplo: Si Ana le debe 10 a Beto, y Beto le debe 10 a Carlos, el sistema debe ser capaz de decir: "Ana le paga 10 directamente a Carlos" para evitar transacciones innecesarias. 
+
+Implementar esta lógica en tu Backend demuestra que tienes capacidad de resolución de algoritmos complejos. 
+
+## Diseño de Línea de Tiempo – Historias de Usuario (Splitty) 
+
+### Línea de Tiempo del Desarrollo de Funcionalidades 
+
+#### Fase 1: Creación y Organización Inicial 
+##### 🟩 HU01 – Crear Grupo 
+Tarjeta: 
+
+Nombre del grupo 
+
+Categoría 
+
+Enlace de invitación 
+
+Añadir miembros 
+
+##### 🟩 HU02 – Añadir Gasto 
+Tarjeta: 
+
+Monto, descripción, quién pagó 
+
+División automática 
+
+Fecha editable 
+
+#### Fase 2: Gestión de Evidencias y Visualización 
+##### 🟦 HU03 – Adjuntar Recibo 
+Tarjeta: 
+
+Subida de JPG/PNG/PDF 
+
+Visualización completa 
+
+Almacenamiento en la nube 
+
+##### 🟦 HU04 – Ver Saldos 
+Tarjeta: 
+
+Saldo total visible 
+
+Colores (Rojo/Verde) 
+
+Desglose por persona 
+
+#### Fase 3: Personalización y Ajustes Financieros 
+##### 🟨 HU05 – División Desigual 
+Tarjeta: 
+
+División por porcentaje, monto o partes 
+
+Validación de suma total 
+
+##### 🟨 HU06 – Registrar Pago 
+Tarjeta: 
+
+Selección de receptor 
+
+Notificación push 
+
+Actualización de saldo 
+
+#### Fase 4: Optimización y Funcionalidades Avanzadas 
+#### 🟧 HU07 – Simplificar Deudas 
+Tarjeta: 
+
+Algoritmo de liquidación cruzada 
+
+Activar/desactivar por grupo 
+
+
+#### 🟧 HU08 – Multimoneda 
+Tarjeta: 
+
+Selector de divisa 
+
+API de tipo de cambio 
+
+Conversión automática 
+
+#### Fase 5: Control y Auditoría 
+#### 🟥 HU09 – Historial/Log 
+Tarjeta: 
+
+Registro cronológico 
+
+Usuario, acción y hora 
+
+Opción de “Deshacer” 
+
+Representación Visual (Esquema Lineal) 
+
+### Inicio → [HU01] → [HU02] → [HU03] → [HU04] → [HU05] → [HU06] → [HU07] → [HU08] → [HU09] → Fin 
+
+
+
+### Posibles APIS Externas: 
+
+1. Gestión de Imágenes (Recibos y Avatares) 
+
+Cloudinary (Recomendado): Es el estándar de oro para proyectos de grado. 
+
+Por qué: Tiene un SDK oficial para Python que es extremadamente fácil de usar. Puedes subir la imagen directamente desde el frontend (React) o pasarla al backend y que Flask la suba. 
+
+Función: Almacena los recibos de la HU03 y te devuelve una URL que guardas en tu base de datos. 
+
+Firebase Storage: Otra opción sólida si ya usas Firebase para autenticación, aunque Cloudinary ofrece mejores herramientas para recortar o redimensionar fotos automáticamente. 
+
+2. Conversión de Monedas (HU08) 
+
+ExchangeRate-API: Es muy estable y tiene un plan gratuito generoso (1,500 peticiones al mes). 
+
+Función: Te permite traer las tasas en tiempo real (ej. convertir de Pesos o Bolívares a USD) para que el balance del grupo sea coherente. 
+
+Fixer.io: Muy profesional, aunque su plan gratuito es un poco más limitado en cuanto a la moneda base (a veces solo permite EUR en el plan free). 
+
+3. Notificaciones y Tiempo Real (HU06) 
+
+Pusher (Recomendado): Es perfecto para proyectos finales porque elimina la complejidad de configurar WebSockets manualmente. 
+
+Función: Envía notificaciones instantáneas ("¡Juan registró un gasto!") que aparecen en la app sin que el usuario recargue la página. 
+
+SendGrid o Brevo (Email): Para notificaciones por correo electrónico (como invitaciones al grupo). Brevo es excelente porque te permite enviar hasta 300 correos al día gratis. 
+
+4. Pasarela de Pagos (Opcional pero Pro) 
+
+Si quieren simular el pago real de la deuda: 
+
+PayPal Sandbox: Es lo más universal para demostrar que sabes integrar un flujo de pago internacional. 
+
+Stripe (Modo Test): Tiene la mejor documentación del mundo. Aunque en Venezuela tiene restricciones para cuentas reales, el Modo Test funciona perfecto para demostrar la integración en tu defensa de proyecto. 
+
+
+¿Por dónde empezar? 
+
+Mi consejo es que dividan el trabajo de inmediato: 
+
+Backend: Alguien debe empezar a definir los modelos en SQLAlchemy y las rutas de auth (JWT). 
+
+Frontend: Alguien debe maquetar el formulario de "Añadir Gasto", que es la parte más compleja de la UI por las divisiones desiguales. 
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
 
 # Plantilla de WebApp con React JS y Flask API
 
