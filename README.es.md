@@ -1,4 +1,3 @@
-
 # Nombre de proyecto : Splitty
 
 ## Concepto general : 
