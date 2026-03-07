@@ -1,10 +1,14 @@
+## 5. ¿Cómo se vería el flujo? 
+
+Frontend (React/Angular/Vue): El usuario llena un formulario: "Cena Pizza - $60 - Pagó: Tú - Dividir entre: Ana y Luis". 
+Backend (Node/Python/Java): Recibe el dato, calcula que Ana debe 20 y Luis debe 20, y actualiza los balances generales del grupo. 
+Base de Datos: Guarda el registro histórico para que nadie pueda decir "yo no sabía". 
+
 ### Nombre de proyecto : 
 
 Nombre de proyecto : Splitty
 
 ### Concepto general : 
-
-
 
 ### Funcionalidades : 
 
