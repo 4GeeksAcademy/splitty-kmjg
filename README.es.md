@@ -1,3 +1,4 @@
+
 # Nombre de proyecto : Splitty
 
 ## Concepto general : 
@@ -124,6 +125,56 @@ Opción de “Deshacer”
 Representación Visual (Esquema Lineal) 
 
 ### Inicio → [HU01] → [HU02] → [HU03] → [HU04] → [HU05] → [HU06] → [HU07] → [HU08] → [HU09] → Fin 
+
+
+
+### Posibles APIS Externas: 
+
+1. Gestión de Imágenes (Recibos y Avatares) 
+
+Cloudinary (Recomendado): Es el estándar de oro para proyectos de grado. 
+
+Por qué: Tiene un SDK oficial para Python que es extremadamente fácil de usar. Puedes subir la imagen directamente desde el frontend (React) o pasarla al backend y que Flask la suba. 
+
+Función: Almacena los recibos de la HU03 y te devuelve una URL que guardas en tu base de datos. 
+
+Firebase Storage: Otra opción sólida si ya usas Firebase para autenticación, aunque Cloudinary ofrece mejores herramientas para recortar o redimensionar fotos automáticamente. 
+
+2. Conversión de Monedas (HU08) 
+
+ExchangeRate-API: Es muy estable y tiene un plan gratuito generoso (1,500 peticiones al mes). 
+
+Función: Te permite traer las tasas en tiempo real (ej. convertir de Pesos o Bolívares a USD) para que el balance del grupo sea coherente. 
+
+Fixer.io: Muy profesional, aunque su plan gratuito es un poco más limitado en cuanto a la moneda base (a veces solo permite EUR en el plan free). 
+
+3. Notificaciones y Tiempo Real (HU06) 
+
+Pusher (Recomendado): Es perfecto para proyectos finales porque elimina la complejidad de configurar WebSockets manualmente. 
+
+Función: Envía notificaciones instantáneas ("¡Juan registró un gasto!") que aparecen en la app sin que el usuario recargue la página. 
+
+SendGrid o Brevo (Email): Para notificaciones por correo electrónico (como invitaciones al grupo). Brevo es excelente porque te permite enviar hasta 300 correos al día gratis. 
+
+4. Pasarela de Pagos (Opcional pero Pro) 
+
+Si quieren simular el pago real de la deuda: 
+
+PayPal Sandbox: Es lo más universal para demostrar que sabes integrar un flujo de pago internacional. 
+
+Stripe (Modo Test): Tiene la mejor documentación del mundo. Aunque en Venezuela tiene restricciones para cuentas reales, el Modo Test funciona perfecto para demostrar la integración en tu defensa de proyecto. 
+
+
+¿Por dónde empezar? 
+
+Mi consejo es que dividan el trabajo de inmediato: 
+
+Backend: Alguien debe empezar a definir los modelos en SQLAlchemy y las rutas de auth (JWT). 
+
+Frontend: Alguien debe maquetar el formulario de "Añadir Gasto", que es la parte más compleja de la UI por las divisiones desiguales. 
+
+
+
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------
