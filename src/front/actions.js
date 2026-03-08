@@ -6,6 +6,7 @@ class Actions {
     this.dispatch = dispatch;
   }
 
+  // Función genérica para hacer llamadas a la API
   async apiFetch(endpoint, method = "GET", body = null, isPrivate = true) {
     const token = this.store.token;
     if (!token && isPrivate) {
