@@ -1,0 +1,98 @@
+/* apply a default gradient to the whole page so transparent navbars can reveal it */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+:root {
+  --color-base-light: #F7F5FB;
+
+  --color-base-dark: #1a1a1a;
+
+  --color-base-cream: #FFE7CD;
+
+  --color-base-orange: #FCAA54;
+
+  --color-base-dark-orange: #BB4D00;
+}
+
+body,
+html {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%);
+  font-family: 'Outfit', sans-serif;
+}
+
+
+/* Registro de variables para animación fluida */
+@property --gap-x {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0.04em;
+}
+
+@property --gap-y {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0.03em;
+}
+
+.cut-text {
+  position: relative;
+  display: inline-block;
+  color: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  --gap-x: 0.04em;
+  --gap-y: 0.03em;
+  --extra-float: 0.02em;
+}
+
+.cut-text::before,
+.cut-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--color-base-light);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.cut-text::before {
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 0 90%);
+  animation: floating-top 5s ease-in-out infinite;
+}
+
+.cut-text::after {
+  clip-path: polygon(0 90%, 100% 30%, 100% 100%, 0 100%);
+  animation: floating-bottom 5s ease-in-out infinite;
+}
+
+@keyframes floating-top {
+  0%,
+  100% {
+    transform: translate(calc(var(--gap-x) * -1), calc(var(--gap-y) * -1))
+      rotate(0deg);
+  }
+  50% {
+    transform: translate(
+        calc((var(--gap-x) + var(--extra-float)) * -1.1),
+        calc((var(--gap-y) + var(--extra-float)) * -1.2)
+      )
+      rotate(-1deg);
+  }
+}
+
+@keyframes floating-bottom {
+  0%,
+  100% {
+    transform: translate(var(--gap-x), var(--gap-y)) rotate(0deg);
+  }
+  50% {
+    transform: translate(
+        calc(var(--gap-x) + var(--extra-float) * 1.1),
+        calc(var(--gap-y) + var(--extra-float) * 1.2)
+      )
+      rotate(1deg);
+  }
+}

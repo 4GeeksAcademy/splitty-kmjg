@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import SplittyBrand2 from "../logos/SplittyBrand2";
 
 export const Login = () => {
-  const { dispatch } = useGlobalReducer();
+  const { dispatch, actions } = useGlobalReducer();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -22,41 +23,20 @@ export const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    const userEmail = formData.email
+    const userPassword = formData.password
 
-    try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    setError("")
+    setLoading(true)
 
-      const resp = await fetch(`${backendUrl}/api/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        setError(data.error || "No se pudo iniciar sesión");
-        return;
-      }
-
-      localStorage.setItem("token", data.access_token);
-      localStorage.setItem("user_email", formData.email);
-
-      dispatch({ type: "SET_JWT", payload: data.access_token });
-      dispatch({ type: "SET_USER", payload: { email: formData.email } });
-
-      navigate("/");
-    } catch (error) {
-      setError("Error de conexión con el servidor");
-    } finally {
-      setLoading(false);
+    const islogged = await actions.login(userEmail, userPassword)
+    if (islogged) {
+      navigate("/")
+    } else {
+      alert("Login failed. Please check your credentials and try again. " + islogged)
     }
-  };
+  }
 
   return (
     <div
@@ -79,24 +59,16 @@ export const Login = () => {
           }}
         >
           <div className="card-body p-4 p-md-5">
-            <div className="text-center mb-4">
-              <h1
-                className="fw-bold mb-1"
-                style={{
-                  fontSize: "2.2rem",
-                  color: "#111"
-                }}
-              >
-                Splitty
-              </h1>
+            <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
+              <SplittyBrand2 width="50%" color="var(--color-base-dark)" contrast="var(--color-base-dark-orange)" />
               <p
                 className="mb-0"
                 style={{
-                  color: "#7a6f67",
-                  fontSize: "0.98rem"
+                  color: "var(--color-base-dark-orange",
+                  fontSize: "1rem"
                 }}
               >
-                Divide expenses easily with your group
+                Share moments, not math
               </p>
             </div>
 
@@ -104,7 +76,7 @@ export const Login = () => {
               <div className="mb-3">
                 <label
                   className="form-label fw-semibold"
-                  style={{ color: "#2a2a2a" }}
+                  style={{ color: "var(--color-base-dark)" }}
                 >
                   Email
                 </label>
@@ -119,7 +91,7 @@ export const Login = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: "var(--color-base-light)"
                   }}
                 />
               </div>
@@ -127,7 +99,7 @@ export const Login = () => {
               <div className="mb-3">
                 <label
                   className="form-label fw-semibold"
-                  style={{ color: "#2a2a2a" }}
+                  style={{ color: "var(--color-base-dark)" }}
                 >
                   Password
                 </label>
@@ -142,7 +114,7 @@ export const Login = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: "var(--color-base-light)"
                   }}
                 />
               </div>
@@ -152,7 +124,7 @@ export const Login = () => {
                   type="button"
                   className="btn btn-link p-0 text-decoration-none"
                   style={{
-                    color: "#b65a1b",
+                    color: "var(--color-base-dark-orange)",
                     fontWeight: "600",
                     fontSize: "0.92rem"
                   }}
