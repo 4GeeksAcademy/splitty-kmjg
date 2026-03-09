@@ -39,9 +39,8 @@ class Actions {
       false,
     );
     if (!resp.ok) {
-      const errorData = await response.json();
-      console.error("Login fallido:", errorData.error);
-      return false;
+      console.error("Login failed:", resp.error || resp.data.error);
+      return;
     }
 
     const data = await response.json();

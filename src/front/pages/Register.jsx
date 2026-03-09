@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import SplittyBrand2 from "../logos/SplittyBrand2";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export const Register = () => {
   const navigate = useNavigate();
+  const { dispatch, actions } = useGlobalReducer();
 
   const [formData, setFormData] = useState({
     username: "",
@@ -25,43 +28,26 @@ export const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { email, password, username, ci } = formData;
+
     setError("");
-    setSuccess("");
     setLoading(true);
-
-    try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL;
-
-      const resp = await fetch(`${backendUrl}/api/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        setError(data.error || "No se pudo crear la cuenta");
-        return;
+    const isregistered = await actions.register(email, password, username, ci);
+    if (isregistered) {
+      const islogged = await actions.login(email, password);
+      if (islogged) {
+        navigate("/");
+      } else {
+        alert("Signup successful but login failed.");
       }
-
-      setSuccess("Cuenta creada correctamente. Ahora inicia sesión.");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1200);
-    } catch (error) {
-      setError("Error de conexión con el servidor");
-    } finally {
-      setLoading(false);
+    } else {
+      alert("Signup failed. Please check your credentials and try again.");
     }
   };
 
   return (
     <div
-      className="min-vh-100 d-flex align-items-center justify-content-center px-3"
+      className="min-vh-100 d-flex align-items-center justify-content-center px-3 my-5"
       style={{
         background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
       }}
@@ -76,34 +62,26 @@ export const Register = () => {
           className="card border-0 shadow-lg"
           style={{
             borderRadius: "24px",
-            background: "#f8f5f2"
+            background: "var(--color-base-light)"
           }}
         >
           <div className="card-body p-4 p-md-5">
-            <div className="text-center mb-4">
-              <h1
-                className="fw-bold mb-1"
-                style={{
-                  fontSize: "2.2rem",
-                  color: "#111"
-                }}
-              >
-                Splitty
-              </h1>
+            <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
+              <SplittyBrand2 width="50%" color="var(--color-base-dark)" contrast="var(--color-base-dark-orange)" />
               <p
                 className="mb-0"
                 style={{
-                  color: "#7a6f67",
-                  fontSize: "0.98rem"
+                  color: "var(--color-base-dark-orange",
+                  fontSize: "1rem"
                 }}
               >
-                Create your account and start splitting smarter
+                Share moments, not math
               </p>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="mb-3">
-                <label className="form-label fw-semibold" style={{ color: "#2a2a2a" }}>
+                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
                   Username
                 </label>
                 <input
@@ -117,13 +95,13 @@ export const Register = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: "var(--color-base-light)"
                   }}
                 />
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold" style={{ color: "#2a2a2a" }}>
+                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
                   Email
                 </label>
                 <input
@@ -137,13 +115,13 @@ export const Register = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: "var(--color-base-light)"
                   }}
                 />
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold" style={{ color: "#2a2a2a" }}>
+                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
                   Password
                 </label>
                 <input
@@ -157,13 +135,13 @@ export const Register = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: "var(--color-base-light)"
                   }}
                 />
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold" style={{ color: "#2a2a2a" }}>
+                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
                   CI
                 </label>
                 <input
@@ -177,7 +155,7 @@ export const Register = () => {
                   style={{
                     height: "50px",
                     borderRadius: "14px",
-                    backgroundColor: "#ffffff"
+                    backgroundColor: ""
                   }}
                 />
               </div>
@@ -186,8 +164,8 @@ export const Register = () => {
                 <div
                   className="alert border-0"
                   style={{
-                    backgroundColor: "#ffe5d6",
-                    color: "#8a3f12",
+                    backgroundColor: "#eb13132c",
+                    color: "var(--color-base-dark)",
                     borderRadius: "14px"
                   }}
                 >
@@ -199,7 +177,7 @@ export const Register = () => {
                 <div
                   className="alert border-0"
                   style={{
-                    backgroundColor: "#e6f6ea",
+                    backgroundColor: "var(--color-base-light)",
                     color: "#1f6b35",
                     borderRadius: "14px"
                   }}
@@ -215,7 +193,7 @@ export const Register = () => {
                 style={{
                   height: "50px",
                   borderRadius: "14px",
-                  background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)",
+                  background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
                   color: "#fff",
                   border: "none"
                 }}
@@ -231,7 +209,7 @@ export const Register = () => {
               <Link
                 to="/login"
                 className="text-decoration-none fw-semibold"
-                style={{ color: "#b65a1b" }}
+                style={{ color: "var(--color-base-dark-orange)" }}
               >
                 Login
               </Link>

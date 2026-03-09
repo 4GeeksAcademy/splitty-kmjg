@@ -13,8 +13,8 @@ bcrypt = Bcrypt()
 
 api = Blueprint('api', __name__)
 
-# Allow CORS requests to this API
-CORS(api)
+# Allow CORS requests to this API; explicitly permit any origin on /api/*
+CORS(api, resources={r"/api/*": {"origins": "*"}})
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -27,6 +27,8 @@ def handle_hello():
     return jsonify(response_body), 200
 
 # Endpoint para registrar un nuevo usuario
+
+
 @api.route('/register', methods=['POST'])
 def reg_user():
     # traer datos del body
@@ -73,6 +75,8 @@ def reg_user():
         return jsonify({"error": "Error interno de servidor", "details": str(e)}), 500
 
 # Endpoint para login de usuario
+
+
 @api.route('/login', methods=['POST'])
 def login_user():
     data = request.get_json()
@@ -95,6 +99,8 @@ def login_user():
     }), 200
 
 # Endpoint para logout de usuario
+
+
 @api.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():

@@ -5,7 +5,7 @@ export default function CountUp({
   to,
   from = 0,
   direction = 'up',
-  delay = 1.8,
+  delay = 1.5,
   duration = 2,
   className = '',
   startWhen = true,

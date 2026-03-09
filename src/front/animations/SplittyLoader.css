@@ -1,0 +1,59 @@
+.splitty-loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.splitty-logo {
+  width: 120px; 
+  height: 120px;
+}
+
+.splitty-path {
+  fill: transparent;
+  stroke: #C95B0C; 
+  stroke-width: 40; 
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  
+  /* Mantenemos los 2.5s para que sea ágil */
+  animation: traceFillAndFade 2.5s cubic-bezier(0.45, 0, 0.15, 1) infinite;
+}
+
+@keyframes traceFillAndFade {
+  0% {
+    stroke-dashoffset: 100;
+    fill: transparent;
+    opacity: 0;
+  }
+  /* Aparece rápido al inicio del trazado */
+  5% {
+    opacity: 1;
+  }
+  /* El trazado se completa */
+  70% {
+    stroke-dashoffset: 0;
+    fill: transparent;
+    opacity: 1;
+  }
+  /* Se rellena el color naranja */
+  85% {
+    stroke-dashoffset: 0;
+    fill: #C95B0C;
+    opacity: 1;
+  }
+  /* Breve pausa con el logo completo */
+  90% {
+    opacity: 1;
+  }
+  /* Fade out final: el logo desaparece suavemente */
+  100% {
+    stroke-dashoffset: 0;
+    fill: #C95B0C;
+    opacity: 0;
+  }
+}

@@ -1,12 +1,35 @@
+/* apply a default gradient to the whole page so transparent navbars can reveal it */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+:root {
+  --color-base-light: #F7F5FB;
+
+  --color-base-dark: #1a1a1a;
+
+  --color-base-cream: #FFE7CD;
+
+  --color-base-orange: #FCAA54;
+
+  --color-base-dark-orange: #BB4D00;
+}
+
+body,
+html {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%);
+  font-family: 'Outfit', sans-serif;
+}
+
+
 /* Registro de variables para animación fluida */
 @property --gap-x {
-  syntax: '<length-percentage>';
+  syntax: "<length-percentage>";
   inherits: true;
   initial-value: 0.04em;
 }
 
 @property --gap-y {
-  syntax: '<length-percentage>';
+  syntax: "<length-percentage>";
   inherits: true;
   initial-value: 0.03em;
 }
@@ -30,7 +53,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  color: #f8f5f2;
+  color: var(--color-base-light);
   pointer-events: none;
   will-change: transform;
 }
@@ -46,25 +69,30 @@
 }
 
 @keyframes floating-top {
-  0%, 100% {
-    transform: translate(calc(var(--gap-x) * -1), calc(var(--gap-y) * -1)) rotate(0deg);
+  0%,
+  100% {
+    transform: translate(calc(var(--gap-x) * -1), calc(var(--gap-y) * -1))
+      rotate(0deg);
   }
   50% {
     transform: translate(
-      calc((var(--gap-x) + var(--extra-float)) * -1.1), 
-      calc((var(--gap-y) + var(--extra-float)) * -1.2)
-    ) rotate(-1deg);
+        calc((var(--gap-x) + var(--extra-float)) * -1.1),
+        calc((var(--gap-y) + var(--extra-float)) * -1.2)
+      )
+      rotate(-1deg);
   }
 }
 
 @keyframes floating-bottom {
-  0%, 100% {
+  0%,
+  100% {
     transform: translate(var(--gap-x), var(--gap-y)) rotate(0deg);
   }
   50% {
     transform: translate(
-      calc(var(--gap-x) + var(--extra-float) * 1.1), 
-      calc(var(--gap-y) + var(--extra-float) * 1.2)
-    ) rotate(1deg);
+        calc(var(--gap-x) + var(--extra-float) * 1.1),
+        calc(var(--gap-y) + var(--extra-float) * 1.2)
+      )
+      rotate(1deg);
   }
 }
