@@ -1,108 +1,84 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { gsap } from 'gsap';
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import FadeContent from '../components/bits/FadeContent.jsx';
+import SplitText from '../components/bits/SplitText.jsx';
+import CountUp from '../components/bits/CountUp.jsx';
 
 export const Home = () => {
 	const { store } = useGlobalReducer();
+	const cutRef = useRef(null);
+	const listRef = useRef(null);
+	const progressRef = useRef(null);
+
+	// Funciones de las animacions
+	useEffect(() => {
+		// 1. Animación del span "Split"
+		gsap.fromTo(cutRef.current,
+			{ opacity: 0, y: 40 },
+			{ opacity: 1, y: 0, duration: 1.25, ease: 'power3.out', delay: 0.1 }
+		);
+
+		// 2. Animación de las transacciones (Stagger)
+		if (listRef.current) {
+			const items = listRef.current.querySelectorAll('.transaction-item');
+			gsap.fromTo(items,
+				{ opacity: 0, y: 20 },
+				{ opacity: 1, y: 0, duration: 0.8, ease: "power2.out", stagger: 0.15, delay: 0.8 }
+			);
+		}
+
+		// 3. Animación de la Barra de Progreso
+		if (progressRef.current) {
+			gsap.fromTo(progressRef.current,
+				{ width: "0%" }, // Empieza vacía
+				{
+					width: "65%", // Se llena hasta el valor deseado
+					duration: 1.5,
+					ease: "power2.inOut",
+					delay: 1.4 // Empieza después de que las transacciones terminen
+				}
+			);
+		}
+	}, []);
 
 	return (
-		<div
-			className="min-vh-100 d-flex align-items-center"
-			style={{
-				background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
-			}}
-		>
+		<div className="min-vh-100 d-flex align-items-center" style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)" }}>
 			<div className="container py-5">
 				<div className="row align-items-center g-5">
+					{/* Columna Izquierda */}
 					<div className="col-12 col-lg-6">
-						<span
-							className="d-inline-block mb-3 px-3 py-2"
-							style={{
-								borderRadius: "999px",
-								background: "rgba(255,255,255,0.08)",
-								color: "#f1e7df",
-								fontSize: "0.9rem",
-								border: "1px solid rgba(255,255,255,0.08)"
-							}}
-						>
+						<span className="d-inline-block mb-3 px-3 py-2" style={{ borderRadius: "999px", background: "rgba(255,255,255,0.08)", color: "#f1e7df", fontSize: "0.9rem", border: "1px solid rgba(255,255,255,0.08)" }}>
 							Smart shared expense tracking
 						</span>
 
-						<h1
-							className="fw-bold mb-3"
-							style={{
-								color: "#f8f5f2",
-								fontSize: "clamp(2.4rem, 6vw, 4.6rem)",
-								lineHeight: "1.05"
-							}}
-						>
-							Split expenses
+						<h1 className="fw-bold mb-3" style={{ color: "#f8f5f2", fontSize: "clamp(2.4rem, 6vw, 4.6rem)", lineHeight: "1.05", position: "relative" }}>
+							<span ref={cutRef} className="cut-text d-inline-block" data-text="Split" style={{ verticalAlign: "middle", marginRight: "0.2rem" }}>
+								Split
+							</span>{" "}
+							<SplitText text="expenses" delay={150} />
 							<br />
-							without the chaos
+							<SplitText text="without the chaos" delay={100} />
 						</h1>
 
-						<p
-							className="mb-4"
-							style={{
-								color: "#d7cfc8",
-								fontSize: "1.08rem",
-								maxWidth: "560px",
-								lineHeight: "1.7"
-							}}
-						>
-							Splitty helps friends, roommates and travel groups track shared
-							expenses, calculate balances, and settle debts in a simple way.
-						</p>
-
+						{/* ... resto del contenido de texto y botones ... */}
 						<div className="d-flex flex-wrap gap-3 mb-4">
 							{store.jwt ? (
 								<Link to="/" className="text-decoration-none">
-									<button
-										className="btn"
-										style={{
-											background:
-												"linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)",
-											color: "#fff",
-											border: "none",
-											borderRadius: "14px",
-											padding: "12px 24px",
-											fontWeight: "700"
-										}}
-									>
+									<button className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)", color: "#fff", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
 										Go to app
 									</button>
 								</Link>
 							) : (
 								<>
 									<Link to="/register" className="text-decoration-none">
-										<button
-											className="btn"
-											style={{
-												background:
-													"linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)",
-												color: "#fff",
-												border: "none",
-												borderRadius: "14px",
-												padding: "12px 24px",
-												fontWeight: "700"
-											}}
-										>
+										<button className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)", color: "#fff", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
 											Get started
 										</button>
 									</Link>
-
 									<Link to="/login" className="text-decoration-none">
-										<button
-											className="btn"
-											style={{
-												background: "transparent",
-												color: "#f8f5f2",
-												border: "1px solid rgba(255,255,255,0.18)",
-												borderRadius: "14px",
-												padding: "12px 24px",
-												fontWeight: "700"
-											}}
-										>
+										<button className="btn" style={{ background: "transparent", color: "#f8f5f2", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700" }}>
 											Log in
 										</button>
 									</Link>
@@ -111,146 +87,79 @@ export const Home = () => {
 						</div>
 
 						<div className="row g-3 mt-1">
-							<div className="col-12 col-sm-4">
-								<div
-									className="p-3 h-100"
-									style={{
-										background: "rgba(255,255,255,0.06)",
-										borderRadius: "18px",
-										border: "1px solid rgba(255,255,255,0.06)"
-									}}
-								>
-									<h3 className="fw-bold mb-1" style={{ color: "#f8f5f2", fontSize: "1.4rem" }}>
-										Groups
-									</h3>
-									<p className="mb-0" style={{ color: "#cfc6bf" }}>
-										Create expense groups for trips, rent, events or daily life.
-									</p>
+							{["Groups", "Balances", "Settle up"].map((title, i) => (
+								<div key={i} className="col-12 col-sm-4">
+									<div className="p-3 h-100" style={{ background: "rgba(255,255,255,0.06)", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.06)" }}>
+										<h3 className="fw-bold mb-1" style={{ color: "#f8f5f2", fontSize: "1.4rem" }}>{title}</h3>
+										<p className="mb-0" style={{ color: "#cfc6bf", fontSize: "0.9rem" }}>
+											{i === 0 && "Create expense groups for trips, rent or daily life."}
+											{i === 1 && "See who owes what without manual math."}
+											{i === 2 && "Keep payments simple and avoid messy debt."}
+										</p>
+									</div>
 								</div>
-							</div>
-
-							<div className="col-12 col-sm-4">
-								<div
-									className="p-3 h-100"
-									style={{
-										background: "rgba(255,255,255,0.06)",
-										borderRadius: "18px",
-										border: "1px solid rgba(255,255,255,0.06)"
-									}}
-								>
-									<h3 className="fw-bold mb-1" style={{ color: "#f8f5f2", fontSize: "1.4rem" }}>
-										Balances
-									</h3>
-									<p className="mb-0" style={{ color: "#cfc6bf" }}>
-										See who owes what without doing manual math.
-									</p>
-								</div>
-							</div>
-
-							<div className="col-12 col-sm-4">
-								<div
-									className="p-3 h-100"
-									style={{
-										background: "rgba(255,255,255,0.06)",
-										borderRadius: "18px",
-										border: "1px solid rgba(255,255,255,0.06)"
-									}}
-								>
-									<h3 className="fw-bold mb-1" style={{ color: "#f8f5f2", fontSize: "1.4rem" }}>
-										Settle up
-									</h3>
-									<p className="mb-0" style={{ color: "#cfc6bf" }}>
-										Keep payments simple and avoid messy debt chains.
-									</p>
-								</div>
-							</div>
+							))}
 						</div>
 					</div>
 
-					<div className="col-12 col-lg-6">
-						<div
-							className="p-4 p-md-5 shadow-lg"
-							style={{
-								background: "#f8f5f2",
-								borderRadius: "28px"
-							}}
-						>
+					{/* Columna Derecha (Mockup) */}
+					<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="col-12 col-lg-6">
+						<div className="p-4 p-md-5 shadow-lg" style={{ background: "#f8f5f2", borderRadius: "28px" }}>
 							<div className="d-flex justify-content-between align-items-center mb-4">
 								<div>
-									<h2 className="fw-bold mb-1" style={{ color: "#111", fontSize: "1.8rem" }}>
-										Weekend Trip
-									</h2>
-									<p className="mb-0" style={{ color: "#7a6f67" }}>
-										4 members · 12 expenses
-									</p>
+									<h2 className="fw-bold mb-1" style={{ color: "#111", fontSize: "1.8rem" }}>Weekend Trip</h2>
+									<p className="mb-0" style={{ color: "#7a6f67" }}>4 members · 12 expenses</p>
 								</div>
-								<div
-									className="px-3 py-2"
-									style={{
-										borderRadius: "999px",
-										background: "#f2e4d9",
-										color: "#9f4713",
-										fontWeight: "700"
-									}}
-								>
-									Active
-								</div>
+								<div className="px-3 py-2" style={{ borderRadius: "999px", background: "#f2e4d9", color: "#9f4713", fontWeight: "700" }}>Active</div>
 							</div>
 
-							<div className="mb-3">
-								<div className="d-flex justify-content-between align-items-center p-3 mb-2" style={{ background: "#fff", borderRadius: "16px" }}>
-									<div>
-										<div className="fw-semibold" style={{ color: "#202020" }}>Marco paid dinner</div>
-										<small style={{ color: "#7a6f67" }}>Shared equally</small>
+							<div className="mb-3" ref={listRef}>
+								{[
+									{ name: "Marco paid dinner", type: "Shared equally", price: "$48" },
+									{ name: "Josue paid gas", type: "Split by percentages", price: "$32" },
+									{ name: "Gustavo paid snacks", type: "Custom split", price: "$18" }
+								].map((item, index) => (
+									<div key={index} className="transaction-item d-flex justify-content-between align-items-center p-3 mb-2" style={{ background: "#fff", borderRadius: "16px", opacity: 0 }}>
+										<div>
+											<div className="fw-semibold" style={{ color: "#202020" }}>{item.name}</div>
+											<small style={{ color: "#7a6f67" }}>{item.type}</small>
+										</div>
+										<div className="fw-bold" style={{ color: "#111" }}>{item.price}</div>
 									</div>
-									<div className="fw-bold" style={{ color: "#111" }}>$48</div>
-								</div>
-
-								<div className="d-flex justify-content-between align-items-center p-3 mb-2" style={{ background: "#fff", borderRadius: "16px" }}>
-									<div>
-										<div className="fw-semibold" style={{ color: "#202020" }}>Josue paid gas</div>
-										<small style={{ color: "#7a6f67" }}>Split by percentages</small>
-									</div>
-									<div className="fw-bold" style={{ color: "#111" }}>$32</div>
-								</div>
-
-								<div className="d-flex justify-content-between align-items-center p-3" style={{ background: "#fff", borderRadius: "16px" }}>
-									<div>
-										<div className="fw-semibold" style={{ color: "#202020" }}>Gustavo paid snacks</div>
-										<small style={{ color: "#7a6f67" }}>Custom split</small>
-									</div>
-									<div className="fw-bold" style={{ color: "#111" }}>$18</div>
-								</div>
+								))}
 							</div>
 
-							<div
-								className="p-4"
-								style={{
-									background: "linear-gradient(90deg, #1c1c1c 0%, #2a1a12 100%)",
-									borderRadius: "20px"
-								}}
-							>
+							{/* Card de Balance con Barra Animada */}
+							<div className="p-4" style={{ background: "linear-gradient(90deg, #1c1c1c 0%, #2a1a12 100%)", borderRadius: "20px" }}>
 								<div className="d-flex justify-content-between align-items-center mb-2">
 									<span style={{ color: "#d9cfc8" }}>Your balance</span>
-									<span style={{ color: "#fff", fontWeight: "700" }}>
-										You owe $14
+									<span style={{ color: "#fff", fontWeight: "700" }}>You owe $
+										<CountUp from={0}
+										to={14}
+										separator=","
+										direction="up"
+										duration={1}
+										className="count-up-text"
+										startCounting={false}
+										/>
 									</span>
+									
 								</div>
-								<div className="progress" style={{ height: "10px", background: "rgba(255,255,255,0.1)", borderRadius: "999px" }}>
+								<div className="progress" style={{ height: "10px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
 									<div
+										ref={progressRef} // Referencia GSAP
 										className="progress-bar"
 										style={{
-											width: "65%",
-											background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)"
+											width: "0%", // Empezamos en 0
+											background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)",
+											height: "100%"
 										}}
-									></div>
+									/>
 								</div>
-								<small className="d-block mt-2" style={{ color: "#c9bfb7" }}>
-									Track balances in real time and settle faster.
-								</small>
+								<small className="d-block mt-2" style={{ color: "#c9bfb7" }}>Track balances in real time.</small>
 							</div>
 						</div>
-					</div>
+					</FadeContent>
 				</div>
 			</div>
 		</div>
