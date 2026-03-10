@@ -1,23 +1,28 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import SplittyBrand1 from "../logos/SplittyBrand1";
+import { useState } from "react";
 
 export const Navbar = () => {
     const { store, actions } = useGlobalReducer();
     const navigate = useNavigate();
     const location = useLocation();
+    const [loading, setLoading] = useState(false);
 
     const isAuthPage =
         location.pathname === "/login" || location.pathname === "/register";
 
     const handleLogout = async () => {
         // call logout helper from global actions provided by the hook
+        setLoading(true);
         const logout = await actions.logout();
         if (!logout) {
             alert("Logout failed. Please try again.");
+            setLoading(false);
             return;
         }
         navigate("/login");
+        setLoading(false);
         return true;
     };
 
@@ -77,7 +82,7 @@ export const Navbar = () => {
                                         fontWeight: "600"
                                     }}
                                 >
-                                    Logout
+                                    {loading ? "Logging out..." : "Logout"}
                                 </button>
                             </>
                         ) : (
