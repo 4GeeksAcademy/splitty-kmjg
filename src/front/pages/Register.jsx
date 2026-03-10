@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import SplittyBrand2 from "../logos/SplittyBrand2";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import { Loading } from "./Loading";
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -33,16 +34,26 @@ export const Register = () => {
     setLoading(true);
     const isregistered = await actions.register(email, password, username);
     if (isregistered) {
-      const islogged = await actions.login(email, password);
+      const [islogged] = await Promise.all([
+      actions.login(email, password),
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
       if (islogged) {
         navigate("/");
       } else {
         alert("Signup successful but login failed.");
+        setLoading(false);
+        navigate("/login");
       }
     } else {
       alert("Signup failed. Please check your credentials and try again.");
+      setLoading(false);
     }
   };
+
+  if (loading) {
+      return <Loading />; 
+  }
 
   return (
     <div
@@ -139,7 +150,7 @@ export const Register = () => {
                 />
               </div>
 
-                  {/* Error message */}
+              {/* Error message */}
               {error && (
                 <div
                   className="alert border-0"

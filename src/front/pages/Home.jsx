@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { gsap } from 'gsap';
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
@@ -6,6 +6,8 @@ import FadeContent from '../components/bits/FadeContent.jsx';
 import SplitText from '../components/bits/SplitText.jsx';
 import CountUp from '../components/bits/CountUp.jsx';
 import SplittyLogo from "../logos/SplittyLogo.jsx";
+import { Loading } from "./Loading";
+
 
 export const Home = () => {
 	const { store } = useGlobalReducer();

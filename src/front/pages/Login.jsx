@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import SplittyBrand2 from "../logos/SplittyBrand2";
+import { Loading } from "./Loading";
 
 export const Login = () => {
   const { dispatch, actions } = useGlobalReducer();
@@ -23,19 +24,28 @@ export const Login = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    const userEmail = formData.email
-    const userPassword = formData.password
+    e.preventDefault();
+    const email = formData.email;
+    const password = formData.password;
 
-    setError("")
-    setLoading(true)
+    setError("");
+    setLoading(true);
 
-    const islogged = await actions.login(userEmail, userPassword)
+    const [islogged] = await Promise.all([
+      actions.login(email, password),
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
+
     if (islogged) {
-      navigate("/")
+      navigate("/");
     } else {
-      alert("Login failed. Please check your credentials and try again. " + islogged)
+      alert("Login failed. Please check your credentials and try again.");
+      setLoading(false);
     }
+  };
+
+  if (loading) {
+      return <Loading />; 
   }
 
   return (
