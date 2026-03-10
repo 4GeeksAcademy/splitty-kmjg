@@ -36,17 +36,8 @@ def reg_user():
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    ci = data.get('ci')
     if not email or not password:
         return jsonify({"error": "Email y contraseña obligatorios"}), 400
-
-    # verificar si la pasaron el ci
-    if not ci:
-        return jsonify({"error": "CI es obligatorio"}), 400
-    # verificar si la ci ya esta registrada
-    ci_exist = User.query.filter_by(ci=ci).first()
-    if ci_exist:
-        return jsonify({"error": "La CI ya esta registrada"}), 409
 
     # verificar si el correo ya esta registrado
     email_exist = User.query.filter_by(email=email).first()
@@ -62,7 +53,6 @@ def reg_user():
         email=email,
         password=hashed_password,
         is_active=True,
-        ci=ci
     )
 
     # guardar en DB
