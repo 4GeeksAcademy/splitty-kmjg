@@ -73,11 +73,11 @@ class Actions {
     return true;
   };
 
-  register = async (email, password, ci) => {
+  register = async (email, password, username) => {
     const resp = await this.apiFetch(
       "/register",
       "POST",
-      { email, password, ci },
+      { email, password, username },
       false,
     );
 
