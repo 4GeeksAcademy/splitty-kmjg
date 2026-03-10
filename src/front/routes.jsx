@@ -8,8 +8,6 @@ import {
 // Import pages
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
-import { Demo } from "./pages/Demo";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 
@@ -24,10 +22,6 @@ export const router = createBrowserRouter(
             {/* Auth */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
-
-            {/* Boilerplate demo routes */}
-            <Route path="single/:theId" element={<Single />} />
-            <Route path="demo" element={<Demo />} />
 
         </Route>
     )
