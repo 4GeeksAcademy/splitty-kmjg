@@ -11,7 +11,6 @@ export const Register = () => {
     username: "",
     email: "",
     password: "",
-    ci: ""
   });
 
   const [error, setError] = useState("");
@@ -28,11 +27,11 @@ export const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const { email, password, username, ci } = formData;
+    const { email, password, username } = formData;
 
     setError("");
     setLoading(true);
-    const isregistered = await actions.register(email, password, username, ci);
+    const isregistered = await actions.register(email, password, username);
     if (isregistered) {
       const islogged = await actions.login(email, password);
       if (islogged) {
@@ -86,7 +85,7 @@ export const Register = () => {
                 </label>
                 <input
                   type="text"
-                  className="form-control border-0 shadow-sm"
+                  className="form-control border-0 shadow"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
@@ -106,7 +105,7 @@ export const Register = () => {
                 </label>
                 <input
                   type="email"
-                  className="form-control border-0 shadow-sm"
+                  className="form-control border-0 shadow"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
@@ -120,13 +119,13 @@ export const Register = () => {
                 />
               </div>
 
-              <div className="mb-3">
+              <div className="mb-4">
                 <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
                   Password
                 </label>
                 <input
                   type="password"
-                  className="form-control border-0 shadow-sm"
+                  className="form-control border-0 shadow"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
@@ -140,26 +139,7 @@ export const Register = () => {
                 />
               </div>
 
-              <div className="mb-3">
-                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
-                  CI
-                </label>
-                <input
-                  type="text"
-                  className="form-control border-0 shadow-sm"
-                  name="ci"
-                  value={formData.ci}
-                  onChange={handleChange}
-                  placeholder="Enter your CI"
-                  required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: ""
-                  }}
-                />
-              </div>
-
+                  {/* Error message */}
               {error && (
                 <div
                   className="alert border-0"

@@ -5,9 +5,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import FadeContent from '../components/bits/FadeContent.jsx';
 import SplitText from '../components/bits/SplitText.jsx';
 import CountUp from '../components/bits/CountUp.jsx';
-import SplittyLoader from "../animations/SplittyLoader.jsx";
 import SplittyLogo from "../logos/SplittyLogo.jsx";
-import SplittyBrand2 from "../logos/SplittyBrand2.jsx";
 
 export const Home = () => {
 	const { store } = useGlobalReducer();
@@ -58,9 +56,9 @@ export const Home = () => {
 				<div className="row align-items-center g-5">
 					{/* Columna Izquierda */}
 					<div className="col-12 col-lg-6">
-						<span className="d-inline-block mb-3 px-3 py-2" style={{ borderRadius: "999px", background: "rgba(255,255,255,0.08)", color: "var(--color-base-light)", fontSize: "0.9rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+						<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="d-inline-block mb-3 px-3 py-2" style={{ borderRadius: "999px", background: "rgba(255,255,255,0.08)", color: "var(--color-base-light)", fontSize: "0.9rem", border: "1px solid rgba(255,255,255,0.08)" }}>
 							Smart shared expense tracking
-						</span>
+						</FadeContent>
 
 						<h1 className="fw-bold mb-3" style={{ color: "var(--color-base-light)", fontSize: "clamp(2.4rem, 6vw, 4.6rem)", lineHeight: "1.05", position: "relative" }}>
 							<span ref={cutRef} className="cut-text d-inline-block" data-text="Split" style={{ verticalAlign: "middle", marginRight: "0.2rem" }}>
@@ -75,21 +73,21 @@ export const Home = () => {
 						<div className="d-flex flex-wrap gap-3 mb-4">
 							{store.jwt ? (
 								<Link to="/" className="text-decoration-none">
-									<button className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)", color: "var(--color-base-light)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
+									<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)", color: "var(--color-base-light)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
 										Go to app
-									</button>
+									</FadeContent>
 								</Link>
 							) : (
 								<>
 									<Link to="/register" className="text-decoration-none">
-										<button className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)", color: "var(--color-base-light)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
+										<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="btn" style={{ background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)", color: "var(--color-base-light)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700", border: "none" }}>
 											Get started
-										</button>
+										</FadeContent>
 									</Link>
 									<Link to="/login" className="text-decoration-none">
-										<button className="btn" style={{ background: "transparent", color: "var(--color-base-light)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700" }}>
+										<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="btn" style={{ background: "transparent", color: "var(--color-base-light)", border: "1px solid rgba(255,255,255,0.18)", borderRadius: "14px", padding: "12px 24px", fontWeight: "700" }}>
 											Log in
-										</button>
+										</FadeContent>
 									</Link>
 								</>
 							)}
@@ -97,7 +95,7 @@ export const Home = () => {
 
 						<div className="row g-3 mt-1">
 							{["Groups", "Balances", "Settle up"].map((title, i) => (
-								<div key={i} className="col-12 col-sm-4">
+								<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} key={i} className="col-12 col-sm-4">
 									<div className="p-3 h-100" style={{ background: "rgba(255,255,255,0.06)", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.06)" }}>
 										<h3 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "1.4rem" }}>{title}</h3>
 										<p className="mb-0" style={{ color: "var(--color-base-light)", fontSize: "0.9rem" }}>
@@ -106,7 +104,7 @@ export const Home = () => {
 											{i === 2 && "Keep payments simple and avoid messy debt."}
 										</p>
 									</div>
-								</div>
+								</FadeContent>
 							))}
 						</div>
 					</div>
