@@ -5,33 +5,25 @@ import '../index.css'
 export const CreateGroupForm = () => {
     
     const { actions } = useGlobalReducer();
-
     const [formData, setFormData] = useState({ name: '', category: '' });
     const [message, setMessage] = useState({ type: '', text: '' });
-
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validación básica
         if (!formData.name || !formData.category) {
             setMessage({ type: 'danger', text: 'Por favor, completa todos los campos.' });
             return;
         }
 
-        // Llamamos al cartero apiFetch: (endpoint, metodo, body, isPrivate)
-        const response = await actions.apiFetch('/groups', 'POST', formData, true);
+        const response = await actions.createGroup(formData);
 
-        // Evaluamos la respuesta (recuerda que apiFetch ya maneja si el token expira)
-        if (response.ok) {
+        if (response.success) {
             setMessage({ type: 'success', text: '¡Grupo creado con éxito!' });
-            setFormData({ name: '', category: '' }); // Limpiamos el formulario
+            setFormData({ name: '', category: '' }); 
         } else {
-            // Error común (ej. faltó un dato)
             setMessage({ type: 'danger', text: response.error || 'Error al crear el grupo' });
         }
     };
@@ -57,7 +49,7 @@ export const CreateGroupForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Ej. Viaje a Cancún"
+                            placeholder="Ej. Viaje a Londres"
                             required
                         />
                     </div>

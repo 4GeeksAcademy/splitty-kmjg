@@ -1,6 +1,6 @@
 class Actions {
   constructor(store, dispatch) {
-    // mantienemos una referencia al store y al dispatch para poder actualizar el estado global desde las acciones
+   
     this.store = store;
     this.dispatch = dispatch;
   }
@@ -11,10 +11,10 @@ class Actions {
     body = null,
     isPrivate = true,
   ) => {
-    // construimos la URL base a partir de la variable de entorno VITE_BACKEND_URL, asegurándonos de eliminar cualquier barra al final y añadir "/api" si no está presente
+    
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
     backendUrl = backendUrl.replace(/\/+$/, "");
-    // ensure final URL ends with /api (not /api/api)
+    
     if (!backendUrl.endsWith("/api")) {
       backendUrl += "/api";
     }
@@ -28,12 +28,12 @@ class Actions {
 
     const fetchParams = { method, headers: {} };
 
-    // comprobamos si hay un body y lo añadimos a los parámetros de la petición, asegurándonos de establecer el header Content-Type
+   
     if (body) {
       fetchParams.body = JSON.stringify(body);
       fetchParams.headers["Content-Type"] = "application/json";
     }
-    //  si la petición es privada, añadimos el token al header Authorization
+   
     if (isPrivate) {
       fetchParams.headers["Authorization"] = "Bearer " + token;
     }
@@ -41,22 +41,22 @@ class Actions {
     try {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
       
-      // 👇 LO NUEVO: Si el backend nos rechaza por token expirado (401 o 422)
+      
       if (resp.status === 401 || resp.status === 422) {
         console.error("Token expirado o inválido. Limpiando sesión...");
         
-        // Destruimos la sesión local
+       
         localStorage.removeItem("token");
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_timestamp");
         this.dispatch({ type: "UNSET_USER" });
         
-        // Lo mandamos al login para que no se quede atrapado
+      
         window.location.href = "/login";
         
         return { code: resp.status, ok: false, error: "Sesión expirada", data: null };
       }
-      // 👆 FIN DE LO NUEVO
+     
 
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
@@ -122,6 +122,16 @@ class Actions {
     
     return true;
   };
+
+  createGroup = async(formData) => {
+    const resp = await this.apiFetch("/groups","POST",formData,true);
+
+    if(!resp.ok){
+      console.error("Error al crear grupo:",resp.error || resp.data?.error);
+      return{success:false,error:resp.error || resp.data?.error || "Error al crear el grupo"}
+    }
+    return{success:true,data:resp.data};
+  }
 }
 
 export default Actions;
