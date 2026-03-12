@@ -48,13 +48,21 @@ class Actions {
        
         localStorage.removeItem("token");
         localStorage.removeItem("user_email");
+        localStorage.removeItem("user_username");
         localStorage.removeItem("token_timestamp");
+        localStorage.removeItem("groups");
+
         this.dispatch({ type: "UNSET_USER" });
         
       
         window.location.href = "/login";
-        
-        return { code: resp.status, ok: false, error: "Sesión expirada", data: null };
+
+        return {
+          code: resp.status,
+          ok: false,
+          error: "Sesión expirada",
+          data: null,
+        };
       }
      
 
@@ -73,20 +81,33 @@ class Actions {
       false,
     );
 
-    if (!resp.ok) {
-      console.error("Login failed:", resp.error || resp.data.error);
-      return false;
-    }
+    if (!resp.ok) return false;
 
     const data = resp.data;
-
     const now = Date.now();
+
+    // 1. Guardar en Storage
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user_email", email);
+    localStorage.setItem("user_username", data.username || "");
     localStorage.setItem("token_timestamp", now.toString());
 
+    // 2. ACTUALIZACIÓN CRÍTICA: Actualizamos la referencia local del store
+    // para que loadUserGroups lo vea de inmediato
+    this.store.jwt = data.access_token;
+
+    // 3. Dispatch para React
     this.dispatch({ type: "SET_JWT", payload: data.access_token });
-    this.dispatch({ type: "SET_USER", payload: { email: email } });
+    this.dispatch({
+      type: "SET_USER",
+      payload: {
+        email: email,
+        username: data.username,
+      },
+    });
+
+    // 4. Ahora loadUserGroups sí encontrará el token en this.store.jwt
+    await this.loadUserGroups();
 
     return true;
   };
@@ -107,19 +128,20 @@ class Actions {
     return true;
   };
 
- logout = async () => {
-    // 1. PRIMERO limpiamos el navegador y el estado de React
+  logout = async () => {
+    // Limpiamos todo el rastro local
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
+    localStorage.removeItem("user_username");
     localStorage.removeItem("token_timestamp");
+    localStorage.removeItem("groups");
+
     this.dispatch({ type: "UNSET_USER" });
 
-    // 2. LUEGO le avisamos al backend (si da error, no nos importa porque ya limpiamos el front)
+    // Avisamos al backend (opcional)
     await this.apiFetch("/logout", "POST", null, true);
 
-    // 3. Redirigimos al inicio o login
     window.location.href = "/login";
-    
     return true;
   };
 

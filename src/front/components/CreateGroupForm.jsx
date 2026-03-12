@@ -26,7 +26,7 @@ export const CreateGroupForm = () => {
         } else {
             setMessage({ type: 'danger', text: response.error || 'Error al crear el grupo' });
         }
-    };
+        };
 
     return (
         <div className="form-wrapper">

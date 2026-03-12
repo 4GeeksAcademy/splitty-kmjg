@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import SplittyBrand2 from "../logos/SplittyBrand2";
-import { Loading } from "./Loading";
+import { Loading } from "../components/Loading.jsx";
 
 export const Login = () => {
   const { dispatch, actions } = useGlobalReducer();
