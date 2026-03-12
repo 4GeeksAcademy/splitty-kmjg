@@ -57,7 +57,7 @@ export const CreateGroupForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Ej. Viaje a Cancún"
+                            placeholder="Ej. Viaje a Londres"
                             required
                         />
                     </div>
