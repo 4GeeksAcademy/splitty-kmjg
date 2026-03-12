@@ -20,6 +20,24 @@ export const Home = () => {
 		{ name: "Josue paid gas", type: "Split by percentages", price: "$32" },
 		{ name: "Gustavo paid snacks", type: "Custom split", price: "$18" }
 	];
+	// Arreglo con la info de cada tarjeta
+	const featureCards = [
+		{
+			title: "Groups",
+			text: "Create expense groups for trips, rent or daily life.",
+			link: "/create-group"
+		},
+		{
+			title: "Balances",
+			text: "See who owes what without manual math.",
+			link: "#"
+		},
+		{
+			title: "Settle up",
+			text: "Keep payments simple and avoid messy debt.",
+			link: "#" 
+		}
+	];
 
 	// Funciones de las animacions
 	useEffect(() => {
@@ -51,6 +69,8 @@ export const Home = () => {
 			);
 		}
 	}, []);
+
+	
 
 	return (
 		<div className="min-vh-100 d-flex align-items-center" style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)" }}>
@@ -94,18 +114,31 @@ export const Home = () => {
 								</>
 							)}
 						</div>
-
+						{/* Tarjetas cambiadas */}
 						<div className="row g-3 mt-1">
-							{["Groups", "Balances", "Settle up"].map((title, i) => (
+							{featureCards.map((card, i) => (
 								<FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} key={i} className="col-12 col-sm-4">
-									<div className="p-3 h-100" style={{ background: "rgba(255,255,255,0.06)", borderRadius: "18px", border: "1px solid rgba(255,255,255,0.06)" }}>
-										<h3 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "1.4rem" }}>{title}</h3>
-										<p className="mb-0" style={{ color: "var(--color-base-light)", fontSize: "0.9rem" }}>
-											{i === 0 && "Create expense groups for trips, rent or daily life."}
-											{i === 1 && "See who owes what without manual math."}
-											{i === 2 && "Keep payments simple and avoid messy debt."}
-										</p>
-									</div>
+
+									{/* Aquí entra la magia de React Router */}
+									<Link to={card.link} style={{ textDecoration: 'none' }}>
+										<div
+											className="p-3 h-100"
+											style={{
+												background: "rgba(255,255,255,0.06)",
+												borderRadius: "18px",
+												border: "1px solid rgba(255,255,255,0.06)",
+												cursor: "pointer" 
+											}}
+										>
+											<h3 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "1.4rem" }}>
+												{card.title}
+											</h3>
+											<p className="mb-0" style={{ color: "var(--color-base-light)", fontSize: "0.9rem" }}>
+												{card.text}
+											</p>
+										</div>
+									</Link>
+
 								</FadeContent>
 							))}
 						</div>
@@ -127,7 +160,7 @@ export const Home = () => {
 									<div key={index} className="transaction-item d-flex justify-content-between align-items-center p-3 mb-2 shadow" style={{ background: "var(--color-base-light)", borderRadius: "16px", opacity: 0 }}>
 										<div>
 											<div className="fw-semibold d-flex align-items-center justify-content-start fs-5 text-center" style={{ color: "var(--color-base-dark)" }}>
-												<SplittyLogo width="6%" color="var(--color-base-dark-orange)"/>
+												<SplittyLogo width="6%" color="var(--color-base-dark-orange)" />
 												{item.name}</div>
 											<small style={{ color: "var(--color-base-dark-orange)", opacity: "60%", fontWeight: "500" }}>{item.type}</small>
 										</div>
@@ -142,15 +175,15 @@ export const Home = () => {
 									<span style={{ color: "var(--color-base-light)" }}>Your balance</span>
 									<span style={{ color: "var(--color-base-light)", fontWeight: "700" }}>You owe $
 										<CountUp from={0}
-										to={14}
-										separator=","
-										direction="up"
-										duration={1}
-										className="count-up-text"
-										startCounting={false}
+											to={14}
+											separator=","
+											direction="up"
+											duration={1}
+											className="count-up-text"
+											startCounting={false}
 										/>
 									</span>
-									
+
 								</div>
 								<div className="progress" style={{ height: "10px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
 									<div

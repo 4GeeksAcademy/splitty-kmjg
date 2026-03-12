@@ -9,6 +9,7 @@ import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
+import CreateGroupForm from "./components/CreateGroupForm";
 
 // 1. Creamos un componente para atrapar los fallos de código (crashes)
 const RootErrorBoundary = () => {
@@ -35,6 +36,7 @@ export const router = createBrowserRouter(
             {/* Auth */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
+            <Route path="/create-group" element={<CreateGroupForm />} />
 
             {/* 3. ESTA es la forma correcta de manejar un "Page not found" (404) */}
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />

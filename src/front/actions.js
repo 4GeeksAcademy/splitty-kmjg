@@ -40,6 +40,24 @@ class Actions {
 
     try {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
+      
+      // 👇 LO NUEVO: Si el backend nos rechaza por token expirado (401 o 422)
+      if (resp.status === 401 || resp.status === 422) {
+        console.error("Token expirado o inválido. Limpiando sesión...");
+        
+        // Destruimos la sesión local
+        localStorage.removeItem("token");
+        localStorage.removeItem("user_email");
+        localStorage.removeItem("token_timestamp");
+        this.dispatch({ type: "UNSET_USER" });
+        
+        // Lo mandamos al login para que no se quede atrapado
+        window.location.href = "/login";
+        
+        return { code: resp.status, ok: false, error: "Sesión expirada", data: null };
+      }
+      // 👆 FIN DE LO NUEVO
+
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
@@ -89,19 +107,19 @@ class Actions {
     return true;
   };
 
-  logout = async () => {
-    const resp = await this.apiFetch("/logout", "POST", null, true);
-
-    if (!resp.ok) {
-      console.error("Error al cerrar sesión:", resp.error || resp.data?.error);
-      return false;
-    }
-
+ logout = async () => {
+    // 1. PRIMERO limpiamos el navegador y el estado de React
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
     localStorage.removeItem("token_timestamp");
-
     this.dispatch({ type: "UNSET_USER" });
+
+    // 2. LUEGO le avisamos al backend (si da error, no nos importa porque ya limpiamos el front)
+    await this.apiFetch("/logout", "POST", null, true);
+
+    // 3. Redirigimos al inicio o login
+    window.location.href = "/login";
+    
     return true;
   };
 }
