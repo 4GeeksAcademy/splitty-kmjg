@@ -1,6 +1,6 @@
 class Actions {
   constructor(store, dispatch) {
-    // mantenemos una referencia al store y al dispatch para poder actualizar el estado global desde las acciones
+   
     this.store = store;
     this.dispatch = dispatch;
   }
@@ -11,11 +11,10 @@ class Actions {
     body = null,
     isPrivate = true,
   ) => {
-    // construimos la URL base a partir de la variable de entorno VITE_BACKEND_URL
+    
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
     backendUrl = backendUrl.replace(/\/+$/, "");
-
-    // aseguramos que la URL termine en /api
+    
     if (!backendUrl.endsWith("/api")) {
       backendUrl += "/api";
     }
@@ -29,24 +28,24 @@ class Actions {
 
     const fetchParams = { method, headers: {} };
 
-    // configuramos el body si existe
+   
     if (body) {
       fetchParams.body = JSON.stringify(body);
       fetchParams.headers["Content-Type"] = "application/json";
     }
-
-    // añadimos el token de autorización si es una ruta privada
+   
     if (isPrivate) {
       fetchParams.headers["Authorization"] = "Bearer " + token;
     }
 
     try {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
-
-      // Si el token expiró o es inválido, limpiamos y redirigimos
+      
+      
       if (resp.status === 401 || resp.status === 422) {
         console.error("Token expirado o inválido. Limpiando sesión...");
-
+        
+       
         localStorage.removeItem("token");
         localStorage.removeItem("user_email");
         localStorage.removeItem("user_username");
@@ -54,6 +53,8 @@ class Actions {
         localStorage.removeItem("groups");
 
         this.dispatch({ type: "UNSET_USER" });
+        
+      
         window.location.href = "/login";
 
         return {
@@ -63,6 +64,7 @@ class Actions {
           data: null,
         };
       }
+     
 
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
@@ -143,39 +145,15 @@ class Actions {
     return true;
   };
 
-  loadUserGroups = async (tokenOverride = null) => {
-    // Si pasamos un token manual, lo usamos. Si no, usamos el del store.
-    const token = tokenOverride || this.store.jwt;
+  createGroup = async(formData) => {
+    const resp = await this.apiFetch("/groups","POST",formData,true);
 
-    const resp = await this.apiFetch("/groups", "GET", null, true);
-
-    if (!resp.ok) {
-      console.error("Error al cargar grupos:", resp.error || resp.data?.error);
-      return false;
+    if(!resp.ok){
+      console.error("Error al crear grupo:",resp.error || resp.data?.error);
+      return{success:false,error:resp.error || resp.data?.error || "Error al crear el grupo"}
     }
-
-    const groups = resp.data.groups || [];
-    this.dispatch({ type: "SET_GROUPS", payload: groups });
-    localStorage.setItem("groups", JSON.stringify(groups));
-    return true;
-  };
-
-  createGroup = async (formData) => {
-    const resp = await this.apiFetch("/groups", "POST", formData, true);
-
-    if (!resp.ok) {
-      console.error("Error al crear grupo:", resp.error || resp.data?.error);
-      return {
-        success: false,
-        error: resp.error || resp.data?.error || "Error al crear el grupo",
-      };
-    }
-
-    await this.loadUserGroups();
-    this.dispatch({ type: "SET_GROUPS", payload: this.store.groups });
-
-    return { success: true, data: resp.data };
-  };
+    return{success:true,data:resp.data};
+  }
 }
 
 export default Actions;
