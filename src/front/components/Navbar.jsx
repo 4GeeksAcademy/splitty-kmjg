@@ -21,7 +21,6 @@ export const Navbar = () => {
             setLoading(false);
             return;
         }
-        navigate("/login");
         setLoading(false);
         return true;
     };
@@ -66,7 +65,7 @@ export const Navbar = () => {
                                             fontSize: "1rem"
                                         }}
                                     >
-                                        {store.user?.email}
+                                        {store.user?.username}
                                     </span>
                                 </div>
 

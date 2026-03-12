@@ -182,3 +182,26 @@ html {
   background-color: #f8d7da;
   color: #721c24;
 }
+
+.group-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--color-base-dark-orange) !important;
+}
+
+.splitty-btn-sm {
+    background: var(--color-base-dark-orange);
+    color: white;
+    font-size: 0.8rem;
+    padding: 5px 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* Custom utility class for gradient text */
+.splitty-gradient-text {
+    background: linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block; /* Essential for the gradient to render correctly on some elements */
+}

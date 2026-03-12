@@ -34,7 +34,7 @@ export const CreateGroupForm = () => {
             // Error común (ej. faltó un dato)
             setMessage({ type: 'danger', text: response.error || 'Error al crear el grupo' });
         }
-    };
+        };
 
     return (
         <div className="form-wrapper">

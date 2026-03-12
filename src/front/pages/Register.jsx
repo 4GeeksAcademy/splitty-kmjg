@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import SplittyBrand2 from "../logos/SplittyBrand2";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import { Loading } from "./Loading";
+import { Loading } from "../components/Loading.jsx";
 
 export const Register = () => {
   const navigate = useNavigate();
