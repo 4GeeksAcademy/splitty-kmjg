@@ -20,9 +20,9 @@ export const CreateGroupForm = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setMessage({ type: 'loading', text: 'Creando grupo...' });
+        setMessage({ type: 'loading', text: 'Creating group...' });
         if (!formData.name || !formData.category) {
-            setMessage({ type: 'danger', text: 'Por favor, completa todos los campos.' });
+            setMessage({ type: 'danger', text: 'Please fill in all fields.' });
             setLoading(false);
             return;
         }
@@ -31,20 +31,20 @@ export const CreateGroupForm = () => {
         setLoading(false);
 
         if (response.success) {
-            setMessage({ type: 'success', text: '¡Grupo creado con éxito!' });
+            setMessage({ type: 'success', text: 'Group created successfully!' });
             setFormData({ name: '', category: '' }); 
             setTimeout(() => {
                 navigate('/');
             }, 1500);
         } else {
-            setMessage({ type: 'danger', text: response.error || 'Error al crear el grupo' });
+            setMessage({ type: 'danger', text: response.error || 'Error creating group' });
         };
     };
 
     return (
         <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="form-wrapper">
             <div className="splitty-card">
-                <h2 className="splitty-title">Crear Nuevo Grupo</h2>
+                <h2 className="splitty-title">Create New Group</h2>
                 
                 {message.text && (
                     <div className={`splitty-alert splitty-alert-${message.type}`}>
@@ -54,7 +54,7 @@ export const CreateGroupForm = () => {
 
                 <form onSubmit={handleSubmit}>
                     <div>
-                        <label htmlFor="name" className="splitty-label">Nombre del Grupo</label>
+                        <label htmlFor="name" className="splitty-label">Group Name</label>
                         <input
                             type="text"
                             className="splitty-input"
@@ -62,13 +62,13 @@ export const CreateGroupForm = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleChange}
-                            placeholder="Ej. Viaje a Londres"
+                            placeholder="e.g. London Trip"
                             required
                         />
                     </div>
 
                     <div>
-                        <label htmlFor="category" className="splitty-label">Categoría</label>
+                        <label htmlFor="category" className="splitty-label">Category</label>
                         <select
                             className="splitty-input"
                             id="category"
@@ -77,17 +77,17 @@ export const CreateGroupForm = () => {
                             onChange={handleChange}
                             required
                         >
-                            <option value="" disabled>Selecciona una categoría</option>
-                            <option value="Viajes">Viajes</option>
-                            <option value="Hogar">Hogar</option>
-                            <option value="Comida">Comida</option>
-                            <option value="Entretenimiento">Entretenimiento</option>
-                            <option value="Otros">Otros</option>
+                            <option value="" disabled>Select a category</option>
+                            <option value="Travel">Travel</option>
+                            <option value="Home">Home</option>
+                            <option value="Food">Food</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Other">Other</option>
                         </select>
                     </div>
 
                     <button type="submit" className="splitty-btn" disabled={loading}>
-                        {loading ? 'Creando...' : 'Crear Grupo'}
+                        {loading ? 'Creating...' : 'Create Group'}
                     </button>
                 </form>
             </div>
