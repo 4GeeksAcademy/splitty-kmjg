@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Loading } from "./Loading";
 
 export const Navbar = () => {
-    const { store, actions } = useGlobalReducer();
+    const { store, dispatch, actions } = useGlobalReducer();
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(false);
@@ -70,61 +70,59 @@ export const Navbar = () => {
                                         </span>
                                     </div>
 
-                                    <button
-                                        className="btn"
-                                        onClick={handleLogout}
-                                        disabled={loading}
-                                        style={{
-                                            background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
-                                            color: "var(--color-base-light)",
-                                            border: "none",
-                                            borderRadius: "12px",
-                                            padding: "8px 18px",
-                                            fontWeight: "600"
-                                        }}
-                                    >
-                                        {loading ? "Logging out..." : "Logout"}
-                                    </button>
-                                </>
-                            ) : (
-                                <div className="d-flex gap-2">
-                                    <Link 
-                                        to="/login"
-                                        className="btn"
-                                        style={{
-                                            background: "transparent",
-                                            color: "var(--color-base-light)",
-                                            border: "1px solid rgba(255,255,255,0.18)",
-                                            borderRadius: "12px",
-                                            padding: "8px 18px",
-                                            fontWeight: "600",
-                                            textDecoration: "none"
-                                        }}
-                                    >
-                                        Login
-                                    </Link>
+                                <button
+                                    className="btn"
+                                    onClick={handleLogout}
+                                    style={{
+                                        background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
+                                        color: "var(--color-base-light)",
+                                        border: "none",
+                                        borderRadius: "12px",
+                                        padding: "8px 18px",
+                                        fontWeight: "600"
+                                    }}
+                                >
+                                    {loading ? "Logging out..." : "Logout"}
+                                </button>
+                            </>
+                        ) : (
+                            <div className="d-flex gap-2">
+                                <Link
+                                    to="/login"
+                                    className="btn"
+                                    style={{
+                                        background: "transparent",
+                                        color: "var(--color-base-light)",
+                                        border: "1px solid rgba(255,255,255,0.18)",
+                                        borderRadius: "12px",
+                                        padding: "8px 18px",
+                                        fontWeight: "600",
+                                        textDecoration: "none"
+                                    }}
+                                >
+                                    Login
+                                </Link>
 
-                                    <Link 
-                                        to="/register"
-                                        className="btn"
-                                        style={{
-                                            background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
-                                            color: "var(--color-base-light)",
-                                            border: "none",
-                                            borderRadius: "12px",
-                                            padding: "8px 18px",
-                                            fontWeight: "600",
-                                            textDecoration: "none"
-                                        }}
-                                    >
-                                        Sign up
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </nav>
-        </>
+                                <Link
+                                    to="/register"
+                                    className="btn"
+                                    style={{
+                                        background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
+                                        color: "var(--color-base-light)",
+                                        border: "none",
+                                        borderRadius: "12px",
+                                        padding: "8px 18px",
+                                        fontWeight: "600",
+                                        textDecoration: "none"
+                                    }}
+                                >
+                                    Sign up
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </nav>
     );
 };
