@@ -1,6 +1,5 @@
 class Actions {
   constructor(store, dispatch) {
-   
     this.store = store;
     this.dispatch = dispatch;
   }
@@ -11,10 +10,9 @@ class Actions {
     body = null,
     isPrivate = true,
   ) => {
-    
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
     backendUrl = backendUrl.replace(/\/+$/, "");
-    
+
     if (!backendUrl.endsWith("/api")) {
       backendUrl += "/api";
     }
@@ -28,24 +26,21 @@ class Actions {
 
     const fetchParams = { method, headers: {} };
 
-   
     if (body) {
       fetchParams.body = JSON.stringify(body);
       fetchParams.headers["Content-Type"] = "application/json";
     }
-   
+
     if (isPrivate) {
       fetchParams.headers["Authorization"] = "Bearer " + token;
     }
 
     try {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
-      
-      
+
       if (resp.status === 401 || resp.status === 422) {
         console.error("Token expirado o inválido. Limpiando sesión...");
-        
-       
+
         localStorage.removeItem("token");
         localStorage.removeItem("user_email");
         localStorage.removeItem("user_username");
@@ -53,8 +48,7 @@ class Actions {
         localStorage.removeItem("groups");
 
         this.dispatch({ type: "UNSET_USER" });
-        
-      
+
         window.location.href = "/login";
 
         return {
@@ -64,7 +58,6 @@ class Actions {
           data: null,
         };
       }
-     
 
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
@@ -86,17 +79,14 @@ class Actions {
     const data = resp.data;
     const now = Date.now();
 
-    //guardar en local
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user_email", email);
     localStorage.setItem("user_username", data.username || "");
     localStorage.setItem("token_timestamp", now.toString());
 
-    // actualizala referencia local del store
-    // para que loadUserGroups lo vea de inmediato
+    // Fix timing issue by updating the local reference
     this.store.jwt = data.access_token;
 
-    // 3. Dispatch para React
     this.dispatch({ type: "SET_JWT", payload: data.access_token });
     this.dispatch({
       type: "SET_USER",
@@ -106,7 +96,6 @@ class Actions {
       },
     });
 
-    // 4. Ahora loadUserGroups sí encontrará el token en this.store.jwt
     await this.loadUserGroups();
 
     return true;
@@ -129,7 +118,6 @@ class Actions {
   };
 
   logout = async () => {
-    // Limpiamos todo el rastro local
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_username");
@@ -138,22 +126,41 @@ class Actions {
 
     this.dispatch({ type: "UNSET_USER" });
 
-    // Avisamos al backend (opcional)
     await this.apiFetch("/logout", "POST", null, true);
 
     window.location.href = "/login";
     return true;
   };
 
-  createGroup = async(formData) => {
-    const resp = await this.apiFetch("/groups","POST",formData,true);
+  createGroup = async (formData) => {
+    const resp = await this.apiFetch("/groups", "POST", formData, true);
 
-    if(!resp.ok){
-      console.error("Error al crear grupo:",resp.error || resp.data?.error);
-      return{success:false,error:resp.error || resp.data?.error || "Error al crear el grupo"}
+    if (!resp.ok) {
+      console.error("Error al crear grupo:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error al crear el grupo" };
     }
-    return{success:true,data:resp.data};
-  }
+    
+    // Refresh groups list so the new group appears in Dashboard
+    await this.loadUserGroups();
+    
+    return { success: true, data: resp.data };
+  };
+
+  loadUserGroups = async () => {
+    const resp = await this.apiFetch("/groups", "GET", null, true);
+
+    if (!resp.ok) {
+      console.error("Error al cargar grupos:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error };
+    }
+
+    const groups = resp.data?.groups || [];
+
+    localStorage.setItem("groups", JSON.stringify(groups));
+    this.dispatch({ type: "SET_GROUPS", payload: groups });
+
+    return { success: true, data: groups };
+  };
 }
 
 export default Actions;
