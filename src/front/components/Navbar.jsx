@@ -4,7 +4,7 @@ import SplittyBrand1 from "../logos/SplittyBrand1";
 import { useState } from "react";
 
 export const Navbar = () => {
-    const { store, actions } = useGlobalReducer();
+    const { store, dispatch, actions } = useGlobalReducer();
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(false);
@@ -86,7 +86,7 @@ export const Navbar = () => {
                             </>
                         ) : (
                             <div className="d-flex gap-2">
-                                <Link 
+                                <Link
                                     to="/login"
                                     className="btn"
                                     style={{
@@ -102,7 +102,7 @@ export const Navbar = () => {
                                     Login
                                 </Link>
 
-                                <Link 
+                                <Link
                                     to="/register"
                                     className="btn"
                                     style={{
