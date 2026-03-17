@@ -23,10 +23,21 @@ export const GroupList = () => {
             const cards = containerRef.current.querySelectorAll(".group-card");
             gsap.fromTo(cards,
                 { opacity: 0, y: 30 },
-                { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power2.out" }
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    stagger: 0.1,
+                    ease: "power2.out",
+                    onComplete: () => {
+                        // Limpiar estilos en línea de GSAP después de la animación
+                        // para evitar conflictos con otros estilos (p. ej., hover)
+                        gsap.set(cards, { clearProps: "opacity,transform" });
+                    }
+                }
             );
         }
-    }, [loading, store.groups]);
+    }, [loading, store.groups.length]);
 
     if (loading) {
         return (
@@ -71,7 +82,7 @@ export const GroupList = () => {
                             onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                         >
                             <div className="d-flex justify-content-between align-items-start mb-3">
-                                <span className="badge" style={{ background: "rgba(199, 106, 42, 0.2)", color: "#c76a2a", borderRadius: "8px", padding: "5px 10px" }}>
+                                <span className="badge" style={{ background: "rgba(199, 106, 42, 0.2)", color: "var(--color-base-dark-orange)", borderRadius: "8px", padding: "5px 10px" }}>
                                     {group.category}
                                 </span>
                                 <small style={{ color: "var(--color-base-light)", opacity: 0.5 }}>

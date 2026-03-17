@@ -128,7 +128,6 @@ class Actions {
 
     await this.apiFetch("/logout", "POST", null, true);
 
-    window.location.href = "/login";
     return true;
   };
 
