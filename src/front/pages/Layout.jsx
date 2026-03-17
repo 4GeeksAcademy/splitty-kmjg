@@ -4,6 +4,7 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { Loading } from "./Loading";
 import { useEffect, useState, useRef } from "react";
+import { AcceptInvite } from "./AcceptInvite";
 
 // Base component that maintains the navbar and footer throughout the page and the scroll to top functionality.
 // it also shows the full‑screen <Loading /> when router navigation is in progress.
