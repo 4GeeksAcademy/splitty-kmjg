@@ -86,13 +86,13 @@ class Actions {
     const data = resp.data;
     const now = Date.now();
 
-    // 1. Guardar en Storage
+    //guardar en local
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user_email", email);
     localStorage.setItem("user_username", data.username || "");
     localStorage.setItem("token_timestamp", now.toString());
 
-    // 2. ACTUALIZACIÓN CRÍTICA: Actualizamos la referencia local del store
+    // actualizala referencia local del store
     // para que loadUserGroups lo vea de inmediato
     this.store.jwt = data.access_token;
 

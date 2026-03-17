@@ -2,7 +2,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-# NEW: se usa Decimal para manejar montos monetarios correctamente
 from decimal import Decimal
 
 db = SQLAlchemy()

@@ -5,7 +5,7 @@ export const initialStore = () => {
   const ts = parseInt(localStorage.getItem("token_timestamp") || "0", 10);
   const now = Date.now();
 
-  // Intentamos leer los grupos del localStorage, si falla por algún motivo, usamos []
+ 
   let groups = [];
   try {
     groups = JSON.parse(localStorage.getItem("groups") || "[]");
@@ -13,7 +13,7 @@ export const initialStore = () => {
     groups = [];
   }
 
-  // Si un token existe pero ha expirado (4 días), limpiamos todo
+  
   if (token && ts && now - ts > 4 * 24 * 60 * 60 * 1000) {
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
