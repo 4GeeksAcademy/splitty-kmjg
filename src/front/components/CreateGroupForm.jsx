@@ -78,11 +78,12 @@ export const CreateGroupForm = () => {
                             required
                         >
                             <option value="" disabled className="splitty-select-option">Select a category</option>
-                            <option value="Travel" className="splitty-select-option">Travel</option>
-                            <option value="Home" className="splitty-select-option">Home</option>
-                            <option value="Food" className="splitty-select-option">Food</option>
-                            <option value="Entertainment" className="splitty-select-option">Entertainment</option>
-                            <option value="Other" className="splitty-select-option">Other</option>
+                            <option value="Trip" className="splitty-select-option"><li className="bi bi-suitcase2-fill"></li> Trip</option>
+                            <option value="Home" className="splitty-select-option"><li className="bi bi-house-door-fill"></li> Home</option>
+                            <option value="Food" className="splitty-select-option"><li className="bi bi-cup-fill"></li> Food</option>
+                            <option value="Couple" className="splitty-select-option"><li className="bi bi-heart-fill"></li> Couple</option>
+                            <option value="Friends" className="splitty-select-option"><li className="bi bi-people-fill"></li> Friends</option>
+                            <option value="Other" className="splitty-select-option"><li className="bi bi-question-circle-fill"></li> Other</option>
                         </select>
                     </div>
 
