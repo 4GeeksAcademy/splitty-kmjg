@@ -1,3 +1,4 @@
+import uuid
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import String, Boolean, DateTime, ForeignKey, Numeric
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -6,6 +7,11 @@ from decimal import Decimal
 
 db = SQLAlchemy()
 
+# Tabla intermedia para la relación N:N
+user_group = db.Table('user_group',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('group_id', db.Integer, db.ForeignKey('group.id'), primary_key=True)
+)
 
 class User(db.Model):
     """
@@ -64,40 +70,21 @@ class BlockedToken(db.Model):
         DateTime, nullable=False, default=datetime.utcnow
     )
 
-
 class Group(db.Model):
-    """
-    Representa un grupo de gastos compartidos.
-    Ejemplo: "Viaje a Cancún", "Departamento", "Cena con amigos".
-    """
-
     __tablename__ = "group"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-
-    # nombre del grupo
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-
-    # categoría opcional del grupo
     category: Mapped[str] = mapped_column(String(80), nullable=False)
-
-    # fecha de creación del grupo
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
-
-    # usuario que creó el grupo
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
     created_by: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
     creator: Mapped["User"] = relationship("User", back_populates="groups_created")
-
-    members: Mapped[list["GroupMember"]] = relationship(
-        "GroupMember", back_populates="group", cascade="all, delete-orphan"
-    )
-
-    expenses: Mapped[list["Expense"]] = relationship(
-        "Expense", back_populates="group", cascade="all, delete-orphan"
-    )
+    
+    # RELACIÓN PRINCIPAL: Usamos la tabla intermedia GroupMember
+    members: Mapped[list["GroupMember"]] = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
+    
+    invitations: Mapped[list["Invitation"]] = relationship("Invitation", back_populates="group", cascade="all, delete-orphan")
+    expenses: Mapped[list["Expense"]] = relationship("Expense", back_populates="group", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -105,34 +92,21 @@ class Group(db.Model):
             "name": self.name,
             "category": self.category,
             "created_by": self.created_by,
+            # Serializamos los IDs de los usuarios a través de la tabla intermedia
+            "members": [m.user_id for m in self.members],
             "created_at": self.created_at.isoformat()
         }
 
-
 class GroupMember(db.Model):
-    """
-    Tabla intermedia que guarda qué usuarios pertenecen a cada grupo.
-    """
-
     __tablename__ = "group_member"
-
     id: Mapped[int] = mapped_column(primary_key=True)
-
-    # referencia al grupo
     group_id: Mapped[int] = mapped_column(ForeignKey("group.id"), nullable=False)
-
-    # referencia al usuario miembro
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    joined_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
 
-    # fecha en que el usuario se unió al grupo
-    joined_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.utcnow
-    )
-
-    # RELATIONS
+    # El back_populates debe coincidir EXACTAMENTE con el nombre en la clase Group
     group: Mapped["Group"] = relationship("Group", back_populates="members")
     user: Mapped["User"] = relationship("User", back_populates="group_memberships")
-
     def serialize(self):
         return {
             "id": self.id,
@@ -216,3 +190,26 @@ class ExpenseParticipant(db.Model):
             "expense_id": self.expense_id,
             "user_id": self.user_id
         }
+    
+#Invitacion
+class Invitation(db.Model):
+    __tablename__ = "invitation"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(120), nullable=False)
+    token: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    group_id: Mapped[int] = mapped_column(ForeignKey("group.id"), nullable=False)
+    is_used: Mapped[bool] = mapped_column(Boolean(), default=False)
+
+    group: Mapped["Group"] = relationship("Group", back_populates="invitations")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "email": self.email,
+            "token": self.token,
+            "group_id": self.group_id,
+            "is_used": self.is_used
+        }
+    
+
+
