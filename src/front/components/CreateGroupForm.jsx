@@ -70,19 +70,19 @@ export const CreateGroupForm = () => {
                     <div>
                         <label htmlFor="category" className="splitty-label">Category</label>
                         <select
-                            className="splitty-input"
+                            className="splitty-input splitty-select"
                             id="category"
                             name="category"
                             value={formData.category}
                             onChange={handleChange}
                             required
                         >
-                            <option value="" disabled>Select a category</option>
-                            <option value="Travel">Travel</option>
-                            <option value="Home">Home</option>
-                            <option value="Food">Food</option>
-                            <option value="Entertainment">Entertainment</option>
-                            <option value="Other">Other</option>
+                            <option value="" disabled className="splitty-select-option">Select a category</option>
+                            <option value="Travel" className="splitty-select-option">Travel</option>
+                            <option value="Home" className="splitty-select-option">Home</option>
+                            <option value="Food" className="splitty-select-option">Food</option>
+                            <option value="Entertainment" className="splitty-select-option">Entertainment</option>
+                            <option value="Other" className="splitty-select-option">Other</option>
                         </select>
                     </div>
 
