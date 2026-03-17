@@ -8,17 +8,10 @@ import CountUp from "./bits/CountUp.jsx";
 
 export const UserDashboard = () => {
     const { store, actions } = useGlobalReducer();
-    const headerRef = useRef(null);
 
     useEffect(() => {
         // Load groups on mount
         actions.loadUserGroups();
-
-        // Entrance animation
-        gsap.fromTo(headerRef.current,
-            { opacity: 0, y: -20 },
-            { opacity: 1, y: 0, duration: 1, ease: "power3.out" }
-        );
     }, []);
 
     const totalGroups = store.groups?.length || 0;
@@ -28,7 +21,7 @@ export const UserDashboard = () => {
             <div className="container mt-5">
 
                 {/* Header Section */}
-                <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="row mb-5 align-items-center" ref={headerRef}>
+                <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="row mb-5 align-items-center">
                     <div className="col-12 col-md-8 text-start">
                         <h1 className="fw-bold" style={{ color: "var(--color-base-light)", fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
                             Hello, <span className="splitty-gradient-text" style={{ color: "var(--color-base-dark-orange)" }}>{store.user?.username || "User"}</span>
@@ -56,7 +49,10 @@ export const UserDashboard = () => {
                     <FadeContent blur={true} duration={1500}>
                         <div className="d-flex flex-wrap gap-4">
                             {/* Card: Active Groups */}
-                            <div className="p-4 flex-fill" style={statCardStyle}>
+                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                            >
                                 <small style={statLabelStyle}>Active Groups</small>
                                 <h2 className="fw-bold mb-0 text-white mt-2">
                                     <CountUp from={0} to={totalGroups} duration={1} />
@@ -64,13 +60,19 @@ export const UserDashboard = () => {
                             </div>
 
                             {/* Card: Overall Balance */}
-                            <div className="p-4 flex-fill" style={statCardStyle}>
+                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                            >
                                 <small style={statLabelStyle}>Overall Balance</small>
                                 <h2 className="fw-bold mb-0 mt-2" style={{ color: "#4ade80" }}>$0.00</h2>
                             </div>
 
                             {/* Card: Friends/Network */}
-                            <div className="p-4 flex-fill" style={statCardStyle}>
+                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                            >
                                 <small style={statLabelStyle}>Friends</small>
                                 <div className="mt-2">
                                     <span style={{ color: "var(--color-base-light)", fontSize: "0.9rem", opacity: 0.8 }}>

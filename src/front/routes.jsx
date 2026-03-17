@@ -41,5 +41,11 @@ export const router = createBrowserRouter(
             {/* 3. ESTA es la forma correcta de manejar un "Page not found" (404) */}
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
         </Route>
-    )
+    ),
+    {
+        future: {
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+        },
+    }
 );
