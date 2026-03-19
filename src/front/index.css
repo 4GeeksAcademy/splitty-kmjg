@@ -8,6 +8,11 @@
   --color-base-orange: #FCAA54;
   --color-base-dark-orange: #BB4D00;
   --splitty-gradient: linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%);
+  color-scheme: dark;
+}
+
+html {
+    scrollbar-gutter: stable;
 }
 
 body,
@@ -16,6 +21,8 @@ html {
   background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%);
   font-family: 'Outfit', sans-serif;
   color: var(--color-base-light);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent; 
+  scrollbar-width: thin;
 }
 
 /* --- CUT TEXT ANIMATION (HOME) --- */
@@ -111,7 +118,7 @@ html {
 
 .splitty-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 0.6rem;
   color: rgba(247, 245, 251, 0.8);
@@ -121,15 +128,17 @@ html {
 /* Inputs and Selects */
 .splitty-input {
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid var(--color-base-dark-orange) !important;
   border-radius: 14px;
-  padding: 14px 18px;
+  padding: 14px 40px 14px 18px; /* Extra right padding for the arrow */
   font-size: 1rem;
   color: var(--color-base-light);
-  margin-bottom: 1.5rem;
-  outline: none;
+  cursor: pointer;
   transition: all 0.3s ease;
+  outline: none;
+  background-image: none !important; /* Remove Bootstrap's default arrow */
+  margin-bottom: 1.5rem;
 }
 
 .splitty-input:hover {
@@ -143,28 +152,39 @@ html {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
+/* Custom arrow for the container */
+.splitty-select-icon {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-base-dark-orange);
+    opacity: 0.8;
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+}
+
 li{
   list-style: none;
   color: var(--color-base-dark-orange);
 }
 
-.splitty-select, 
-.splitty-select::picker(select) {
-    appearance: base-select;
-}
-
-.splitty-select::picker(select) {
-    background-color: #1a1a1a;
-    border: 1px solid var(--color-base-dark-orange);
+/* --- CUSTOM SELECT COMPONENT --- */
+.splitty-custom-select-list {
+    background: rgba(20, 20, 20, 0.95); /* Slightly darker for better contrast */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--color-base-dark-orange); 
     border-radius: 18px;
-    padding: 8px;
-    margin-top: 8px; 
+    padding: 10px; /* Added padding to the container so scrollbar doesn't feel cramped */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-    /* Animación suave al abrir */
-    transition: opacity 0.2s, transform 0.2s;
+    z-index: 1050;
+    max-height: 250px;
+    overflow-y: auto;
 }
 
-.splitty-select option {
+.splitty-custom-select-option {
     padding: 12px 16px;
     border-radius: 12px;
     color: var(--color-base-light);
@@ -173,11 +193,53 @@ li{
     margin-bottom: 4px;
 }
 
+.splitty-custom-select-option:hover:not(.disabled),
+.splitty-custom-select-option.selected {
+    background-color: rgba(187, 77, 0, 0.3); /* Using dark orange with transparency */
+    color: var(--color-base-orange);
+    transform: scale(1.02);
+    font-weight: 600;
+}
+
+.splitty-custom-select-option.disabled {
+    cursor: not-allowed;
+}
+
+/* --- CUSTOM SCROLLBAR (Minimalist Glassmorphism) --- */
+::-webkit-scrollbar, 
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+    width: 20px; 
+    height: 20px;
+}
+
+::-webkit-scrollbar-track, 
+html::-webkit-scrollbar-track, 
+body::-webkit-scrollbar-track {
+    background: transparent; 
+}
+
+::-webkit-scrollbar-thumb, 
+html::-webkit-scrollbar-thumb, 
+body::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    border: 7px solid rgba(0, 0, 0, 0); 
+    background-clip: padding-box; 
+    transition: background-color 0.1s;
+}
+
+::-webkit-scrollbar-thumb:hover, 
+html::-webkit-scrollbar-thumb:hover, 
+body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
 
 .splitty-select option:hover,
 .splitty-select option:checked {
-    background-color: rgba(199, 106, 42, 0.2);
-    color: var(--color-base-orange);
+    background-color: rgba(187, 109, 45, 0.2); /* Rust Brown with opacity */
+    color: #FCA434; /* Vibrant Orange from skill */
     transform: scale(1.02);
 }
 
@@ -275,4 +337,42 @@ li{
   -webkit-text-fill-color: transparent;
   background-clip: text;
   display: inline-block;
+}
+
+/* --- MOBILE OPTIMIZATIONS --- */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .splitty-card {
+    padding: 1.8rem 1.4rem;
+    border-radius: 24px;
+  }
+
+  /* Prevent iOS zoom on focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  .splitty-btn {
+    padding: 16px; /* Larger touch target */
+  }
+
+  /* Handle notched phones */
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+}
+
+/* Hide Spinners in Number Inputs */
+.no-spinners::-webkit-outer-spin-button,
+.no-spinners::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinners[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }

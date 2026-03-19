@@ -80,3 +80,14 @@ database.database
 database.db
 diagram.png
 __pycache__/
+
+# AI Workflow & Guidelines
+.agent/skills/
+implementation_plan.md
+task.md
+coding_guidelines.md
+estado_del_proyecto.md
+ui_ux_guidelines.md
+instructions.md
+# Ignore any other markdown files that might contain prompts/instructions
+*instructions*.md

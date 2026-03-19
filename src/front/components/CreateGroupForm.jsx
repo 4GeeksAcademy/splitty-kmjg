@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import useGlobalReducer from '../hooks/useGlobalReducer';
 import '../index.css'
 import FadeContent from "./bits/FadeContent.jsx";
+import CustomSelect from "./CustomSelect.jsx";
 
 export const CreateGroupForm = () => {
     const navigate = useNavigate();
@@ -69,22 +70,20 @@ export const CreateGroupForm = () => {
 
                     <div>
                         <label htmlFor="category" className="splitty-label">Category</label>
-                        <select
-                            className="splitty-input splitty-select"
-                            id="category"
-                            name="category"
+                        <CustomSelect
                             value={formData.category}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="" disabled className="splitty-select-option">Select a category</option>
-                            <option value="Trip" className="splitty-select-option"><li className="bi bi-suitcase2-fill"></li> Trip</option>
-                            <option value="Home" className="splitty-select-option"><li className="bi bi-house-door-fill"></li> Home</option>
-                            <option value="Food" className="splitty-select-option"><li className="bi bi-cup-fill"></li> Food</option>
-                            <option value="Couple" className="splitty-select-option"><li className="bi bi-heart-fill"></li> Couple</option>
-                            <option value="Friends" className="splitty-select-option"><li className="bi bi-people-fill"></li> Friends</option>
-                            <option value="Other" className="splitty-select-option"><li className="bi bi-question-circle-fill"></li> Other</option>
-                        </select>
+                            onChange={(val) => setFormData({ ...formData, category: val })}
+                            placeholder="Select a category"
+                            options={[
+                                { value: "", label: "Select a category", disabled: true },
+                                { value: "Trip", label: <span><i className="bi bi-suitcase2-fill me-2 splitty-gradient-text"></i> Trip</span> },
+                                { value: "Home", label: <span><i className="bi bi-house-door-fill me-2 splitty-gradient-text"></i> Home</span> },
+                                { value: "Food", label: <span><i className="bi bi-cup-fill me-2 splitty-gradient-text"></i> Food</span> },
+                                { value: "Couple", label: <span><i className="bi bi-heart-fill me-2 splitty-gradient-text"></i> Couple</span> },
+                                { value: "Friends", label: <span><i className="bi bi-people-fill me-2 splitty-gradient-text"></i> Friends</span> },
+                                { value: "Other", label: <span><i className="bi bi-question-circle-fill me-2 splitty-gradient-text"></i> Other</span> }
+                            ]}
+                        />
                     </div>
 
                     <button type="submit" className="splitty-btn" disabled={loading}>
