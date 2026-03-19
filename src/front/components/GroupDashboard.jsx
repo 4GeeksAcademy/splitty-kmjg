@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Loading } from "./Loading";
@@ -15,6 +15,7 @@ export const GroupDashboard = () => {
     const [data, setData] = useState(null);
     const [showAddForm, setShowAddForm] = useState(false);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const initialAnimation = useRef(false);
 
     // Current logged in user ID to format messages
     const currentUserId = store.user?.id || -1; 
@@ -36,11 +37,12 @@ export const GroupDashboard = () => {
     }, [id]);
 
     useEffect(() => {
-        if (!loading && data) {
+        if (!loading && data && !initialAnimation.current) {
             gsap.fromTo(".dashboard-element", 
                 { opacity: 0, y: 15 }, 
                 { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, ease: "power2.out" }
             );
+            initialAnimation.current = true;
         }
     }, [loading, data]);
 
@@ -128,10 +130,11 @@ export const GroupDashboard = () => {
                     <div className="mt-4 dashboard-element">
                          <button 
                             className="splitty-btn w-100 py-3 mb-2" 
-                            onClick={() => setShowAddForm(!showAddForm)}
+                            onClick={() => setShowAddForm(!showAddForm)} 
                             style={{ 
                                 background: showAddForm ? "rgba(255,255,255,0.1)" : "var(--splitty-gradient)",
-                                color: showAddForm ? "var(--color-base-cream)" : "var(--color-base-light)"
+                                color: showAddForm ? "var(--color-base-cream)" : "var(--color-base-light)",
+                                boxShadow: showAddForm ? "none" : "inherit"
                             }}
                         >
                             <i className={`fa-solid ${showAddForm ? 'fa-xmark' : 'fa-receipt'} me-2`}></i> 
