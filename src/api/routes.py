@@ -47,11 +47,11 @@ def reg_user():
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"error": "Email y contraseña obligatorios"}), 400
+        return jsonify({"error": "Email and password are required"}), 400
 
     email_exist = User.query.filter_by(email=email).first()
     if email_exist:
-        return jsonify({"error": "El correo previamente registrado en la DB"}), 409
+        return jsonify({"error": "Email already registered"}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
@@ -68,7 +68,7 @@ def reg_user():
         return jsonify({"message": "Usuario creado con exito"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error interno de servidor", "details": str(e)}), 500
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 # Endpoint para login de usuario
 @api.route('/login', methods=['POST'])
@@ -78,12 +78,12 @@ def login_user():
     password = data.get('password')
 
     if not email or not password:
-        return jsonify({"error": "email y password requeridos"}), 400
+        return jsonify({"error": "Email and password are required"}), 400
 
     user = User.query.filter_by(email=email).first()
 
     if not user or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({"error": "Correo o password incorrectos"}), 401
+        return jsonify({"error": "Incorrect email or password"}), 401
 
     acces_token = create_access_token(identity=str(user.id))
 
@@ -116,7 +116,7 @@ def create_group():
     category = data.get('category')
 
     if not name or not category:
-        return jsonify({"error": "name y category son obligatorios"}), 400
+        return jsonify({"error": "Name and category are required"}), 400
 
     try:
         new_group = Group(
@@ -144,7 +144,7 @@ def create_group():
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error al crear grupo", "details": str(e)}), 500
+        return jsonify({"error": "Error creating group", "details": str(e)}), 500
 
 
 # Obtener todos los grupos donde participa el usuario logueado
@@ -170,11 +170,11 @@ def get_group_by_id(group_id):
 
     membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
     if not membership:
-        return jsonify({"error": "No tienes acceso a este grupo"}), 403
+        return jsonify({"error": "You do not have access to this group"}), 403
 
     group = Group.query.get(group_id)
     if not group:
-        return jsonify({"error": "Grupo no encontrado"}), 404
+        return jsonify({"error": "Group not found"}), 404
 
     members = GroupMember.query.filter_by(group_id=group_id).all()
 
@@ -194,20 +194,20 @@ def add_member_to_group(group_id):
     new_member_user_id = data.get('user_id')
 
     if not new_member_user_id:
-        return jsonify({"error": "user_id es obligatorio"}), 400
+        return jsonify({"error": "user_id is required"}), 400
 
     group = Group.query.get(group_id)
     if not group:
-        return jsonify({"error": "Grupo no encontrado"}), 404
+        return jsonify({"error": "Group not found"}), 404
 
     # Solo un miembro del grupo puede agregar otros usuarios
     membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
     if not membership:
-        return jsonify({"error": "No tienes permiso para modificar este grupo"}), 403
+        return jsonify({"error": "You do not have permission to modify this group"}), 403
 
     user_exists = User.query.get(new_member_user_id)
     if not user_exists:
-        return jsonify({"error": "El usuario a agregar no existe"}), 404
+        return jsonify({"error": "The user to add does not exist"}), 404
 
     already_member = GroupMember.query.filter_by(
         group_id=group_id,
@@ -215,7 +215,7 @@ def add_member_to_group(group_id):
     ).first()
 
     if already_member:
-        return jsonify({"error": "El usuario ya pertenece a este grupo"}), 409
+        return jsonify({"error": "User already belongs to this group"}), 409
 
     try:
         new_member = GroupMember(
@@ -232,7 +232,7 @@ def add_member_to_group(group_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error al agregar miembro", "details": str(e)}), 500
+        return jsonify({"error": "Error adding member", "details": str(e)}), 500
 
 
 # Crear gasto dentro de un grupo
@@ -249,29 +249,29 @@ def create_expense(group_id):
 
     if not description or amount is None or not paid_by:
         return jsonify({
-            "error": "description, amount y paid_by son obligatorios"
+            "error": "description, amount, and paid_by are required"
         }), 400
 
     group = Group.query.get(group_id)
     if not group:
-        return jsonify({"error": "Grupo no encontrado"}), 404
+        return jsonify({"error": "Group not found"}), 404
 
     # Validar que el usuario logueado pertenezca al grupo
     current_membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
     if not current_membership:
-        return jsonify({"error": "No tienes acceso a este grupo"}), 403
+        return jsonify({"error": "You do not have access to this group"}), 403
 
     # Validar que quien pagó pertenezca al grupo
     payer_membership = GroupMember.query.filter_by(group_id=group_id, user_id=paid_by).first()
     if not payer_membership:
-        return jsonify({"error": "El usuario que pagó no pertenece al grupo"}), 400
+        return jsonify({"error": "The user who paid does not belong to the group"}), 400
 
     try:
         amount_decimal = Decimal(str(amount))
         if amount_decimal <= 0:
-            return jsonify({"error": "El monto debe ser mayor a 0"}), 400
+            return jsonify({"error": "Amount must be greater than 0"}), 400
     except (InvalidOperation, ValueError):
-        return jsonify({"error": "El monto no es válido"}), 400
+        return jsonify({"error": "Invalid amount"}), 400
 
     # Si no mandan participantes, se asigna por defecto al que pagó
     if not participants:
@@ -286,7 +286,7 @@ def create_expense(group_id):
 
         if not participant_membership:
             return jsonify({
-                "error": f"El usuario {participant_id} no pertenece al grupo"
+                "error": f"User {participant_id} does not belong to the group"
             }), 400
 
     try:
@@ -318,7 +318,7 @@ def create_expense(group_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error al crear gasto", "details": str(e)}), 500
+        return jsonify({"error": "Error creating expense", "details": str(e)}), 500
 
 
 # Obtener gastos de un grupo
@@ -329,11 +329,11 @@ def get_group_expenses(group_id):
 
     membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
     if not membership:
-        return jsonify({"error": "No tienes acceso a este grupo"}), 403
+        return jsonify({"error": "You do not have access to this group"}), 403
 
     group = Group.query.get(group_id)
     if not group:
-        return jsonify({"error": "Grupo no encontrado"}), 404
+        return jsonify({"error": "Group not found"}), 404
 
     expenses = Expense.query.filter_by(group_id=group_id).all()
 
@@ -360,12 +360,12 @@ def send_invitation():
     
     # 1. Validaciones básicas
     if not email_destinatario or not group_id:
-        return jsonify({"msg": "Faltan datos (email o group_id)"}), 400
+        return jsonify({"msg": "Missing data (email or group_id)"}), 400
 
     # 2. Verificar que el grupo existe
     group = Group.query.get(group_id)
     if not group:
-        return jsonify({"msg": "El grupo no existe"}), 404
+        return jsonify({"msg": "Group not found"}), 404
 
     try:
         # 3. Guardar la invitación en la DB (esto genera el UUID automáticamente)
@@ -415,5 +415,4 @@ def send_invitation():
     except Exception as e:
         # Si algo falla, hacemos rollback para no dejar invitaciones huérfanas
         db.session.rollback()
-        return jsonify({"msg": "Error al procesar la invitación", "error": str(e)}), 500
-    
+        return jsonify({"msg": "Error processing invitation", "error": str(e)}), 500

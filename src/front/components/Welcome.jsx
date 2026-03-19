@@ -19,7 +19,7 @@ export const Welcome = () => {
         { name: "Josue paid gas", type: "Split by percentages", price: "$32" },
         { name: "Gustavo paid snacks", type: "Custom split", price: "$18" }
     ];
-    // Arreglo con la info de cada tarjeta
+    // Array with the info for each feature card
     const featureCards = [
         {
             title: "Groups",
@@ -38,15 +38,15 @@ export const Welcome = () => {
         }
     ];
 
-    // Funciones de las animacions
+    // Animation functions
     useEffect(() => {
-        // 1. Animación del span "Split"
+        // 1. Animation for the "Split" span
         gsap.fromTo(cutRef.current,
             { opacity: 0, y: 40 },
             { opacity: 1, y: 0, duration: 1.25, ease: 'power3.out', delay: 0.1 }
         );
 
-        // 2. Animación de las transacciones (Stagger)
+        // 2. Animation for transactions (Stagger)
         if (listRef.current) {
             const items = listRef.current.querySelectorAll('.transaction-item');
             gsap.fromTo(items,
@@ -55,15 +55,15 @@ export const Welcome = () => {
             );
         }
 
-        // 3. Animación de la Barra de Progreso
+        // 3. Animation for the Progress Bar
         if (progressRef.current) {
             gsap.fromTo(progressRef.current,
-                { width: "0%" }, // Empieza vacía
+                { width: "0%" }, // Starts empty
                 {
-                    width: "65%", // Se llena hasta el valor deseado
+                    width: "65%", // Fills up to the desired value
                     duration: 1.5,
                     ease: "power2.inOut",
-                    delay: 1.4 // Empieza después de que las transacciones terminen
+                    delay: 1.4 // Starts after transactions finish
                 }
             );
         }
@@ -75,9 +75,9 @@ export const Welcome = () => {
         <div className="min-vh-100 d-flex align-items-start" style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)" }}>
             <div className="container mt-5 py-5">
                 <div className="row align-items-start mt-1 g-5">
-                    {/* Columna Izquierda */}
+                    {/* Left Column */}
                     <div className="col-12 col-lg-6">
-                        <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="d-inline-block mb-3 px-3 py-2" style={{ borderRadius: "999px", background: "rgba(255,255,255,0.08)", color: "var(--color-base-light)", fontSize: "0.9rem", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="d-inline-block mb-3 px-3 py-2" style={{ borderRadius: "999px", background: "rgba(255,255,255,0.08)", color: "var(--color-base-light)", fontSize: "1rem", border: "1px solid rgba(255,255,255,0.08)" }}>
                             Smart shared expense tracking
                         </FadeContent>
 
@@ -113,12 +113,12 @@ export const Welcome = () => {
                                 </>
                             )}
                         </div>
-                        {/* Tarjetas cambiadas */}
+                        {/* Feature cards */}
                         <div className="row g-3 mt-1">
                             {featureCards.map((card, i) => (
                                 <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} key={i} className="col-12 col-sm-4">
 
-                                    {/* Aquí entra la magia de React Router */}
+                                    {/* React Router logic here */}
                                     <Link to={card.link} style={{ textDecoration: 'none' }}>
                                         <div
                                             className="p-3 h-100"
@@ -143,7 +143,7 @@ export const Welcome = () => {
                         </div>
                     </div>
 
-                    {/* Columna Derecha (Mockup) */}
+                    {/* Right Column (Mockup) */}
                     <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="col-12 col-lg-6">
                         <div className="p-4 p-md-5 shadow-lg" style={{ background: "var(--color-base-light)", borderRadius: "28px" }}>
                             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -168,7 +168,7 @@ export const Welcome = () => {
                                 ))}
                             </div>
 
-                            {/* Card de Balance con Barra Animada */}
+                            {/* Balance Card with Animated Bar */}
                             <div className="p-4" style={{ background: "linear-gradient(90deg, #1c1c1c 0%, #2a1a12 100%)", borderRadius: "20px" }}>
                                 <div className="d-flex justify-content-between align-items-center mb-2">
                                     <span style={{ color: "var(--color-base-light)" }}>Your balance</span>
@@ -186,10 +186,10 @@ export const Welcome = () => {
                                 </div>
                                 <div className="progress" style={{ height: "10px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
                                     <div
-                                        ref={progressRef} // Referencia GSAP
+                                        ref={progressRef} // GSAP Reference
                                         className="progress-bar"
                                         style={{
-                                            width: "0%", // Empezamos en 0
+                                            width: "0%", // Start at 0
                                             background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 50%)",
                                             height: "100%"
                                         }}

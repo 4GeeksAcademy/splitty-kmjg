@@ -49,7 +49,7 @@ export const UserDashboard = () => {
                     <FadeContent blur={true} duration={1500}>
                         <div className="d-flex flex-wrap gap-4">
                             {/* Card: Active Groups */}
-                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
                                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
                                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                             >
@@ -60,7 +60,7 @@ export const UserDashboard = () => {
                             </div>
 
                             {/* Card: Overall Balance */}
-                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
                                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
                                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                             >
@@ -69,7 +69,7 @@ export const UserDashboard = () => {
                             </div>
 
                             {/* Card: Friends/Network */}
-                            <div className="p-4 flex-fill stat-card" style={statCardStyle}
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
                                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
                                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
                             >

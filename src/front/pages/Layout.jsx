@@ -4,7 +4,7 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { Loading } from "../components/Loading.jsx";
 import { useEffect, useState, useRef } from "react";
-import { AcceptInvite } from "./AcceptInvite";
+import { AcceptInvite } from "../components/AcceptInvite";
 
 // Base component that maintains the navbar and footer throughout the page and the scroll to top functionality.
 // it also shows the full‑screen <Loading /> when router navigation is in progress.
@@ -56,11 +56,13 @@ export const Layout = () => {
             {showLoader ? (
                 <Loading fade={fadeOut} />
             ) : (
-                <>
+                <div className="d-flex flex-column min-vh-100">
                     <Navbar />
-                    <Outlet />
+                    <main className="flex-grow-1" style={{ minHeight: "100vh" }}>
+                        <Outlet />
+                    </main>
                     <Footer />
-                </>
+                </div>
             )}
         </ScrollToTop>
     );

@@ -1,26 +1,26 @@
-import { div } from "motion/react-client";
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 
 export const AcceptInvite = () => {
     const [searchParams] = useSearchParams();
-    const [status, setStatus] = useState("Procesando tu invitación...");
+    const [status, setStatus] = useState("Processing your invitation...");
     const navigate = useNavigate();
     const token = searchParams.get("token");
 
     useEffect(() => {
         const joinGroup = async () => {
-            const response = await fetch(`${process.env.BACKEND_URL}/api/accept-invitation/${token}`, {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+    const response = await fetch(`${backendUrl}/api/accept-invitation/${token}`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${localStorage.getItem("token")}`
                 }
             });
             if (response.ok) {
-                setStatus("Bienvenido al Grupo! Redirigiendo...");
+                setStatus("Welcome to the Group! Redirecting...");
                 setTimeout(() => navigate("/dashboard"), 3000);
             } else {
-                setStatus("Hubo un error o la invitación ya no es valida.");
+                setStatus("There was an error or the invitation is no longer valid.");
             }
         };
         if (token) joinGroup();

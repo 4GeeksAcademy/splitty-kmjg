@@ -50,8 +50,8 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         user: {
-          ...store.user, // Mantenemos lo que ya había (como el email)
-          ...action.payload, // Sobrescribimos con lo nuevo (como el username)
+          ...store.user, // Keep what was already there (like the email)
+          ...action.payload, // Overwrite with new data (like the username)
         },
       };
 
@@ -63,7 +63,7 @@ export default function storeReducer(store, action = {}) {
           username: null,
         },
         jwt: null,
-        groups: [], // Al cerrar sesión, también limpiamos los grupos del estado
+        groups: [], // When logging out, we also clear the groups from state
       };
 
     case "SET_GROUPS":

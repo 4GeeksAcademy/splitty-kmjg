@@ -39,7 +39,7 @@ class Actions {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
 
       if (resp.status === 401 || resp.status === 422) {
-        console.error("Token expirado o inválido. Limpiando sesión...");
+        console.error("Token expired or invalid. Clearing session...");
 
         localStorage.removeItem("token");
         localStorage.removeItem("user_email");
@@ -54,7 +54,7 @@ class Actions {
         return {
           code: resp.status,
           ok: false,
-          error: "Sesión expirada",
+          error: "Session expired",
           data: null,
         };
       }
@@ -110,7 +110,7 @@ class Actions {
     );
 
     if (!resp.ok) {
-      console.error("Registro fallido:", resp.error || resp.data.error);
+      console.error("Registration failed:", resp.error || resp.data.error);
       return false;
     }
 
@@ -135,8 +135,8 @@ class Actions {
     const resp = await this.apiFetch("/groups", "POST", formData, true);
 
     if (!resp.ok) {
-      console.error("Error al crear grupo:", resp.error || resp.data?.error);
-      return { success: false, error: resp.error || resp.data?.error || "Error al crear el grupo" };
+      console.error("Error creating group:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error creating group" };
     }
     
     // Refresh groups list so the new group appears in Dashboard
@@ -145,11 +145,53 @@ class Actions {
     return { success: true, data: resp.data };
   };
 
+  addExpense = async (groupId, expenseData) => {
+    const resp = await this.apiFetch(`/groups/${groupId}/expenses`, "POST", expenseData, true);
+
+    if (!resp.ok) {
+      console.error("Error adding expense:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error adding expense" };
+    }
+    
+    await this.loadUserGroups();
+    
+    return { success: true, data: resp.data };
+  };
+
+  fetchGroupBalances = async (groupId) => {
+    // THIS IS A MOCK WHILE THE DEBT SIMPLIFICATION BACKEND IS IMPLEMENTED
+    // Get basic group info
+    const groupResp = await this.apiFetch(`/groups/${groupId}`, "GET", null, true);
+    if (!groupResp.ok) {
+        return { success: false, error: "Could not load group." };
+    }
+
+    // Real endpoint will send "users" as map, mocking users here
+    // Assume logged in user is the main one:
+    const storeUser = this.store.user;
+    
+    // And for AddExpenseForm to receive valid members:
+    const usersMap = {
+        [1]: { id: 1, username: storeUser?.username || "Admin" },
+        [2]: { id: 2, username: "Juan Pérez" },
+        [3]: { id: 3, username: "María López" }
+    };
+
+    return {
+        success: true,
+        data: {
+            personal_balances: { 1: 0, 2: 0, 3: 0 },
+            settlements: [],
+            users: usersMap
+        }
+    };
+  };
+
   loadUserGroups = async () => {
     const resp = await this.apiFetch("/groups", "GET", null, true);
 
     if (!resp.ok) {
-      console.error("Error al cargar grupos:", resp.error || resp.data?.error);
+      console.error("Error loading groups:", resp.error || resp.data?.error);
       return { success: false, error: resp.error || resp.data?.error };
     }
 
@@ -157,8 +199,24 @@ class Actions {
 
     localStorage.setItem("groups", JSON.stringify(groups));
     this.dispatch({ type: "SET_GROUPS", payload: groups });
-
     return { success: true, data: groups };
+  };
+
+  generateInviteLink = async (groupId) => {
+    // This is a stub. The backend should implement POST /api/groups/<id>/invite-link
+    // which returns { "token": "..." } or a full URL.
+    const resp = await this.apiFetch(`/groups/${groupId}/invite-link`, "POST", null, true);
+    
+    if (!resp.ok) {
+      console.warn("Backend invite-link not implemented yet, returning mock link.");
+      // Return a mock for UI development
+      return { 
+        success: true, 
+        link: `${window.location.origin}/join?token=mock_token_${groupId}_${Date.now()}` 
+      };
+    }
+    
+    return { success: true, link: resp.data.link || `${window.location.origin}/join?token=${resp.data.token}` };
   };
 }
 

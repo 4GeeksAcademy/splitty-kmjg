@@ -30,8 +30,8 @@ export const GroupList = () => {
                     stagger: 0.1,
                     ease: "power2.out",
                     onComplete: () => {
-                        // Limpiar estilos en línea de GSAP después de la animación
-                        // para evitar conflictos con otros estilos (p. ej., hover)
+                        // Clear GSAP inline styles after animation
+                        // to avoid conflicts with other styles (e.g., hover)
                         gsap.set(cards, { clearProps: "opacity,transform" });
                     }
                 }
@@ -70,7 +70,7 @@ export const GroupList = () => {
             {store.groups.map((group) => (
                 <div key={group.id} className="col-12 col-md-6 col-lg-4">
                     <Link to={`/group/${group.id}`} style={{ textDecoration: 'none' }}>
-                        <div className="group-card p-4 h-100 shadow-sm"
+                        <div className="group-card px-3 py-4 px-md-4 py-md-4 h-100 shadow-sm"
                             style={{
                                 background: "rgba(255,255,255,0.05)",
                                 borderRadius: "22px",
