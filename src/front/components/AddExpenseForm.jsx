@@ -164,6 +164,7 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
                                 options={[
                                     { value: "$", label: "$ USD" },
                                     { value: "€", label: "€ EUR" },
+                                    { value: "VES", label: "VES Bs" },
                                     { value: "£", label: "£ GBP" }
                                 ]}
                             />

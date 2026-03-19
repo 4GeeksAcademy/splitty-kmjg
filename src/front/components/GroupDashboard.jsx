@@ -130,10 +130,11 @@ export const GroupDashboard = () => {
                     <div className="mt-4 dashboard-element">
                          <button 
                             className="splitty-btn w-100 py-3 mb-2" 
-                            onClick={() => setShowAddForm(!showAddForm)}
+                            onClick={() => setShowAddForm(!showAddForm)} 
                             style={{ 
                                 background: showAddForm ? "rgba(255,255,255,0.1)" : "var(--splitty-gradient)",
-                                color: showAddForm ? "var(--color-base-cream)" : "var(--color-base-light)"
+                                color: showAddForm ? "var(--color-base-cream)" : "var(--color-base-light)",
+                                boxShadow: showAddForm ? "none" : "inherit"
                             }}
                         >
                             <i className={`fa-solid ${showAddForm ? 'fa-xmark' : 'fa-receipt'} me-2`}></i> 
