@@ -32,6 +32,9 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 mail = Mail(app)
 # database condiguration
 db_url = os.getenv("DATABASE_URL")
+if db_url is not None and db_url.startswith("http"):
+    db_url = None
+    
 if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
         "postgres://", "postgresql://")
