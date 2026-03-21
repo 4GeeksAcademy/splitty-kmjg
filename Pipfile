@@ -14,7 +14,6 @@ psycopg2-binary = "*"
 python-dotenv = "*"
 flask-cors = "*"
 gunicorn = "*"
-cloudinary = "*"
 flask-admin = "==2.0.0"
 typing-extensions = "*"
 wtforms = "==3.1.2"
@@ -22,6 +21,7 @@ sqlalchemy = "*"
 flask-jwt-extended = "*"
 flask-bcrypt = "*"
 flask-mail = "*"
+cloudinary = "*"
 
 [requires]
 python_version = "3.13"
@@ -29,10 +29,8 @@ python_version = "3.13"
 [scripts]
 # ── Dev workflow (no data loss: incremental migrate + upgrade + server) ──
 dev="bash ./scripts/migrate_and_run.sh"
-
 # ── Reset workflow (full DB reset + init + migrate + upgrade + server) ───
 reset="bash ./scripts/reset_and_run.sh"
-
 # ── Low-level commands (use individually if needed) ──────────────────────
 start="flask run -p 3001 -h 0.0.0.0"
 init="flask db init"
