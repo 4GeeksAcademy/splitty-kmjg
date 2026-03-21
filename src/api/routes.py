@@ -15,6 +15,7 @@ from api.models import (
     Invitation
 )
 from flask_mail import Message
+import cloudinary.uploader
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
@@ -416,3 +417,71 @@ def send_invitation():
         # Si algo falla, hacemos rollback para no dejar invitaciones huérfanas
         db.session.rollback()
         return jsonify({"msg": "Error processing invitation", "error": str(e)}), 500
+
+
+# ===============================
+# RECEIPTS (SUBIR / ELIMINAR)
+# ===============================
+
+@api.route('/expense/<int:expense_id>/receipt', methods=['POST'])
+@jwt_required()
+def upload_receipt(expense_id):
+    user_id = int(get_jwt_identity())
+
+    expense = Expense.query.get(expense_id)
+    if not expense:
+        return jsonify({"error": "Expense not found"}), 404
+
+    membership = GroupMember.query.filter_by(
+        group_id=expense.group_id,
+        user_id=user_id
+    ).first()
+
+    if not membership:
+        return jsonify({"error": "You do not have access to this expense"}), 403
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files['file']
+
+    try:
+        upload_result = cloudinary.uploader.upload(file)
+
+        expense.receipt_url = upload_result['secure_url']
+        db.session.commit()
+
+        return jsonify({
+            "message": "Receipt uploaded successfully",
+            "receipt_url": expense.receipt_url
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route('/expense/<int:expense_id>/receipt', methods=['DELETE'])
+@jwt_required()
+def delete_receipt(expense_id):
+    user_id = int(get_jwt_identity())
+
+    expense = Expense.query.get(expense_id)
+    if not expense:
+        return jsonify({"error": "Expense not found"}), 404
+
+    membership = GroupMember.query.filter_by(
+        group_id=expense.group_id,
+        user_id=user_id
+    ).first()
+
+    if not membership:
+        return jsonify({"error": "You do not have access to this expense"}), 403
+
+    if not expense.receipt_url:
+        return jsonify({"error": "No receipt to delete"}), 400
+
+    expense.receipt_url = None
+    db.session.commit()
+
+    return jsonify({"message": "Receipt removed"}), 200
