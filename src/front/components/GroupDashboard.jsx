@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import { Loading } from "./Loading";
+import { SkeletonDashboard } from "./SkeletonDashboard";
 import { AddExpenseForm } from "./AddExpenseForm";
 import InviteModal from "./InviteModal";
 import gsap from "gsap";
@@ -54,9 +54,9 @@ export const GroupDashboard = () => {
         return Object.values(data.users);
     }, [data]);
 
-    if (loading) return <Loading />;
+    if (loading) return <SkeletonDashboard />;
     if (error) return (
-        <div className="container mt-5 text-center">
+        <div className="container mt-5 text-center dashboard-element">
             <h2 className="splitty-gradient-text fw-bold">Error</h2>
             <p className="mb-4" style={{ color: "var(--color-base-cream)" }}>{error}</p>
             <button className="splitty-btn" style={{ maxWidth: "200px" }} onClick={() => navigate("/")}>
