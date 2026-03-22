@@ -182,12 +182,20 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                             onClick={handleDelete}
                             title="Delete Expense"
                             style={{
-                                background: "rgba(248,113,113,0.12)",
-                                border: "1px solid rgba(248,113,113,0.3)",
+                                background: "rgba(204, 0, 0, 0.12)",
+                                border: "1px solid rgba(204, 0, 0, 0.3)",
                                 borderRadius: "10px",
                                 padding: "8px 12px",
-                                color: "#f87171",
+                                color: "var(--color-base-cream)",
                                 cursor: "pointer"
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.background = "rgba(204, 0, 0, 0.3)";
+                                e.currentTarget.style.borderColor = "rgba(204, 0, 0, 0.5)";
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.background = "rgba(204, 0, 0, 0.12)";
+                                e.currentTarget.style.borderColor = "rgba(204, 0, 0, 0.3)";
                             }}
                         >
                             <i className="fa-solid fa-trash-can"></i>
