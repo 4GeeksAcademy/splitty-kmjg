@@ -44,7 +44,7 @@ export const router = createBrowserRouter(
             <Route path="/group/:id" element={<GroupDashboard />} />
 
             {/* Invitation Support */}
-            <Route path="/join" element={<AcceptInvite />} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
 
             {/* 3. ESTA es la forma correcta de manejar un "Page not found" (404) */}
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
