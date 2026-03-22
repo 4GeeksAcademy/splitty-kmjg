@@ -89,5 +89,5 @@ coding_guidelines.md
 estado_del_proyecto.md
 ui_ux_guidelines.md
 instructions.md
-# Ignore any other markdown files that might contain prompts/instructions
-*instructions*.md
+# Scripts
+generate_design.ps1

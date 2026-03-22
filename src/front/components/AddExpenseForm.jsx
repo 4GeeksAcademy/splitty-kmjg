@@ -9,10 +9,11 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     const isEditing = !!expenseToEdit;
     
     // Internal state
-    const [description, setDescription] = useState(expenseToEdit?.expense?.description || "");
-    const [totalAmount, setTotalAmount] = useState(expenseToEdit?.expense?.amount || "");
-    const [currency, setCurrency] = useState(expenseToEdit?.expense?.currency || "$"); 
-    const [paidBy, setPaidBy] = useState(expenseToEdit?.expense?.paid_by?.toString() || "");
+    // Internal state - vercel-react-best-practices: Lazy state initialization (rerender-lazy-state-init)
+    const [description, setDescription] = useState(() => expenseToEdit?.expense?.description || "");
+    const [totalAmount, setTotalAmount] = useState(() => expenseToEdit?.expense?.amount || "");
+    const [currency, setCurrency] = useState(() => expenseToEdit?.expense?.currency || "$"); 
+    const [paidBy, setPaidBy] = useState(() => expenseToEdit?.expense?.paid_by?.toString() || "");
     const [splitMode, setSplitMode] = useState("equal");
     const [splits, setSplits] = useState({});
     
@@ -56,7 +57,8 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
         }
     }, [groupMembers, store.user?.username, isEditing]);
 
-    const selectedGroupMembers = groupMembers.filter(m => selectedMembers.includes(m.id));
+    // vercel-react-best-practices: Memoize derived data
+    const selectedGroupMembers = React.useMemo(() => groupMembers.filter(m => selectedMembers.includes(m.id)), [groupMembers, selectedMembers]);
 
     const handleMemberToggle = (id) => {
         setSelectedMembers(prev => 
@@ -173,8 +175,8 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                 <h3 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "1.9rem" }}>
                     {isEditing ? "Edit Expense" : "Add Expense"}
                 </h3>
-                <div className="d-flex gap-2 align-items-center">
-                    {isEditing && (
+                {isEditing ? (
+                    <div className="d-flex gap-2 align-items-center">
                         <button
                             type="button"
                             onClick={handleDelete}
@@ -190,12 +192,14 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         >
                             <i className="fa-solid fa-trash-can"></i>
                         </button>
-                    )}
+                        <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
+                    </div>
+                ) : (
                     <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
-                </div>
+                )}
             </div>
             
-            {error && <div className="splitty-alert splitty-alert-danger">{error}</div>}
+            {error ? <div className="splitty-alert splitty-alert-danger">{error}</div> : null}
 
             <form onSubmit={handleSubmit}>
                 <div className="mb-2">
@@ -394,13 +398,13 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                 </button>
             </form>
 
-            {showInviteModal && (
+            {showInviteModal ? (
                 <InviteModal 
                     groupId={groupId} 
                     groupName={store.groups.find(g => g.id.toString() === groupId.toString())?.name || "the group"} 
                     onClose={() => setShowInviteModal(false)} 
                 />
-            )}
+            ) : null}
         </div>
     );
 };
