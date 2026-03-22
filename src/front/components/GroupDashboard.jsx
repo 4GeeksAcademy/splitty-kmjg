@@ -5,6 +5,7 @@ import { SkeletonDashboard } from "./SkeletonDashboard";
 import { AddExpenseForm } from "./AddExpenseForm";
 import InviteModal from "./InviteModal";
 import DeleteGroupModal from "./DeleteGroupModal";
+import DeleteExpenseModal from "./DeleteExpenseModal";
 import gsap from "gsap";
 
 export const GroupDashboard = () => {
@@ -18,6 +19,7 @@ export const GroupDashboard = () => {
     const [selectedExpense, setSelectedExpense] = useState(null);
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [expenseToDelete, setExpenseToDelete] = useState(null);
     const initialAnimation = useRef(false);
 
     // Current logged in user ID to format messages
@@ -39,17 +41,11 @@ export const GroupDashboard = () => {
         loadDashboardData();
     }, [id]);
 
-    const handleDeleteExpense = async (e, expenseId) => {
+    // vercel-react-best-practices: use useCallback for event handlers
+    const handleDeleteExpenseClick = React.useCallback((e, expenseId) => {
         e.stopPropagation();
-        if (window.confirm("Are you sure you want to delete this expense?")) {
-            const result = await actions.deleteExpense(expenseId);
-            if (result.success) {
-                loadDashboardData();
-            } else {
-                alert(result.error || "Failed to delete expense");
-            }
-        }
-    };
+        setExpenseToDelete(expenseId);
+    }, []);
 
     useEffect(() => {
         if (!loading && data && !initialAnimation.current) {
@@ -154,23 +150,25 @@ export const GroupDashboard = () => {
                                 height: "46px",
                                 width: "46px",
                                 borderRadius: "14px", 
-                                background: "linear-gradient(135deg, #ff4d4d 0%, #cc0000 100%)",
-                                border: "none",
+                                background: "rgba(147, 0, 10, 0.15)",
+                                border: "1px solid rgba(147, 0, 10, 0.3)",
                                 color: "white",
                                 fontSize: "0.95rem",
                                 fontWeight: "600",
                                 transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
                                 padding: "0",
                                 minWidth: "46px",
-                                boxShadow: "0 4px 12px rgba(204, 0, 0, 0.25)"
+                                boxShadow: "none"
                             }}
                             onMouseEnter={e => {
                                 e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
-                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(204, 0, 0, 0.4)";
+                                e.currentTarget.style.background = "linear-gradient(135deg, #93000a, #690005)";
+                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(147, 0, 10, 0.4)";
                             }}
                             onMouseLeave={e => {
                                 e.currentTarget.style.transform = "translateY(0) scale(1)";
-                                e.currentTarget.style.boxShadow = "0 4px 12px rgba(204, 0, 0, 0.25)";
+                                e.currentTarget.style.background = "rgba(147, 0, 10, 0.15)";
+                                e.currentTarget.style.boxShadow = "none";
                             }}
                             title="Delete Group"
                         >
@@ -197,7 +195,7 @@ export const GroupDashboard = () => {
                 </div>
             </div>
 
-            <div className="row g-4 align-items-stretch">
+            <div className="row g-4 align-items-start">
                 <div className="col-12 col-lg-5 d-flex flex-column">
                     {/* The Balances / Settlements Board */}
                     <div className="splitty-card dashboard-element h-100" style={{ maxWidth: "100%", padding: "2.5rem", boxShadow: "none", height: "100%" }}>
@@ -402,8 +400,8 @@ export const GroupDashboard = () => {
                                                             </span>
                                                             <div className="d-flex gap-2 mt-2">
                                                                 <small 
-                                                                    onClick={(e) => handleDeleteExpense(e, exp.id)}
-                                                                    style={{ color: "#ff4d4d", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, transition: "all 0.2" }} 
+                                                                    onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
+                                                                    style={{ color: "#cc0000", fontSize: "0.75rem", fontWeight: "700", opacity: 0.9, transition: "all 0.3s ease" }} 
                                                                     className="expense-action-btn"
                                                                 >
                                                                     <i className="fa-solid fa-trash-can me-1"></i>Delete
@@ -441,6 +439,17 @@ export const GroupDashboard = () => {
                     onClose={() => setShowDeleteModal(false)} 
                 />
             ) : null}
+
+            {expenseToDelete && (
+                <DeleteExpenseModal
+                    expenseId={expenseToDelete}
+                    onClose={() => setExpenseToDelete(null)}
+                    onConfirm={() => {
+                        setExpenseToDelete(null);
+                        loadDashboardData();
+                    }}
+                />
+            )}
         </div>
     );
 };

@@ -57,11 +57,7 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
             WebkitBackdropFilter: "blur(25px)", zIndex: 9999,
             display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem"
         }} onClick={handleClose}>
-            <div className="delete-modal-content splitty-card" style={{
-                maxWidth: "450px", width: "100%", padding: "2.5rem 2rem",
-                position: "relative", border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
-            }} onClick={e => e.stopPropagation()}>
+            <div className="delete-modal-content splitty-card" onClick={e => e.stopPropagation()}>
                 
                 <button onClick={handleClose} className="border-0 bg-transparent" style={{
                     position: "absolute", top: "1.5rem", right: "1.5rem",
@@ -107,6 +103,16 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
                                 cursor: confirmName === groupName ? "pointer" : "not-allowed",
                                 transition: "all 0.3s ease",
                                 boxShadow: confirmName === groupName ? "0 8px 24px rgba(147, 0, 10, 0.4)" : "none"
+                            }}
+                            onMouseEnter={e => {
+                                if (confirmName === groupName) {
+                                e.currentTarget.style.filter = "brightness(1.15)";
+                                e.currentTarget.style.transform = "translateY(-1px)";
+                                }
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.filter = "brightness(1)";
+                                e.currentTarget.style.transform = "translateY(0)";
                             }}
                             onClick={handleDelete}
                             disabled={isDeleting || confirmName !== groupName}

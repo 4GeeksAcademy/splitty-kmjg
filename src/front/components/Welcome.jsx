@@ -121,11 +121,9 @@ export const Welcome = () => {
                                     {/* React Router logic here */}
                                     <Link to={card.link} style={{ textDecoration: 'none' }}>
                                         <div
-                                            className="p-3 h-100"
+                                            className="p-3 h-100 group-card"
                                             style={{
-                                                background: "rgba(255,255,255,0.06)",
                                                 borderRadius: "18px",
-                                                border: "1px solid rgba(255,255,255,0.06)",
                                                 cursor: "pointer" 
                                             }}
                                         >
@@ -145,25 +143,25 @@ export const Welcome = () => {
 
                     {/* Right Column (Mockup) */}
                     <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="col-12 col-lg-6">
-                        <div className="p-4 p-md-5 shadow-lg" style={{ background: "var(--color-base-light)", borderRadius: "28px" }}>
+                        <div className="p-4 p-md-5 splitty-card" style={{ maxWidth: "100%", width: "100%" }}>
                             <div className="d-flex justify-content-between align-items-center mb-4">
                                 <div>
-                                    <h2 className="fw-bold mb-1" style={{ color: "var(--color-base-dark)", fontSize: "1.8rem" }}>Weekend Trip</h2>
-                                    <p className="mb-0" style={{ color: "var(--color-base-light)" }}>4 members · 12 expenses</p>
+                                    <h2 className="fw-bold mb-1" style={{ fontSize: "1.8rem" }}>Weekend Trip</h2>
+                                    <p className="mb-0" style={{ opacity: 0.7 }}>4 members · 12 expenses</p>
                                 </div>
-                                <div className="px-3 py-2" style={{ borderRadius: "999px", background: "#f2e4d9", color: "var(--color-base-dark-orange", fontWeight: "700" }}>Active</div>
+                                <div className="px-3 py-2" style={{ borderRadius: "999px", background: "rgba(252, 164, 52, 0.15)", color: "var(--color-base-orange)", fontWeight: "700" }}>Active</div>
                             </div>
 
                             <div className="mb-3" ref={listRef}>
                                 {splits.map((item, index) => (
-                                    <div key={index} className="transaction-item d-flex justify-content-between align-items-center p-3 mb-2 shadow" style={{ background: "var(--color-base-light)", borderRadius: "16px", opacity: 0 }}>
+                                    <div key={index} className="transaction-item d-flex justify-content-between align-items-center p-3 mb-2 shadow group-card" style={{ borderRadius: "16px", opacity: 0 }}>
                                         <div>
-                                            <div className="fw-semibold d-flex align-items-center justify-content-start fs-5 text-center" style={{ color: "var(--color-base-dark)" }}>
+                                            <div className="fw-semibold d-flex align-items-center justify-content-start fs-5 text-center">
                                                 <SplittyLogo width="6%" color="var(--color-base-dark-orange)" />
                                                 {item.name}</div>
-                                            <small style={{ color: "var(--color-base-dark-orange)", opacity: "60%", fontWeight: "500" }}>{item.type}</small>
+                                            <small style={{ color: "var(--color-base-orange)", opacity: "80%", fontWeight: "500" }}>{item.type}</small>
                                         </div>
-                                        <div className="fw-bold" style={{ color: "var(--color-base-dark)" }}>{item.price}</div>
+                                        <div className="fw-bold">{item.price}</div>
                                     </div>
                                 ))}
                             </div>
