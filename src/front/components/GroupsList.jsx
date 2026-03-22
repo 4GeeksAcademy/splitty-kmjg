@@ -41,8 +41,24 @@ export const GroupList = () => {
 
     if (loading) {
         return (
-            <div className="text-center p-5">
-                <p style={{ color: "var(--color-base-light)", opacity: 0.6 }}>Loading groups...</p>
+            <div className="row g-4">
+                {[1, 2, 3].map((n) => (
+                    <div key={n} className="col-12 col-md-6 col-lg-4">
+                        <div className="skeleton-box px-3 py-4 px-md-4 py-md-4 h-100 shadow-sm"
+                            style={{
+                                borderRadius: "22px",
+                                height: "160px"
+                            }}
+                        >
+                            <div className="d-flex justify-content-between align-items-start mb-3">
+                                <div className="skeleton-box rounded" style={{ width: "60px", height: "24px", background: "rgba(255,255,255,0.1)" }}></div>
+                                <div className="skeleton-box rounded" style={{ width: "80px", height: "20px", background: "rgba(255,255,255,0.1)" }}></div>
+                            </div>
+                            <div className="skeleton-box rounded mb-3 mt-4" style={{ width: "120px", height: "30px", background: "rgba(255,255,255,0.1)" }}></div>
+                            <div className="skeleton-box rounded mt-2" style={{ width: "100px", height: "20px", background: "rgba(255,255,255,0.1)" }}></div>
+                        </div>
+                    </div>
+                ))}
             </div>
         );
     }

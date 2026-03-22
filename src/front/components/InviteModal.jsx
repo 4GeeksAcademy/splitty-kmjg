@@ -4,13 +4,14 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import gsap from "gsap";
 
 export const InviteModal = ({ groupId, groupName, onClose }) => {
-    const { actions } = useGlobalReducer();
+    const { store, actions } = useGlobalReducer();
     const [inviteLink, setInviteLink] = useState("");
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
-    
     const [email, setEmail] = useState("");
     const [sendingEmail, setSendingEmail] = useState(false);
+    const [emailError, setEmailError] = useState("");
+    const [emailSuccess, setEmailSuccess] = useState("");
 
     useEffect(() => {
         const getLink = async () => {
@@ -21,14 +22,14 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
             }
             setLoading(false);
         };
-        getLink();
+        if (groupId) getLink();
 
         gsap.fromTo(".invite-modal-overlay", { opacity: 0 }, { opacity: 1, duration: 0.3 });
         gsap.fromTo(".invite-modal-content", 
             { opacity: 0, scale: 0.9, y: 30 }, 
             { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: "power4.out" }
         );
-    }, [groupId]);
+    }, [groupId, actions]);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(inviteLink);
@@ -37,18 +38,23 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
     };
 
     const handleSendEmail = async () => {
-        if (!email) return alert("Please enter an email");
+        if (!email) {
+            setEmailError("Please enter an email");
+            return;
+        }
         
         setSendingEmail(true);
-        // Obtenemos el token de acceso para evitar el error 401
-        const token = localStorage.getItem("token"); 
+        setEmailError("");
+        setEmailSuccess("");
+        
+        const token = store.jwt; 
 
         try {
-            const response = await fetch(`https://silver-memory-pj57p55w575xc76g7-5000.app.github.dev//api/groups/${groupId}/invite-link`, {
+            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/${groupId}/invite-link`, {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json', // Esto soluciona el error 415
-                    "Authorization": "Bearer " + token // Esto soluciona el error 401
+                    'Content-Type': 'application/json',
+                    "Authorization": "Bearer " + token
                 },
                 body: JSON.stringify({
                     email: email,
@@ -60,15 +66,13 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
             const data = await response.json();
 
             if (response.ok) {
-                alert(`¡Invitación enviada con éxito a ${email}!`);
+                setEmailSuccess(`Invitation sent to ${email}!`);
                 setEmail("");
             } else {
-                console.error("Error del servidor:", data);
-                alert(data.msg || "Hubo un error al enviar la invitación.");
+                setEmailError(data.msg || "Error sending invitation.");
             }
         } catch (error) {
-            console.error("Error en la petición:", error);
-            alert("Error de conexión con el servidor.");
+            setEmailError("Server connection error.");
         } finally {
             setSendingEmail(false);
         }
@@ -147,6 +151,8 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
                         >
                             {sendingEmail ? 'Sending...' : 'Send Invitation'}
                         </button>
+                        {emailError && <div className="text-danger mt-1 small">{emailError}</div>}
+                        {emailSuccess && <div className="text-success mt-1 small">{emailSuccess}</div>}
                     </div>
                 </div>
 
