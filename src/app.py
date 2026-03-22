@@ -102,10 +102,6 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0  # avoid cache memory
     return response
 
-@app.route('/')
-def index():
-    return "Backend de Splitty funcionando"
-
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':

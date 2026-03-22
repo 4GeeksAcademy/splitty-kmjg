@@ -27,7 +27,7 @@ def setup_commands(app):
             user = User()
             user.email = "test_user" + str(x) + "@test.com"
             # hash the password before storing it just like the real registration endpoint
-            from api.models import bcrypt
+            from api.routes import bcrypt
             user.password = bcrypt.generate_password_hash(
                 "123456").decode("utf-8")
             user.is_active = True

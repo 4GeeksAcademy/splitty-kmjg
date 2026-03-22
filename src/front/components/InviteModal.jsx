@@ -108,57 +108,57 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
                     Add friends to <span style={{ color: "var(--color-base-cream)" }}>{groupName}</span>.
                 </p>
 
-                <div className="mt-2">
-                    <label className="splitty-label splitty-gradient-text" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>
+                <div className="mt-2 mb-4">
+                    <label className="splitty-label splitty-gradient-text d-block mb-2 fw-semibold" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>
                         Unique Invitation Link
                     </label>
-                    <div className="d-flex gap-2">
+                    <div className="d-flex align-items-stretch gap-2">
                         <input type="text" readOnly className="splitty-input mb-0 flex-grow-1" 
-                            style={{ fontSize: "0.8rem", background: "rgba(0,0,0,0.3)", height: "45px" }}
+                            style={{ fontSize: "0.85rem", background: "rgba(0,0,0,0.3)", height: "48px" }}
                             value={loading ? "Generating link..." : inviteLink}
                         />
-                        <button className="splitty-btn mt-0" onClick={handleCopy} disabled={loading}
-                            style={{ width: "auto", padding: "0 1rem", height: "45px", background: copied ? "#4ade80" : "var(--splitty-gradient)" }}>
-                            {copied ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-copy"></i>}
+                        <button className="splitty-btn m-0 d-flex align-items-center justify-content-center" onClick={handleCopy} disabled={loading}
+                            style={{ width: "48px", height: "48px", padding: "0", background: copied ? "#4ade80" : "var(--splitty-gradient)", borderRadius: "12px", border: "none" }}>
+                            {copied ? <i className="fa-solid fa-check" style={{ color: "#161311" }}></i> : <i className="fa-solid fa-copy"></i>}
                         </button>
                     </div>
                 </div>
 
-                <div className="my-4 d-flex align-items-center gap-2">
-                    <hr className="flex-grow-1" style={{ opacity: 0.1 }} />
-                    <span style={{ fontSize: "0.7rem", color: "#a19b95", textTransform: "uppercase" }}>OR</span>
-                    <hr className="flex-grow-1" style={{ opacity: 0.1 }} />
+                <div className="my-4 d-flex align-items-center gap-3">
+                    <hr className="flex-grow-1 m-0" style={{ opacity: 0.15, borderColor: "var(--color-base-cream)" }} />
+                    <span style={{ fontSize: "0.75rem", color: "#a19b95", textTransform: "uppercase", letterSpacing: "1px" }}>OR</span>
+                    <hr className="flex-grow-1 m-0" style={{ opacity: 0.15, borderColor: "var(--color-base-cream)" }} />
                 </div>
 
-                <div>
-                    <label className="splitty-label splitty-gradient-text" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>
+                <div className="mb-2">
+                    <label className="splitty-label splitty-gradient-text d-block mb-2 fw-semibold" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px" }}>
                         Send via Email
                     </label>
-                    <div className="d-flex flex-column gap-2">
+                    <div className="d-flex flex-column gap-3">
                         <input 
                             type="email" 
                             className="splitty-input mb-0" 
                             placeholder="friend@email.com"
-                            style={{ height: "45px", fontSize: "0.9rem" }}
+                            style={{ height: "48px", fontSize: "0.9rem" }}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
                         <button 
-                            className="splitty-btn w-100 mt-1" 
-                            style={{ height: "45px" }}
+                            className="splitty-btn w-100 m-0 d-flex align-items-center justify-content-center fw-bold" 
+                            style={{ height: "48px", border: "none" }}
                             onClick={handleSendEmail}
                             disabled={sendingEmail || loading}
                         >
                             {sendingEmail ? 'Sending...' : 'Send Invitation'}
                         </button>
-                        {emailError && <div className="text-danger mt-1 small">{emailError}</div>}
-                        {emailSuccess && <div className="text-success mt-1 small">{emailSuccess}</div>}
+                        {emailError && <div className="text-danger small px-1">{emailError}</div>}
+                        {emailSuccess && <div className="text-success small px-1">{emailSuccess}</div>}
                     </div>
                 </div>
 
-                <div className="mt-4 pt-2 text-center">
+                <div className="mt-4 text-center">
                     <div className="d-flex align-items-center justify-content-center gap-2" style={{ color: "#a19b95", fontSize: "0.8rem" }}>
-                        <i className="fa-solid fa-shield-halved text-warning"></i>
+                        <i className="fa-solid fa-shield-halved" style={{ color: "var(--color-brand-primary)" }}></i>
                         <span>Private invitation link.</span>
                     </div>
                 </div>
