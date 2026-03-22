@@ -55,7 +55,7 @@ export const UserDashboard = () => {
                             >
                                 <small style={statLabelStyle}>Active Groups</small>
                                 <h2 className="fw-bold mb-0 text-white mt-2">
-                                    <CountUp from={0} to={totalGroups} duration={1} />
+                                    <CountUp from={0} to={totalGroups} duration={0.5} />
                                 </h2>
                             </div>
 

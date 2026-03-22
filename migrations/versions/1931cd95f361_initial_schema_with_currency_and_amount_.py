@@ -1,8 +1,8 @@
-"""Create user table and others
+"""initial schema with currency and amount_owed
 
-Revision ID: efc879782e4d
-Revises: e4f923489b86
-Create Date: 2026-03-19 04:05:12.052295
+Revision ID: 1931cd95f361
+Revises: 
+Create Date: 2026-03-21 19:12:01.974413
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'efc879782e4d'
-down_revision = 'e4f923489b86'
+revision = '1931cd95f361'
+down_revision = None
 branch_labels = None
 depends_on = None
 
@@ -47,9 +47,11 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(length=255), nullable=False),
     sa.Column('amount', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('currency', sa.String(length=10), nullable=False),
     sa.Column('date', sa.DateTime(), nullable=False),
     sa.Column('group_id', sa.Integer(), nullable=False),
     sa.Column('paid_by', sa.Integer(), nullable=False),
+    sa.Column('receipt_url', sa.String(length=500), nullable=True),
     sa.ForeignKeyConstraint(['group_id'], ['group.id'], ),
     sa.ForeignKeyConstraint(['paid_by'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
@@ -84,6 +86,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('expense_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('amount_owed', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.ForeignKeyConstraint(['expense_id'], ['expense.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
