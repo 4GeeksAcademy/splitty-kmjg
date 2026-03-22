@@ -3,6 +3,8 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import { Loading } from "./Loading";
 import CustomSelect from "./CustomSelect";
 import InviteModal from "./InviteModal";
+import ReceiptUploader from "./ReceiptUploader";
+import ReceiptViewerLightbox from "./ReceiptViewerLightbox";
 
 export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, expenseToEdit }) => {
     const { store, actions } = useGlobalReducer();
@@ -22,6 +24,10 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     const [showInviteModal, setShowInviteModal] = useState(false);
 
     const [selectedMembers, setSelectedMembers] = useState([]);
+    
+    // Receipt upload state
+    const [receiptFile, setReceiptFile] = useState(null);
+    const [lightboxData, setLightboxData] = useState({ isOpen: false, url: null, type: null });
 
     // Pre-populate participants and splits if editing
     useEffect(() => {
@@ -169,7 +175,7 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     if (loading) return <Loading />;
 
     return (
-        <div className="splitty-card w-100 shadow-lg px-3 px-md-4 py-4 py-md-5" style={{ maxWidth: "100%" }}>
+        <div className="w-100" style={{ maxWidth: "100%" }}>
             <div className="d-flex justify-content-between align-items-center mb-4 pb-2">
                 {/* Fix #6: gradient text always applied */}
                 <h3 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "1.9rem" }}>
@@ -206,10 +212,26 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         >
                             <i className="fa-solid fa-trash-can"></i>
                         </button>
-                        <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
+                        {onCancel && (
+                            <button 
+                                onClick={onCancel} 
+                                className="btn text-white p-0 d-flex align-items-center justify-content-center flex-shrink-0 ms-3" 
+                                style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.1)", borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)" }}
+                            >
+                                <i className="fa-solid fa-xmark fs-5"></i>
+                            </button>
+                        )}
                     </div>
                 ) : (
-                    <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
+                    onCancel && (
+                        <button 
+                            onClick={onCancel} 
+                            className="btn text-white p-0 d-flex align-items-center justify-content-center flex-shrink-0 ms-3" 
+                            style={{ width: "36px", height: "36px", background: "rgba(255,255,255,0.1)", borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)" }}
+                        >
+                            <i className="fa-solid fa-xmark fs-5"></i>
+                        </button>
+                    )
                 )}
             </div>
             
@@ -272,18 +294,18 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         <label className="splitty-label splitty-gradient-text mb-0" style={{ fontWeight: 700 }}>Participants</label>
                         <button 
                             type="button"
-                            className="btn py-2 px-3 border-0 shadow-sm"
+                            className="btn py-1 px-3 border-0 shadow-sm text-nowrap"
                             onClick={() => setShowInviteModal(true)}
                             style={{ 
                                 borderRadius: "10px", 
                                 background: "rgba(252, 164, 52, 0.15)", 
-                                fontSize: "0.9rem",
+                                fontSize: "0.8rem",
                                 fontWeight: "600",
                                 color: "var(--color-base-orange)",
                                 border: "1px solid rgba(252, 164, 52, 0.3)"
                             }}
                         >
-                            <i className="fa-solid fa-user-plus me-2"></i> Anyone missing?
+                            <i className="fa-solid fa-user-plus me-1"></i> Missing?
                         </button>
                     </div>
                     <div className="d-flex flex-wrap gap-2 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)" }}>
@@ -336,9 +358,10 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                                         background: active ? "var(--splitty-gradient)" : "transparent",
                                         color: active ? "var(--color-base-light)" : "#a19b95",
                                         fontWeight: active ? "bold" : "500",
-                                        fontSize: "0.85rem",
-                                        padding: "10px 0",
-                                        transition: "all 0.3s ease"
+                                        fontSize: "clamp(0.7rem, 2.5vw, 0.85rem)",
+                                        padding: "10px 4px",
+                                        transition: "all 0.3s ease",
+                                        whiteSpace: "nowrap"
                                     }}
                                 >
                                     {tab.label}
@@ -401,10 +424,15 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                     </div>
                 </div>
 
+                <ReceiptUploader 
+                    onChange={(file, url) => setReceiptFile({ file, url })}
+                    onPreviewClick={(url, type) => setLightboxData({ isOpen: true, url, type })}
+                />
+
                 {/* Fix #4: Contextual submit button label */}
                 <button 
                     type="submit" 
-                    className="splitty-btn w-100 py-3 mt-2" 
+                    className="splitty-btn w-100 py-3 mt-4 d-flex align-items-center justify-content-center" 
                     disabled={!isValid || loading}
                 >
                     <i className={`fa-solid ${isEditing ? 'fa-floppy-disk' : 'fa-receipt'} me-2`}></i>
@@ -419,6 +447,13 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                     onClose={() => setShowInviteModal(false)} 
                 />
             ) : null}
+            
+            <ReceiptViewerLightbox 
+                isOpen={lightboxData.isOpen}
+                onClose={() => setLightboxData({ isOpen: false, url: null, type: null })}
+                fileUrl={lightboxData.url}
+                fileType={lightboxData.type}
+            />
         </div>
     );
 };

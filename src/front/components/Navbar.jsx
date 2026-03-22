@@ -158,8 +158,8 @@ export const Navbar = memo(() => {
                                 style={{
                                     width: "56px", height: "56px", borderRadius: "50%",
                                     background: "var(--splitty-gradient)",
-                                    boxShadow: "0 8px 24px rgba(252, 164, 52, 0.3)",
-                                    transform: "translateY(-12px)"
+                                    boxShadow: "0 8px 16px rgba(252, 164, 52, 0.2)",
+                                    transition: "transform 0.2s ease"
                                 }}
                             >
                                 <i className="bi bi-plus-lg fs-2" style={{ color: "#fff" }}></i>
