@@ -89,6 +89,7 @@ class Actions {
     localStorage.setItem("token", data.access_token);
     localStorage.setItem("user_email", email);
     localStorage.setItem("user_username", data.username || "");
+    if (data.id) localStorage.setItem("user_id", data.id.toString());
     localStorage.setItem("token_timestamp", now.toString());
 
     this.store.jwt = data.access_token;
@@ -97,6 +98,7 @@ class Actions {
     this.dispatch({
       type: "SET_USER",
       payload: {
+        id: data.id,
         email: email,
         username: data.username,
       },
@@ -132,6 +134,7 @@ class Actions {
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_username");
+    localStorage.removeItem("user_id");
     localStorage.removeItem("token_timestamp");
     localStorage.removeItem("groups");
     localStorage.removeItem("pending_invite_token"); // Limpiamos también esto al salir
@@ -149,6 +152,19 @@ class Actions {
     if (!resp.ok) {
       console.error("Error creating group:", resp.error || resp.data?.error);
       return { success: false, error: resp.error || resp.data?.error || "Error creating group" };
+    }
+    
+    await this.loadUserGroups();
+    
+    return { success: true, data: resp.data };
+  };
+
+  deleteGroup = async (groupId) => {
+    const resp = await this.apiFetch(`/groups/${groupId}`, "DELETE", null, true);
+
+    if (!resp.ok) {
+      console.error("Error deleting group:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error deleting group" };
     }
     
     await this.loadUserGroups();

@@ -4,6 +4,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import { SkeletonDashboard } from "./SkeletonDashboard";
 import { AddExpenseForm } from "./AddExpenseForm";
 import InviteModal from "./InviteModal";
+import DeleteGroupModal from "./DeleteGroupModal";
 import gsap from "gsap";
 
 export const GroupDashboard = () => {
@@ -16,6 +17,7 @@ export const GroupDashboard = () => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState(null);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const initialAnimation = useRef(false);
 
     // Current logged in user ID to format messages
@@ -36,6 +38,18 @@ export const GroupDashboard = () => {
     useEffect(() => {
         loadDashboardData();
     }, [id]);
+
+    const handleDeleteExpense = async (e, expenseId) => {
+        e.stopPropagation();
+        if (window.confirm("Are you sure you want to delete this expense?")) {
+            const result = await actions.deleteExpense(expenseId);
+            if (result.success) {
+                loadDashboardData();
+            } else {
+                alert(result.error || "Failed to delete expense");
+            }
+        }
+    };
 
     useEffect(() => {
         if (!loading && data && !initialAnimation.current) {
@@ -67,26 +81,33 @@ export const GroupDashboard = () => {
 
     const { personal_balances, settlements, users, expenses = [] } = data;
 
+    const currentGroup = store.groups?.find(g => g.id.toString() === id.toString());
+    const groupName = currentGroup?.name || "the group";
+    const groupCreatorId = currentGroup?.created_by;
+    const isCreator = store.user?.id === groupCreatorId;
+
     return (
         <div className="container py-4 dashboard-element">
             {/* Header Section */}
             <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4 mb-5">
                 {/* Left Side: Navigation & Primary Actions */}
-                <div className="d-flex align-items-center gap-2 order-2 order-md-1 flex-shrink-0">
+                <div className="d-flex align-items-center gap-3 order-2 order-md-1" style={{ flex: "1 0 0%" }}>
                     <button
                         className="btn text-white d-flex align-items-center justify-content-center"
                         onClick={() => navigate("/")}
                         style={{
+                            height: "46px",
                             borderRadius: "14px",
                             background: "rgba(255, 255, 255, 0.05)",
                             border: "1px solid rgba(255, 255, 255, 0.1)",
                             backdropFilter: "blur(12px)",
                             fontSize: "0.95rem",
                             fontWeight: "500",
-                            padding: "10px 20px",
+                            padding: "0 24px",
                             color: "var(--color-base-cream)",
                             transition: "all 0.3s ease",
-                            minWidth: "100px"
+                            minWidth: "110px",
+                            whiteSpace: "nowrap"
                         }}
                         onMouseEnter={e => {
                             e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
@@ -101,16 +122,18 @@ export const GroupDashboard = () => {
                     </button>
                     
                     <button 
-                        className="btn text-white border-0 px-4 d-flex align-items-center justify-content-center shadow-sm" 
+                        className="btn text-white border-0 d-flex align-items-center justify-content-center shadow-sm" 
                         onClick={() => setShowInviteModal(true)} 
                         style={{ 
+                            height: "46px",
                             borderRadius: "14px", 
                             background: "var(--splitty-gradient)", 
                             fontSize: "0.95rem",
                             fontWeight: "600",
                             transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
-                            padding: "10px 24px",
-                            minWidth: "140px"
+                            padding: "0 24px",
+                            minWidth: "160px",
+                            whiteSpace: "nowrap"
                         }}
                         onMouseEnter={e => {
                             e.currentTarget.style.transform = "translateY(-2px)";
@@ -123,17 +146,48 @@ export const GroupDashboard = () => {
                     >
                         <i className="fa-solid fa-user-plus me-2"></i> Invite Friend
                     </button>
+                    {isCreator && (
+                        <button 
+                            className="btn d-flex align-items-center justify-content-center" 
+                            onClick={() => setShowDeleteModal(true)} 
+                            style={{ 
+                                height: "46px",
+                                width: "46px",
+                                borderRadius: "14px", 
+                                background: "linear-gradient(135deg, #ff4d4d 0%, #cc0000 100%)",
+                                border: "none",
+                                color: "white",
+                                fontSize: "0.95rem",
+                                fontWeight: "600",
+                                transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+                                padding: "0",
+                                minWidth: "46px",
+                                boxShadow: "0 4px 12px rgba(204, 0, 0, 0.25)"
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(204, 0, 0, 0.4)";
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = "translateY(0) scale(1)";
+                                e.currentTarget.style.boxShadow = "0 4px 12px rgba(204, 0, 0, 0.25)";
+                            }}
+                            title="Delete Group"
+                        >
+                            <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                    )}
                 </div>
 
                 {/* Center: Title */}
-                <div className="order-1 order-md-2 text-center flex-grow-1">
+                <div className="order-1 order-md-2 text-center" style={{ flex: "2 0 0%" }}>
                     <h1 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", letterSpacing: "-1px" }}>
                         Group Dashboard
                     </h1>
                 </div>
 
                 {/* Right Side: User Profile / Space Balance */}
-                <div className="d-none d-md-flex align-items-center justify-content-end order-3 flex-shrink-0" style={{ minWidth: "250px" }}>
+                <div className="d-none d-md-flex align-items-center justify-content-end order-3" style={{ flex: "1 0 0%" }}>
                     {store.user && (
                         <div className="d-flex align-items-center p-2 px-3 rounded-pill" style={{ background: "rgba(252, 164, 52, 0.1)", border: "1px solid rgba(252, 164, 52, 0.2)" }}>
                             <i className="fa-solid fa-circle-user me-2" style={{ color: "var(--color-base-orange)" }}></i>
@@ -333,23 +387,32 @@ export const GroupDashboard = () => {
                                                         </div>
                                                     </div>
                                                     {/* Right: amount badge */}
-                                                    <div className="text-end flex-shrink-0 d-flex flex-column align-items-end gap-1">
-                                                        <span
-                                                            className="badge rounded-pill fw-bold"
-                                                            style={{
-                                                                background: "rgba(252, 164, 52, 0.15)",
-                                                                color: "var(--color-base-dark-orange)",
-                                                                border: "1px solid rgba(252, 164, 52, 0.3)",
-                                                                padding: "8px 16px",
-                                                                fontSize: "0.95rem"
-                                                            }}
-                                                        >
-                                                            ${parseFloat(exp.amount || 0).toFixed(2)}
-                                                        </span>
-                                                        <small style={{ color: "var(--color-base-rust)", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, marginTop: "0.5rem", transition: "color 0.2s" }} className="expense-edit-hint">
-                                                            <i className="fa-solid fa-pen-to-square me-1"></i>Edit
-                                                        </small>
-                                                    </div>
+                                                        <div className="text-end flex-shrink-0 d-flex flex-column align-items-end gap-1">
+                                                            <span
+                                                                className="badge rounded-pill fw-bold"
+                                                                style={{
+                                                                    background: "rgba(252, 164, 52, 0.15)",
+                                                                    color: "var(--color-base-dark-orange)",
+                                                                    border: "1px solid rgba(252, 164, 52, 0.3)",
+                                                                    padding: "8px 16px",
+                                                                    fontSize: "0.95rem"
+                                                                }}
+                                                            >
+                                                                ${parseFloat(exp.amount || 0).toFixed(2)}
+                                                            </span>
+                                                            <div className="d-flex gap-2 mt-2">
+                                                                <small 
+                                                                    onClick={(e) => handleDeleteExpense(e, exp.id)}
+                                                                    style={{ color: "#ff4d4d", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, transition: "all 0.2" }} 
+                                                                    className="expense-action-btn"
+                                                                >
+                                                                    <i className="fa-solid fa-trash-can me-1"></i>Delete
+                                                                </small>
+                                                                <small style={{ color: "var(--color-base-orange)", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, transition: "all 0.2s" }} className="expense-action-btn">
+                                                                    <i className="fa-solid fa-pen-to-square me-1"></i>Edit
+                                                                </small>
+                                                            </div>
+                                                        </div>
                                                 </div>
                                             </li>
                                         );
@@ -365,8 +428,17 @@ export const GroupDashboard = () => {
             {showInviteModal ? (
                 <InviteModal 
                     groupId={id} 
-                    groupName={store.groups.find(g => g.id.toString() === id.toString())?.name || "the group"} 
+                    groupName={groupName} 
                     onClose={() => setShowInviteModal(false)} 
+                />
+            ) : null}
+
+            {showDeleteModal ? (
+                <DeleteGroupModal 
+                    groupId={id} 
+                    groupName={groupName} 
+                    groupCreatorId={groupCreatorId}
+                    onClose={() => setShowDeleteModal(false)} 
                 />
             ) : null}
         </div>

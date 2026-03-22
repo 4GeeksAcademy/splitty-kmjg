@@ -33,9 +33,9 @@ export const Navbar = () => {
                     position: "sticky",
                     top: 0,
                     zIndex: 1000,
-                    backdropFilter: "blur(10px)",
-                    borderBottom: "1px solid rgba(255,255,255,0.08)",
-                    backgroundColor: "transparent",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    background: "rgba(22, 19, 17, 0.6)",
                     padding: "1rem 0"
                 }}
             >
@@ -48,13 +48,15 @@ export const Navbar = () => {
                         <div className="d-flex align-items-center gap-2 gap-md-3">
                             {store.jwt ? (
                                 <>
-                                    <div className="d-flex align-items-center gap-2 px-3 py-2"
+                                    <div className="d-flex align-items-center gap-2 px-4"
                                         style={{
-                                            borderRadius: "999px",
-                                            background: "rgba(255,255,255,0.08)",
-                                            color: "var(--color-base-light)",
-                                            border: "1px solid rgba(255,255,255,0.08)",
-                                            display: "flex"
+                                            borderRadius: "24px",
+                                            background: "rgba(57, 52, 49, 0.2)",
+                                            backdropFilter: "blur(20px)",
+                                            WebkitBackdropFilter: "blur(20px)",
+                                            color: "var(--color-base-cream)",
+                                            display: "flex",
+                                            height: "48px"
                                         }}
                                     >
                                         <i className="bi bi-person-fill fs-5"
@@ -63,7 +65,7 @@ export const Navbar = () => {
                                         <span
                                             className="d-none d-md-inline"
                                             style={{
-                                                color: "var(--color-base-light)",
+                                                color: "var(--color-base-cream)",
                                                 fontSize: "0.95rem",
                                                 fontWeight: "500"
                                             }}
@@ -73,16 +75,22 @@ export const Navbar = () => {
                                     </div>
 
                                 <button
-                                    className="btn px-3 py-2"
+                                    className="btn px-4 d-flex align-items-center justify-content-center"
                                     onClick={handleLogout}
                                     style={{
-                                        background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
+                                        background: "var(--splitty-gradient)",
                                         color: "var(--color-base-light)",
                                         border: "none",
-                                        borderRadius: "12px",
-                                        fontWeight: "600",
-                                        fontSize: "0.9rem"
+                                        borderRadius: "24px",
+                                        fontWeight: "700",
+                                        fontSize: "0.95rem",
+                                        height: "48px",
+                                        transition: "transform 0.2s ease, opacity 0.2s ease"
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"}
+                                    onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.96)"}
+                                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                                 >
                                     {loading ? "..." : "Logout"}
                                 </button>
@@ -91,32 +99,46 @@ export const Navbar = () => {
                             <div className="d-flex gap-2">
                                 <Link
                                     to="/login"
-                                    className="btn px-3 py-2"
+                                    className="btn px-4 d-flex align-items-center justify-content-center"
                                     style={{
-                                        background: "transparent",
-                                        color: "var(--color-base-light)",
-                                        border: "1px solid rgba(255,255,255,0.18)",
-                                        borderRadius: "12px",
+                                        background: "rgba(57, 52, 49, 0.2)",
+                                        backdropFilter: "blur(20px)",
+                                        WebkitBackdropFilter: "blur(20px)",
+                                        color: "var(--color-base-cream)",
+                                        border: "none",
+                                        borderRadius: "24px",
                                         fontWeight: "600",
-                                        fontSize: "0.9rem",
-                                        textDecoration: "none"
+                                        fontSize: "0.95rem",
+                                        textDecoration: "none",
+                                        height: "48px",
+                                        transition: "transform 0.2s ease, background 0.2s ease"
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = "rgba(57, 52, 49, 0.3)"}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = "rgba(57, 52, 49, 0.2)"}
+                                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.96)"}
+                                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                                 >
                                     Login
                                 </Link>
 
                                 <Link
                                     to="/register"
-                                    className="btn px-3 py-2"
+                                    className="btn px-4 d-flex align-items-center justify-content-center"
                                     style={{
-                                        background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
+                                        background: "var(--splitty-gradient)",
                                         color: "var(--color-base-light)",
                                         border: "none",
-                                        borderRadius: "12px",
-                                        fontWeight: "600",
-                                        fontSize: "0.9rem",
-                                        textDecoration: "none"
+                                        borderRadius: "24px",
+                                        fontWeight: "700",
+                                        fontSize: "0.95rem",
+                                        textDecoration: "none",
+                                        height: "48px",
+                                        transition: "transform 0.2s ease, opacity 0.2s ease"
                                     }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = "0.85"}
+                                    onMouseLeave={(e) => e.currentTarget.style.opacity = "1"}
+                                    onMouseDown={(e) => e.currentTarget.style.transform = "scale(0.96)"}
+                                    onMouseUp={(e) => e.currentTarget.style.transform = "scale(1)"}
                                 >
                                     Sign up
                                 </Link>
