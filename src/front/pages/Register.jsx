@@ -168,7 +168,7 @@ export const Register = () => {
               </div>
 
               {/* Error message */}
-              {error && (
+              {error ? (
                 <div
                   key={shakeKey}
                   role="alert"
@@ -190,7 +190,7 @@ export const Register = () => {
                   </span>
                   <span>{error}</span>
                 </div>
-              )}
+              ) : null}
 
               <style>{`
                 @keyframes splitty-shake {
@@ -203,7 +203,7 @@ export const Register = () => {
                 }
               `}</style>
 
-              {success && (
+              {success ? (
                 <div
                   role="status"
                   className="d-flex align-items-center gap-2 mb-4"
@@ -223,7 +223,7 @@ export const Register = () => {
                   </span>
                   <span>{success}</span>
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="submit"

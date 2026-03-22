@@ -146,7 +146,7 @@ export const Login = () => {
                 </button>
               </div>
 
-              {error && (
+              {error ? (
                 <div
                   key={shakeKey}
                   role="alert"
@@ -168,7 +168,7 @@ export const Login = () => {
                   </span>
                   <span>{error}</span>
                 </div>
-              )}
+              ) : null}
 
               <style>{`
                 @keyframes splitty-shake {
