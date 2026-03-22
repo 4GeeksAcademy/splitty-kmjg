@@ -14,9 +14,11 @@ export const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
 
   const handleChange = ({ target }) => {
     const { name, value } = target;
+    if (error) setError("");
     setFormData((prev) => ({
       ...prev,
       [name]: value
@@ -31,15 +33,16 @@ export const Login = () => {
     setError("");
     setLoading(true);
 
-    const [islogged] = await Promise.all([
+    const [result] = await Promise.all([
       actions.login(email, password),
       new Promise(resolve => setTimeout(resolve, 2000))
     ]);
 
-    if (islogged) {
+    if (result.ok) {
       navigate("/");
     } else {
-      alert("Login failed. Please check your credentials and try again.");
+      setError(result.error || "Login failed. Please check your credentials and try again.");
+      setShakeKey(k => k + 1);
       setLoading(false);
     }
   };
@@ -74,7 +77,7 @@ export const Login = () => {
               <p
                 className="mb-0"
                 style={{
-                  color: "var(--color-base-dark-orange",
+                  color: "var(--color-base-dark-orange)",
                   fontSize: "1rem"
                 }}
               >
@@ -83,7 +86,7 @@ export const Login = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <div className="mb-3">
+              <div className="mb-4">
                 <label
                   className="form-label fw-semibold"
                   style={{ color: "var(--color-base-dark)" }}
@@ -106,7 +109,7 @@ export const Login = () => {
                 />
               </div>
 
-              <div className="mb-3">
+              <div className="mb-2">
                 <label
                   className="form-label fw-semibold"
                   style={{ color: "var(--color-base-dark)" }}
@@ -129,7 +132,7 @@ export const Login = () => {
                 />
               </div>
 
-              <div className="d-flex justify-content-end mb-3">
+              <div className="d-flex justify-content-end mb-4">
                 <button
                   type="button"
                   className="btn btn-link p-0 text-decoration-none"
@@ -145,16 +148,38 @@ export const Login = () => {
 
               {error && (
                 <div
-                  className="alert border-0"
+                  key={shakeKey}
+                  role="alert"
+                  className="d-flex align-items-center gap-2 border-0 mb-4"
                   style={{
-                    backgroundColor: "#ffe5d6",
-                    color: "#8a3f12",
-                    borderRadius: "14px"
+                    backgroundColor: "#FFE7CD",
+                    color: "#BB6D2D",
+                    borderRadius: "14px",
+                    padding: "12px 16px",
+                    fontSize: "0.9rem",
+                    fontWeight: "500",
+                    lineHeight: "1.4",
+                    animation: "splitty-shake 0.4s ease",
+                    border: "1px solid rgba(187, 109, 45, 0.4)"
                   }}
                 >
-                  {error}
+                  <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>
+                    <i className="bi bi-exclamation-triangle-fill"></i>
+                  </span>
+                  <span>{error}</span>
                 </div>
               )}
+
+              <style>{`
+                @keyframes splitty-shake {
+                  0%   { transform: translateX(0); }
+                  20%  { transform: translateX(-6px); }
+                  40%  { transform: translateX(6px); }
+                  60%  { transform: translateX(-4px); }
+                  80%  { transform: translateX(4px); }
+                  100% { transform: translateX(0); }
+                }
+              `}</style>
 
               <button
                 type="submit"
@@ -163,9 +188,10 @@ export const Login = () => {
                 style={{
                   height: "50px",
                   borderRadius: "14px",
-                  background: "linear-gradient(90deg, #c76a2a 0%, #9f4713 100%)",
+                  background: "var(--splitty-gradient)",
                   color: "#fff",
-                  border: "none"
+                  border: "none",
+                  boxShadow: "0 4px 12px rgba(187, 77, 0, 0.2)"
                 }}
               >
                 {loading ? "Signing in..." : "Login"}
@@ -179,7 +205,7 @@ export const Login = () => {
               <Link
                 to="/register"
                 className="text-decoration-none fw-semibold"
-                style={{ color: "#b65a1b" }}
+                style={{ color: "var(--color-base-dark-orange)" }}
               >
                 Sign up
               </Link>

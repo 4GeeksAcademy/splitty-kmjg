@@ -4,15 +4,16 @@ import { Loading } from "./Loading";
 import CustomSelect from "./CustomSelect";
 import InviteModal from "./InviteModal";
 
-export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) => {
+export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, expenseToEdit }) => {
     const { store, actions } = useGlobalReducer();
+    const isEditing = !!expenseToEdit;
     
     // Internal state
-    const [description, setDescription] = useState("");
-    const [totalAmount, setTotalAmount] = useState("");
-    const [currency, setCurrency] = useState("$"); 
-    const [paidBy, setPaidBy] = useState("");
-    const [splitMode, setSplitMode] = useState("equal"); // 'equal', 'exact', 'percentage'
+    const [description, setDescription] = useState(expenseToEdit?.expense?.description || "");
+    const [totalAmount, setTotalAmount] = useState(expenseToEdit?.expense?.amount || "");
+    const [currency, setCurrency] = useState(expenseToEdit?.expense?.currency || "$"); 
+    const [paidBy, setPaidBy] = useState(expenseToEdit?.expense?.paid_by?.toString() || "");
+    const [splitMode, setSplitMode] = useState("equal");
     const [splits, setSplits] = useState({});
     
     const [loading, setLoading] = useState(false);
@@ -21,9 +22,28 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
 
     const [selectedMembers, setSelectedMembers] = useState([]);
 
-    // Initialize paidBy to the current user or first member, and participate all members by default
+    // Pre-populate participants and splits if editing
     useEffect(() => {
-        if (groupMembers.length > 0) {
+        if (isEditing && expenseToEdit.participants) {
+            const pIds = expenseToEdit.participants.map(p => p.user_id);
+            setSelectedMembers(pIds);
+            
+            const newSplits = {};
+            expenseToEdit.participants.forEach(p => {
+                newSplits[p.user_id] = p.amount_owed;
+            });
+            setSplits(newSplits);
+            
+            // Try to guess if it was exact or percentage (simplified: default to exact if not equal)
+            const amount = parseFloat(expenseToEdit.expense.amount);
+            const isEqual = expenseToEdit.participants.every(p => Math.abs(p.amount_owed - (amount / pIds.length)) < 0.05);
+            if (!isEqual) setSplitMode("exact");
+        }
+    }, [expenseToEdit]);
+
+    // Initialize paidBy and members for NEW expense
+    useEffect(() => {
+        if (!isEditing && groupMembers.length > 0) {
             if (!paidBy && store.user?.username) {
                 const currentUserMember = groupMembers.find(m => m.username === store.user.username || m.email === store.user.email);
                 setPaidBy(currentUserMember ? currentUserMember.id.toString() : groupMembers[0].id.toString());
@@ -34,7 +54,7 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
                 setSelectedMembers(groupMembers.map(m => m.id));
             }
         }
-    }, [groupMembers, store.user?.username]);
+    }, [groupMembers, store.user?.username, isEditing]);
 
     const selectedGroupMembers = groupMembers.filter(m => selectedMembers.includes(m.id));
 
@@ -77,6 +97,18 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
         }));
     };
 
+    const handleDelete = async () => {
+        if (!window.confirm("Are you sure you want to delete this expense?")) return;
+        setLoading(true);
+        const resp = await actions.deleteExpense(expenseToEdit.expense.id);
+        if (resp.success) {
+            onSuccess();
+        } else {
+            setError(resp.error || "Error deleting expense");
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!isValid) return;
@@ -95,20 +127,21 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
                 });
             });
         } else if (splitMode === "exact") {
-            for (const [userId, val] of Object.entries(splits)) {
+            // Filter splits to only included members
+            selectedMembers.forEach(uid => {
                 participantsData.push({
-                    user_id: parseInt(userId),
-                    amount_owed: parseFloat(val) || 0
+                    user_id: uid,
+                    amount_owed: parseFloat(splits[uid]) || 0
                 });
-            }
+            });
         } else if (splitMode === "percentage") {
-            for (const [userId, val] of Object.entries(splits)) {
-                const perc = parseFloat(val) || 0;
+            selectedMembers.forEach(uid => {
+                const perc = parseFloat(splits[uid]) || 0;
                 participantsData.push({
-                    user_id: parseInt(userId),
+                    user_id: uid,
                     amount_owed: (perc / 100) * amountVal
                 });
-            }
+            });
         }
 
         const expenseData = {
@@ -119,7 +152,10 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
             participants: participantsData
         };
 
-        const resp = await actions.addExpense(groupId, expenseData);
+        const resp = isEditing 
+            ? await actions.updateExpense(expenseToEdit.expense.id, expenseData)
+            : await actions.addExpense(groupId, expenseData);
+
         if (resp.success) {
             onSuccess();
         } else {
@@ -133,8 +169,30 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
     return (
         <div className="splitty-card w-100 shadow-lg px-3 px-md-4 py-4 py-md-5" style={{ maxWidth: "100%" }}>
             <div className="d-flex justify-content-between align-items-center mb-4 pb-2">
-                <h3 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "1.9rem" }}>Add Expense</h3>
-                <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
+                {/* Fix #6: gradient text always applied */}
+                <h3 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "1.9rem" }}>
+                    {isEditing ? "Edit Expense" : "Add Expense"}
+                </h3>
+                <div className="d-flex gap-2 align-items-center">
+                    {isEditing && (
+                        <button
+                            type="button"
+                            onClick={handleDelete}
+                            title="Delete Expense"
+                            style={{
+                                background: "rgba(248,113,113,0.12)",
+                                border: "1px solid rgba(248,113,113,0.3)",
+                                borderRadius: "10px",
+                                padding: "8px 12px",
+                                color: "#f87171",
+                                cursor: "pointer"
+                            }}
+                        >
+                            <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                    )}
+                    <button type="button" className="btn-close btn-close-white opacity-50" onClick={onCancel} aria-label="Close"></button>
+                </div>
             </div>
             
             {error && <div className="splitty-alert splitty-alert-danger">{error}</div>}
@@ -325,13 +383,14 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel }) =
                     </div>
                 </div>
 
+                {/* Fix #4: Contextual submit button label */}
                 <button 
                     type="submit" 
                     className="splitty-btn w-100 py-3 mt-2" 
                     disabled={!isValid || loading}
                 >
-                    <i className="fa-solid fa-receipt me-2"></i>
-                    Create Shared Expense
+                    <i className={`fa-solid ${isEditing ? 'fa-floppy-disk' : 'fa-receipt'} me-2`}></i>
+                    {isEditing ? "Save Changes" : "Create Shared Expense"}
                 </button>
             </form>
 

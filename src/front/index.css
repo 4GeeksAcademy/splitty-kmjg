@@ -89,10 +89,11 @@ html {
   align-items: center;
   width: 100%; 
   min-height: calc(100vh - 180px); 
-  padding: 2rem 1rem;
+  padding: 4rem 1rem;
 }
 
 .splitty-card {
+  position: relative;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -105,11 +106,20 @@ html {
   color: var(--color-base-light);
 }
 
+.splitty-card-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
 .splitty-title {
   text-align: center;
   font-size: 1.8rem;
   font-weight: 800;
-  margin-bottom: 2rem;
+  margin-bottom: 0; /* Managed by header */
   background: var(--splitty-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -118,9 +128,9 @@ html {
 
 .splitty-label {
   display: block;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.5rem;
   color: rgba(247, 245, 251, 0.8);
   letter-spacing: 0.5px;
 }
@@ -138,7 +148,7 @@ html {
   transition: all 0.3s ease;
   outline: none;
   background-image: none !important; /* Remove Bootstrap's default arrow */
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .splitty-input:hover {
@@ -274,6 +284,49 @@ body::-webkit-scrollbar-thumb:hover {
   cursor: not-allowed;
 }
 
+/* Back Button */
+.splitty-back-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--color-base-cream);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.splitty-back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-base-light);
+  border-color: var(--color-base-dark-orange);
+  transform: translateY(-50%) translateX(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.splitty-back-btn:active {
+  transform: translateY(-50%) translateX(-1px) scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .splitty-back-btn {
+    left: -0.5rem; /* Optical adjustment on mobile */
+    width: 38px;
+    height: 38px;
+  }
+}
+
 /* Alerts */
 .splitty-alert {
   padding: 12px;
@@ -339,16 +392,43 @@ body::-webkit-scrollbar-thumb:hover {
   display: inline-block;
 }
 
+.poopet-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 8px 16px rgba(187, 77, 0, 0.4));
+  transition: transform 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.poopet-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
 /* --- MOBILE OPTIMIZATIONS --- */
 @media (max-width: 768px) {
+  .form-wrapper {
+    padding: 6rem 1rem 2rem 1rem; /* More top padding to clear navbar */
+    align-items: flex-start; /* Start from top on mobile */
+  }
+
   .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
   }
   
   .splitty-card {
-    padding: 1.8rem 1.4rem;
+    padding: 2.2rem 1.5rem 1.8rem 1.5rem;
     border-radius: 24px;
+  }
+
+  .splitty-card-header {
+    margin-bottom: 1.2rem;
+  }
+
+  .splitty-title {
+    font-size: 1.5rem;
+    margin-bottom: 0;
   }
 
   /* Prevent iOS zoom on focus */
@@ -375,4 +455,14 @@ body::-webkit-scrollbar-thumb:hover {
 .no-spinners[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* Custom Autocomplete Styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 50px #FFE7CD inset !important;
+    -webkit-text-fill-color: var(--color-base-dark) !important;
+    transition: background-color 5000s ease-in-out 0s;
 }

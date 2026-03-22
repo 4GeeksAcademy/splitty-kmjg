@@ -149,6 +149,9 @@ class Expense(db.Model):
     # se usa Numeric(10,2) para evitar errores de precisión con dinero
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
+    # moneda del gasto
+    currency: Mapped[str] = mapped_column(String(10), nullable=False, default="$")
+
     # fecha del gasto
     date: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow
@@ -179,6 +182,7 @@ class Expense(db.Model):
             "id": self.id,
             "description": self.description,
             "amount": float(self.amount),
+            "currency": self.currency,
             "date": self.date.isoformat(),
             "group_id": self.group_id,
             "paid_by": self.paid_by,
@@ -203,6 +207,9 @@ class ExpenseParticipant(db.Model):
     # usuario que participa en el gasto
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
+    # monto que este participante debe
+    amount_owed: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=0)
+
     # RELATIONS
     expense: Mapped["Expense"] = relationship(
         "Expense", back_populates="participants")
@@ -214,7 +221,8 @@ class ExpenseParticipant(db.Model):
         return {
             "id": self.id,
             "expense_id": self.expense_id,
-            "user_id": self.user_id
+            "user_id": self.user_id,
+            "amount_owed": float(self.amount_owed)
         }
 
 # Invitacion

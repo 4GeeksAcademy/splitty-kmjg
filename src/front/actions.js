@@ -38,7 +38,7 @@ class Actions {
     try {
       const resp = await fetch(backendUrl + endpoint, fetchParams);
 
-      if (resp.status === 401 || resp.status === 422) {
+      if (isPrivate && (resp.status === 401 || resp.status === 422)) {
         console.error("Token expired or invalid. Clearing session...");
 
         localStorage.removeItem("token");
@@ -74,7 +74,14 @@ class Actions {
       false,
     );
 
-    if (!resp.ok) return false;
+    if (!resp.ok) {
+      const msg =
+        resp.data?.msg ||
+        resp.data?.error ||
+        resp.error ||
+        "Invalid email or password.";
+      return { ok: false, error: msg };
+    }
 
     const data = resp.data;
     const now = Date.now();
@@ -98,7 +105,7 @@ class Actions {
 
     await this.loadUserGroups();
 
-    return true;
+    return { ok: true };
   };
 
   register = async (email, password, username) => {
@@ -110,11 +117,16 @@ class Actions {
     );
 
     if (!resp.ok) {
-      console.error("Registration failed:", resp.error || resp.data.error);
-      return false;
+      const msg =
+        resp.data?.msg ||
+        resp.data?.error ||
+        resp.error ||
+        "Registration failed. Please try again.";
+      console.error("Registration failed:", msg);
+      return { ok: false, error: msg };
     }
 
-    return true;
+    return { ok: true };
   };
 
   logout = async () => {
@@ -158,31 +170,109 @@ class Actions {
     return { success: true, data: resp.data };
   };
 
+  updateExpense = async (expenseId, expenseData) => {
+    const resp = await this.apiFetch(`/expenses/${expenseId}`, "PUT", expenseData, true);
+
+    if (!resp.ok) {
+      console.error("Error updating expense:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error updating expense" };
+    }
+    
+    await this.loadUserGroups();
+    
+    return { success: true, data: resp.data };
+  };
+
+  deleteExpense = async (expenseId) => {
+    const resp = await this.apiFetch(`/expenses/${expenseId}`, "DELETE", null, true);
+
+    if (!resp.ok) {
+      console.error("Error deleting expense:", resp.error || resp.data?.error);
+      return { success: false, error: resp.error || resp.data?.error || "Error deleting expense" };
+    }
+    
+    await this.loadUserGroups();
+    
+    return { success: true, data: resp.data };
+  };
+
   fetchGroupBalances = async (groupId) => {
-    // THIS IS A MOCK WHILE THE DEBT SIMPLIFICATION BACKEND IS IMPLEMENTED
-    // Get basic group info
+    // Fetch real group data (members) from backend
     const groupResp = await this.apiFetch(`/groups/${groupId}`, "GET", null, true);
     if (!groupResp.ok) {
-        return { success: false, error: "Could not load group." };
+        return { success: false, error: groupResp.data?.error || "Could not load group." };
     }
 
-    // Real endpoint will send "users" as map, mocking users here
-    // Assume logged in user is the main one:
-    const storeUser = this.store.user;
+    // Fetch real expenses from backend
+    const expensesResp = await this.apiFetch(`/groups/${groupId}/expenses`, "GET", null, true);
     
-    // And for AddExpenseForm to receive valid members:
-    const usersMap = {
-        [1]: { id: 1, username: storeUser?.username || "Admin" },
-        [2]: { id: 2, username: "Juan Pérez" },
-        [3]: { id: 3, username: "María López" }
-    };
+    // Build users map from real members (backend now returns {id, username, email})
+    const members = groupResp.data.members || [];
+    const usersMap = {};
+    members.forEach(m => {
+        usersMap[m.id] = { id: m.id, username: m.username };
+    });
+
+    // Compute balances from expenses
+    const balances = {}; // net balance per user (positive = owed money, negative = owes money)
+    members.forEach(m => { balances[m.id] = 0; });
+
+    if (expensesResp.ok) {
+        const expenses = expensesResp.data.expenses || [];
+        for (const entry of expenses) {
+            const expense = entry.expense;
+            const participants = entry.participants || [];
+            
+            // The payer is owed money by participants
+            for (const p of participants) {
+                const amountOwed = p.amount_owed || 0;
+                if (p.user_id !== expense.paid_by) {
+                    balances[expense.paid_by] = (balances[expense.paid_by] || 0) + amountOwed;
+                    balances[p.user_id] = (balances[p.user_id] || 0) - amountOwed;
+                }
+            }
+        }
+    }
+
+    // Compute simplified settlements (greedy algorithm)
+    const settlements = [];
+    const debtors = []; // people who owe (negative balance)
+    const creditors = []; // people who are owed (positive balance)
+
+    for (const [userId, balance] of Object.entries(balances)) {
+        if (balance > 0.01) creditors.push({ id: parseInt(userId), amount: balance });
+        else if (balance < -0.01) debtors.push({ id: parseInt(userId), amount: -balance });
+    }
+
+    // Sort for greedy matching
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
+
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+        const transfer = Math.min(debtors[i].amount, creditors[j].amount);
+        if (transfer > 0.01) {
+            settlements.push({
+                from: debtors[i].id,
+                to: creditors[j].id,
+                amount: Math.round(transfer * 100) / 100
+            });
+        }
+        debtors[i].amount -= transfer;
+        creditors[j].amount -= transfer;
+        if (debtors[i].amount < 0.01) i++;
+        if (creditors[j].amount < 0.01) j++;
+    }
+
+    const rawExpenses = expensesResp.ok ? (expensesResp.data.expenses || []) : [];
 
     return {
         success: true,
         data: {
-            personal_balances: { 1: 0, 2: 0, 3: 0 },
-            settlements: [],
-            users: usersMap
+            personal_balances: balances,
+            settlements,
+            users: usersMap,
+            expenses: rawExpenses
         }
     };
   };
