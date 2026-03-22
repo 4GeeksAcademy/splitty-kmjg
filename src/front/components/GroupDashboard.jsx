@@ -392,7 +392,7 @@ export const GroupDashboard = () => {
                                                                 className="badge rounded-pill fw-bold"
                                                                 style={{
                                                                     background: "rgba(252, 164, 52, 0.15)",
-                                                                    color: "var(--color-base-dark-orange)",
+                                                                    color: "var(--color-base-cream)",
                                                                     border: "1px solid rgba(252, 164, 52, 0.3)",
                                                                     padding: "8px 16px",
                                                                     fontSize: "0.95rem"

@@ -70,9 +70,9 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
                     <i className="fa-solid fa-xmark"></i>
                 </button>
 
-                <h2 className="fw-bold mb-2" style={{ fontSize: "2rem", color: "#ffb4ab" }}>Delete Group</h2>
-                <p className="mb-4" style={{ color: "#a19b95", fontSize: "0.95rem", lineHeight: "1.5" }}>
-                    This action <strong style={{ color: "#ffb4ab" }}>cannot be undone</strong>. 
+                <h2 className="fw-bold mb-2" style={{ fontSize: "2rem", color: "var(--color-base-dark-orange)" }}>Delete Group</h2>
+                <p className="mb-4" style={{ color: "var(--color-base-cream)", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                    This action <strong style={{ color: "var(--color-base-dark-orange)" }}>cannot be undone</strong>. 
                     This will permanently delete the <strong>{groupName}</strong> group, its members, and all expenses.
                 </p>
 
@@ -84,7 +84,7 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
                     <>
                         <div className="mb-4">
                             <label className="splitty-label d-block mb-2 fw-semibold" style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "1px", color: "var(--color-base-cream)" }}>
-                                Please type <strong style={{ color: "var(--color-base-cream)" }}>{groupName}</strong> to confirm.
+                                Please type <strong style={{ color: "var(--color-base-dark-orange)" }}>{groupName}</strong> to confirm.
                             </label>
                             <input 
                                 type="text" 
@@ -94,7 +94,7 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
                                 value={confirmName}
                                 onChange={(e) => setConfirmName(e.target.value)}
                             />
-                            {error && <div className="text-danger small mt-2 px-1" style={{ color: "#ffb4ab" }}>{error}</div>}
+                            {error && <div className="text-danger small mt-2 px-1" style={{ color: "var(--color-base-dark-orange)" }}>{error}</div>}
                         </div>
 
                         <button 
@@ -103,7 +103,7 @@ export const DeleteGroupModal = ({ groupId, groupName, groupCreatorId, onClose }
                                 height: "48px", 
                                 border: "none",
                                 background: confirmName === groupName ? "linear-gradient(135deg, #93000a, #690005)" : "rgba(255, 255, 255, 0.05)",
-                                color: confirmName === groupName ? "#ffdad6" : "rgba(255, 255, 255, 0.3)",
+                                color: confirmName === groupName ? "var(--color-base-cream)" : "rgba(255, 255, 255, 0.3)",
                                 cursor: confirmName === groupName ? "pointer" : "not-allowed",
                                 transition: "all 0.3s ease",
                                 boxShadow: confirmName === groupName ? "0 8px 24px rgba(147, 0, 10, 0.4)" : "none"
