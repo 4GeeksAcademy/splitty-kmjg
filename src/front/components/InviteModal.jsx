@@ -92,8 +92,7 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
         }} onClick={handleClose}>
             <div className="invite-modal-content splitty-card" style={{
                 maxWidth: "450px", width: "100%", padding: "2.5rem 2rem",
-                position: "relative", border: "1px solid rgba(255,255,255,0.1)",
-                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+                position: "relative"
             }} onClick={e => e.stopPropagation()}>
                 
                 <button onClick={handleClose} className="border-0 bg-transparent" style={{

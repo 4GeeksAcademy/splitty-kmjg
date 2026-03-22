@@ -49,10 +49,7 @@ export const UserDashboard = () => {
                     <FadeContent blur={true} duration={1500}>
                         <div className="d-flex flex-wrap gap-4">
                             {/* Card: Active Groups */}
-                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
-                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                            >
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
                                 <small style={statLabelStyle}>Active Groups</small>
                                 <h2 className="fw-bold mb-0 text-white mt-2">
                                     <CountUp from={0} to={totalGroups} duration={0.5} />
@@ -60,19 +57,13 @@ export const UserDashboard = () => {
                             </div>
 
                             {/* Card: Overall Balance */}
-                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
-                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                            >
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
                                 <small style={statLabelStyle}>Overall Balance</small>
                                 <h2 className="fw-bold mb-0 mt-2" style={{ color: "#4ade80" }}>$0.00</h2>
                             </div>
 
                             {/* Card: Friends/Network */}
-                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}
-                                onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.1)"}
-                                onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
-                            >
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
                                 <small style={statLabelStyle}>Friends</small>
                                 <div className="mt-2">
                                     <span style={{ color: "var(--color-base-light)", fontSize: "0.9rem", opacity: 0.8 }}>
@@ -103,11 +94,8 @@ export const UserDashboard = () => {
 
 // Styles
 const statCardStyle = {
-    background: "rgba(255,255,255,0.06)",
     borderRadius: "18px",
-    border: "1px solid rgba(255,255,255,0.06)",
     cursor: "pointer",
-    backdropFilter: "blur(10px)",
     minWidth: "240px"
 };
 

@@ -182,20 +182,26 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                             onClick={handleDelete}
                             title="Delete Expense"
                             style={{
-                                background: "rgba(204, 0, 0, 0.12)",
-                                border: "1px solid rgba(204, 0, 0, 0.3)",
+                                background: "rgba(147, 0, 10, 0.15)",
+                                border: "1px solid rgba(147, 0, 10, 0.3)",
                                 borderRadius: "10px",
                                 padding: "8px 12px",
                                 color: "var(--color-base-cream)",
-                                cursor: "pointer"
+                                cursor: "pointer",
+                                transition: "all 0.3s ease",
+                                boxShadow: "none"
                             }}
                             onMouseEnter={e => {
-                                e.currentTarget.style.background = "rgba(204, 0, 0, 0.3)";
-                                e.currentTarget.style.borderColor = "rgba(204, 0, 0, 0.5)";
+                                e.currentTarget.style.background = "linear-gradient(135deg, #93000a, #690005)";
+                                e.currentTarget.style.borderColor = "rgba(147, 0, 10, 0.5)";
+                                e.currentTarget.style.boxShadow = "0 6px 16px rgba(147, 0, 10, 0.4)";
+                                e.currentTarget.style.transform = "translateY(-1px)";
                             }}
                             onMouseLeave={e => {
-                                e.currentTarget.style.background = "rgba(204, 0, 0, 0.12)";
-                                e.currentTarget.style.borderColor = "rgba(204, 0, 0, 0.3)";
+                                e.currentTarget.style.background = "rgba(147, 0, 10, 0.15)";
+                                e.currentTarget.style.borderColor = "rgba(147, 0, 10, 0.3)";
+                                e.currentTarget.style.boxShadow = "none";
+                                e.currentTarget.style.transform = "translateY(0)";
                             }}
                         >
                             <i className="fa-solid fa-trash-can"></i>
