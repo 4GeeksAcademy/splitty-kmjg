@@ -38,6 +38,7 @@ export const GroupDetails = ({ group }) => {
 
             {/* RENDER MODAL AT THE END (outside of main layout flow) */}
             <InviteModal groupId={group.id} groupName={group.name} />
+            
         </div>
     );
 };

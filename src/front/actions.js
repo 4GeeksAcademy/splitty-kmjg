@@ -91,7 +91,6 @@ class Actions {
     localStorage.setItem("user_username", data.username || "");
     localStorage.setItem("token_timestamp", now.toString());
 
-    // Fix timing issue by updating the local reference
     this.store.jwt = data.access_token;
 
     this.dispatch({ type: "SET_JWT", payload: data.access_token });
@@ -135,6 +134,7 @@ class Actions {
     localStorage.removeItem("user_username");
     localStorage.removeItem("token_timestamp");
     localStorage.removeItem("groups");
+    localStorage.removeItem("pending_invite_token"); // Limpiamos también esto al salir
 
     this.dispatch({ type: "UNSET_USER" });
 
@@ -151,7 +151,6 @@ class Actions {
       return { success: false, error: resp.error || resp.data?.error || "Error creating group" };
     }
     
-    // Refresh groups list so the new group appears in Dashboard
     await this.loadUserGroups();
     
     return { success: true, data: resp.data };
@@ -292,21 +291,20 @@ class Actions {
     return { success: true, data: groups };
   };
 
-  generateInviteLink = async (groupId) => {
-    // This is a stub. The backend should implement POST /api/groups/<id>/invite-link
-    // which returns { "token": "..." } or a full URL.
-    const resp = await this.apiFetch(`/groups/${groupId}/invite-link`, "POST", null, true);
+  generateInviteLink = async (groupId, email = null) => {
+    const body = email ? { email: email } : {};
+    // Corregido: Enviamos el body si existe
+    const resp = await this.apiFetch(`/groups/${groupId}/invite-link`, "POST", body, true);
     
-    if (!resp.ok) {
-      console.warn("Backend invite-link not implemented yet, returning mock link.");
-      // Return a mock for UI development
+    if (resp.ok) {
       return { 
         success: true, 
-        link: `${window.location.origin}/join?token=mock_token_${groupId}_${Date.now()}` 
+        link: resp.data.link,
+        token: resp.data.token
       };
     }
-    
-    return { success: true, link: resp.data.link || `${window.location.origin}/join?token=${resp.data.token}` };
+
+    return { success: false, error: "No se pudo generar el link" };
   };
 }
 
