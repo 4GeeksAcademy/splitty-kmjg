@@ -45,7 +45,17 @@ export const CreateGroupForm = () => {
     return (
         <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="form-wrapper">
             <div className="splitty-card">
-                <h2 className="splitty-title">Create New Group</h2>
+                <div className="splitty-card-header">
+                    <button 
+                        type="button" 
+                        className="splitty-back-btn" 
+                        onClick={() => navigate(-1)}
+                        aria-label="Go back"
+                    >
+                        <i className="bi bi-chevron-left"></i>
+                    </button>
+                    <h2 className="splitty-title">Create New Group</h2>
+                </div>
                 
                 {message.text && (
                     <div className={`splitty-alert splitty-alert-${message.type}`}>

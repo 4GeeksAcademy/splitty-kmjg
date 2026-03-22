@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from decimal import Decimal, InvalidOperation
-from flask import Flask, request, jsonify, url_for, Blueprint
+from flask import Flask, request, jsonify, url_for, Blueprint, current_app
 from api.models import (
     db,
     User,
@@ -179,9 +179,21 @@ def get_group_by_id(group_id):
 
     members = GroupMember.query.filter_by(group_id=group_id).all()
 
+    # Build member list with full user info (id, username, email)
+    members_with_user_info = []
+    for member in members:
+        user = User.query.get(member.user_id)
+        if user:
+            members_with_user_info.append({
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "joined_at": member.joined_at.isoformat()
+            })
+
     return jsonify({
         "group": group.serialize(),
-        "members": [member.serialize() for member in members]
+        "members": members_with_user_info
     }), 200
 
 
@@ -245,6 +257,7 @@ def create_expense(group_id):
 
     description = data.get('description')
     amount = data.get('amount')
+    currency = data.get('currency', '$')
     paid_by = data.get('paid_by')
     participants = data.get('participants', [])
 
@@ -257,12 +270,12 @@ def create_expense(group_id):
     if not group:
         return jsonify({"error": "Group not found"}), 404
 
-    # Validar que el usuario logueado pertenezca al grupo
+    # Validate that the logged-in user belongs to the group
     current_membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
     if not current_membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
-    # Validar que quien pagó pertenezca al grupo
+    # Validate that the payer belongs to the group
     payer_membership = GroupMember.query.filter_by(group_id=group_id, user_id=paid_by).first()
     if not payer_membership:
         return jsonify({"error": "The user who paid does not belong to the group"}), 400
@@ -274,26 +287,38 @@ def create_expense(group_id):
     except (InvalidOperation, ValueError):
         return jsonify({"error": "Invalid amount"}), 400
 
-    # Si no mandan participantes, se asigna por defecto al que pagó
+    # Participants can be objects {user_id, amount_owed} or plain IDs (backward compat)
+    # Normalize to list of dicts
+    normalized_participants = []
     if not participants:
-        participants = [paid_by]
+        # Default: assign evenly to the payer only
+        normalized_participants = [{"user_id": paid_by, "amount_owed": float(amount_decimal)}]
+    elif isinstance(participants[0], dict):
+        # Frontend sends [{user_id, amount_owed}]
+        normalized_participants = participants
+    else:
+        # Legacy: plain list of user IDs — split evenly
+        split_amount = float(amount_decimal) / len(participants)
+        normalized_participants = [{"user_id": pid, "amount_owed": split_amount} for pid in participants]
 
-    # Validar que todos los participantes pertenezcan al grupo
-    for participant_id in participants:
+    # Validate all participants belong to the group
+    for p in normalized_participants:
+        p_id = p["user_id"] if isinstance(p, dict) else p
         participant_membership = GroupMember.query.filter_by(
             group_id=group_id,
-            user_id=participant_id
+            user_id=p_id
         ).first()
 
         if not participant_membership:
             return jsonify({
-                "error": f"User {participant_id} does not belong to the group"
+                "error": f"User {p_id} does not belong to the group"
             }), 400
 
     try:
         new_expense = Expense(
             description=description,
             amount=amount_decimal,
+            currency=currency,
             group_id=group_id,
             paid_by=paid_by
         )
@@ -301,24 +326,30 @@ def create_expense(group_id):
         db.session.add(new_expense)
         db.session.flush()
 
-        # Crear participantes del gasto
-        for participant_id in participants:
+        # Create expense participants with amount_owed
+        created_participants = []
+        for p in normalized_participants:
+            p_user_id = p["user_id"]
+            p_amount = Decimal(str(p.get("amount_owed", 0)))
             expense_participant = ExpenseParticipant(
                 expense_id=new_expense.id,
-                user_id=participant_id
+                user_id=p_user_id,
+                amount_owed=p_amount
             )
             db.session.add(expense_participant)
+            created_participants.append(expense_participant)
 
         db.session.commit()
 
         return jsonify({
-            "message": "Gasto creado con exito",
+            "message": "Expense created successfully",
             "expense": new_expense.serialize(),
-            "participants": participants
+            "participants": [ep.serialize() for ep in created_participants]
         }), 201
 
     except Exception as e:
         db.session.rollback()
+        print(f"DEBUG: Error creating expense: {str(e)}")
         return jsonify({"error": "Error creating expense", "details": str(e)}), 500
 
 
@@ -351,6 +382,95 @@ def get_group_expenses(group_id):
         "group_id": group_id,
         "expenses": response
     }), 200
+
+# Actualizar un gasto
+@api.route('/expenses/<int:expense_id>', methods=['PUT'])
+@jwt_required()
+def update_expense(expense_id):
+    user_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    expense = Expense.query.get(expense_id)
+    if not expense:
+        return jsonify({"error": "Expense not found"}), 404
+
+    # Verificar que el usuario pertenece al grupo
+    membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=user_id).first()
+    if not membership:
+        return jsonify({"error": "You do not have access to this expense"}), 403
+
+    description = data.get('description')
+    amount = data.get('amount')
+    currency = data.get('currency', '$')
+    paid_by = data.get('paid_by')
+    participants = data.get('participants', [])
+
+    if description: expense.description = description
+    if amount is not None: 
+        try:
+            expense.amount = Decimal(str(amount))
+        except:
+            return jsonify({"error": "Invalid amount"}), 400
+    if currency: expense.currency = currency
+    if paid_by:
+        payer_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=paid_by).first()
+        if not payer_membership:
+            return jsonify({"error": "The user who paid does not belong to the group"}), 400
+        expense.paid_by = paid_by
+
+    try:
+        if participants:
+            # Eliminar participantes anteriores
+            ExpenseParticipant.query.filter_by(expense_id=expense.id).delete()
+            
+            # Crear nuevos participantes
+            for p in participants:
+                p_user_id = p["user_id"]
+                p_amount = Decimal(str(p.get("amount_owed", 0)))
+                
+                # Validar que el participante pertenece al grupo
+                p_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=p_user_id).first()
+                if not p_membership:
+                    continue
+
+                new_participant = ExpenseParticipant(
+                    expense_id=expense.id,
+                    user_id=p_user_id,
+                    amount_owed=p_amount
+                )
+                db.session.add(new_participant)
+
+        db.session.commit()
+        return jsonify({"message": "Expense updated successfully", "expense": expense.serialize()}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error updating expense", "details": str(e)}), 500
+
+# Eliminar un gasto
+@api.route('/expenses/<int:expense_id>', methods=['DELETE'])
+@jwt_required()
+def delete_expense(expense_id):
+    user_id = int(get_jwt_identity())
+    
+    expense = Expense.query.get(expense_id)
+    if not expense:
+        return jsonify({"error": "Expense not found"}), 404
+
+    # Verificar que el usuario pertenece al grupo
+    membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=user_id).first()
+    if not membership:
+        return jsonify({"error": "You do not have permission to delete this expense"}), 403
+
+    try:
+        # Los participantes se eliminan en cascada si está configurado, o manualmente
+        ExpenseParticipant.query.filter_by(expense_id=expense.id).delete()
+        db.session.delete(expense)
+        db.session.commit()
+        return jsonify({"message": "Expense deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error deleting expense", "details": str(e)}), 500
+
 
 @api.route('/invite', methods=['POST'])
 @jwt_required()
@@ -406,7 +526,7 @@ def send_invitation():
         """
 
         # 5. Enviar el correo
-        mail.send(msg)
+        current_app.extensions['mail'].send(msg)
 
         return jsonify({
             "msg": "Invitación guardada y correo enviado con éxito",
