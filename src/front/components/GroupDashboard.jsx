@@ -198,7 +198,7 @@ export const GroupDashboard = () => {
             <div className="row g-4 align-items-start">
                 <div className="col-12 col-lg-5 d-flex flex-column">
                     {/* The Balances / Settlements Board */}
-                    <div className="splitty-card dashboard-element h-100" style={{ maxWidth: "100%", padding: "2.5rem", boxShadow: "none", height: "100%" }}>
+                    <div className="splitty-card dashboard-element h-100" style={{ maxWidth: "100%", boxShadow: "none" }}>
                         <div className="p-0">
                             <h4 className="card-title fw-bold mb-4 splitty-gradient-text d-flex align-items-center">
                                 <i className="fa-solid fa-scale-balanced me-2 fs-5" style={{ color: "var(--color-base-orange)" }}></i> Settle Up
@@ -248,42 +248,41 @@ export const GroupDashboard = () => {
                 </div>  {/* end left col */}
 
                 <div className="col-12 col-lg-7 dashboard-element d-flex flex-column">
-                    <div className="splitty-card h-100" style={{ maxWidth: "100%", padding: "2.5rem", boxShadow: "none", height: "100%" }}>
+                    <div className="splitty-card h-100" style={{ maxWidth: "100%", boxShadow: "none" }}>
                         <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
                             <h4 className="card-title fw-bold mb-0 splitty-gradient-text d-flex align-items-center">
                                 <i className="fa-solid fa-receipt me-2 fs-5" style={{ color: "var(--color-base-orange)" }}></i> Shared Expenses
                             </h4>
-                            <button
-                                className="btn text-white px-4 d-flex align-items-center justify-content-center"
-                                onClick={() => {
-                                    setSelectedExpense(null);
-                                    setShowAddForm(!showAddForm);
-                                }}
-                                style={{
-                                    borderRadius: "12px",
-                                    background: showAddForm && !selectedExpense ? "rgba(255,255,255,0.08)" : "var(--splitty-gradient)",
-                                    color: showAddForm && !selectedExpense ? "var(--color-base-cream)" : "var(--color-base-light)",
-                                    border: showAddForm && !selectedExpense ? "1px solid rgba(255,255,255,0.1)" : "none",
-                                    fontSize: "0.85rem",
-                                    fontWeight: "600",
-                                    padding: "10px 18px",
-                                    boxShadow: "none",
-                                    transition: "all 0.3s ease"
-                                }}
-                                onMouseEnter={e => {
-                                    if (!(showAddForm && !selectedExpense)) {
+                            {!showAddForm && (
+                                <button
+                                    className="btn text-white px-4 d-flex align-items-center justify-content-center"
+                                    onClick={() => {
+                                        setSelectedExpense(null);
+                                        setShowAddForm(true);
+                                    }}
+                                    style={{
+                                        borderRadius: "12px",
+                                        background: "var(--splitty-gradient)",
+                                        color: "var(--color-base-light)",
+                                        fontSize: "0.85rem",
+                                        fontWeight: "600",
+                                        padding: "10px 18px",
+                                        boxShadow: "none",
+                                        transition: "all 0.3s ease"
+                                    }}
+                                    onMouseEnter={e => {
                                         e.currentTarget.style.boxShadow = "0 6px 15px rgba(187, 77, 0, 0.4)";
                                         e.currentTarget.style.transform = "translateY(-1px)";
-                                    }
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.boxShadow = "none";
-                                    e.currentTarget.style.transform = "translateY(0)";
-                                }}
-                            >
-                                <i className={`fa-solid ${showAddForm && !selectedExpense ? 'fa-xmark' : 'fa-plus'} me-2`}></i>
-                                {showAddForm && !selectedExpense ? "Cancel" : "Add Expense"}
-                            </button>
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.boxShadow = "none";
+                                        e.currentTarget.style.transform = "translateY(0)";
+                                    }}
+                                >
+                                    <i className="fa-solid fa-plus me-2"></i>
+                                    Add Expense
+                                </button>
+                            )}
                         </div>
 
                         {showAddForm ? (

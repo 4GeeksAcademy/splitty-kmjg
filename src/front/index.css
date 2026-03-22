@@ -442,6 +442,11 @@ li:hover .expense-edit-hint {
     align-items: flex-start; /* Start from top on mobile */
   }
 
+  /* Remove default blue tap highlight on iOS/Android */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   .container {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
@@ -470,9 +475,9 @@ li:hover .expense-edit-hint {
     padding: 16px; /* Larger touch target */
   }
 
-  /* Handle notched phones */
+  /* Handle notched phones and Bottom Dock overlap */
   body {
-    padding-bottom: env(safe-area-inset-bottom, 20px);
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));
   }
 }
 
