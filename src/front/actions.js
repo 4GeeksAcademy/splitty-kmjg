@@ -322,6 +322,10 @@ class Actions {
 
     return { success: false, error: "No se pudo generar el link" };
   };
+
+  
 }
+
+
 
 export default Actions;

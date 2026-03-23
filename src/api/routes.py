@@ -306,7 +306,7 @@ def accept_group_invitation():
     if existing_member:
         return jsonify({"message": "Ya eres miembro de este grupo"}), 200
     try:
-        # --3- AÑADIR EL USUARIO AL GRUPA
+        # --3- AÑADIR EL USUARIO AL GRUPO
         new_member = GroupMember(
             group_id=invitation.group_id,
             user_id=user_id
