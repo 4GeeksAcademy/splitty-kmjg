@@ -88,7 +88,8 @@ def login_user():
     return jsonify({
         "message": "Login correcto",
         "access_token": acces_token,
-        "username": user.username
+        "username": user.username,
+        "id": user.id
     }), 200
 
 @api.route('/logout', methods=['POST'])
@@ -184,6 +185,27 @@ def get_group_by_id(group_id):
         "members": members_with_user_info
     }), 200
 
+@api.route('/groups/<int:group_id>', methods=['DELETE'])
+@jwt_required()
+def delete_group(group_id):
+    user_id = int(get_jwt_identity())
+    
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Verificar que el usuario sea el creador del grupo
+    if group.created_by != user_id:
+        return jsonify({"error": "Only the creator of the group can delete it"}), 403
+
+    try:
+        db.session.delete(group)
+        db.session.commit()
+        return jsonify({"message": "Group deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Error deleting group", "details": str(e)}), 500
+
 # --- INVITACIONES (CORREGIDO) ---
 
 @api.route('/groups/<int:group_id>/invite-link', methods=['POST'])
@@ -212,9 +234,8 @@ def send_invitation(group_id):
 
         token = nueva_invitacion.token
 
-        # URL de tu frontend
-
-        url_aceptacion = f"https://silver-memory-pj57p55w575xc76g7-3000.app.github.dev/accept-invite?token={token}"
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        url_aceptacion = f"{frontend_url}/accept-invite?token={token}"
 
         # 2. SOLO si el usuario escribió un email, intentamos enviar el correo
 
@@ -249,8 +270,6 @@ def send_invitation(group_id):
                 </div>
                 </div>
             </div>
-
-    current_app.extensions['mail'].send(msg)
             """
             current_app.extensions['mail'].send(msg)
         # 3. Siempre respondemos con éxito (201) y el link,
@@ -508,8 +527,6 @@ def delete_expense(expense_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": "Error deleting expense", "details": str(e)}), 500
-
-
 
 # ===============================
 # RECEIPTS (SUBIR / ELIMINAR)

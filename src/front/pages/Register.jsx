@@ -79,22 +79,9 @@ export const Register = () => {
         background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
       }}
     >
-      <div
-        className="w-100"
-        style={{
-          maxWidth: "440px"
-        }}
-      >
-        <div
-          className="card border-0 shadow-lg"
-          style={{
-            borderRadius: "24px",
-            background: "var(--color-base-light)"
-          }}
-        >
-          <div className="card-body p-4 p-md-5">
+      <div className="splitty-card mx-auto">
             <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
-              <SplittyBrand2 width="50%" color="var(--color-base-dark)" contrast="var(--color-base-dark-orange)" />
+              <SplittyBrand2 width="50%" color="var(--color-base-light)" contrast="var(--color-base-dark-orange)" />
               <p
                 className="mb-0"
                 style={{
@@ -108,67 +95,52 @@ export const Register = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
+                <label className="splitty-label">
                   Username
                 </label>
                 <input
                   type="text"
-                  className="form-control border-0 shadow"
+                  className="splitty-input"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
                   placeholder="Enter your username"
                   required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: "var(--color-base-light)"
-                  }}
                 />
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
+                <label className="splitty-label">
                   Email
                 </label>
                 <input
                   type="email"
-                  className="form-control border-0 shadow"
+                  className="splitty-input"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
                   required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: "var(--color-base-light)"
-                  }}
                 />
               </div>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold" style={{ color: "var(--color-base-dark)" }}>
+                <label className="splitty-label">
                   Password
                 </label>
                 <input
                   type="password"
-                  className="form-control border-0 shadow"
+                  className="splitty-input"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Create a password"
                   required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: "var(--color-base-light)"
-                  }}
                 />
               </div>
 
               {/* Error message */}
-              {error && (
+              {error ? (
                 <div
                   key={shakeKey}
                   role="alert"
@@ -190,7 +162,7 @@ export const Register = () => {
                   </span>
                   <span>{error}</span>
                 </div>
-              )}
+              ) : null}
 
               <style>{`
                 @keyframes splitty-shake {
@@ -203,7 +175,7 @@ export const Register = () => {
                 }
               `}</style>
 
-              {success && (
+              {success ? (
                 <div
                   role="status"
                   className="d-flex align-items-center gap-2 mb-4"
@@ -223,7 +195,7 @@ export const Register = () => {
                   </span>
                   <span>{success}</span>
                 </div>
-              )}
+              ) : null}
 
               <button
                 type="submit"
@@ -243,7 +215,7 @@ export const Register = () => {
             </form>
 
             <div className="text-center mt-4">
-              <span style={{ color: "#7a6f67" }}>
+              <span style={{ color: "rgba(247, 245, 251, 0.7)" }}>
                 Already have an account?{" "}
               </span>
               <Link
@@ -254,8 +226,6 @@ export const Register = () => {
                 Login
               </Link>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   );

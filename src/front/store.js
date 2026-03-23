@@ -2,6 +2,7 @@ export const initialStore = () => {
   const token = localStorage.getItem("token");
   const email = localStorage.getItem("user_email");
   const username = localStorage.getItem("user_username");
+  const userId = localStorage.getItem("user_id");
   const ts = parseInt(localStorage.getItem("token_timestamp") || "0", 10);
   const now = Date.now();
 
@@ -18,12 +19,13 @@ export const initialStore = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_username");
+    localStorage.removeItem("user_id");
     localStorage.removeItem("token_timestamp");
     localStorage.removeItem("groups");
 
     return {
       jwt: null,
-      user: { email: null, username: null },
+      user: { id: null, email: null, username: null },
       groups: [],
     };
   }
@@ -31,6 +33,7 @@ export const initialStore = () => {
   return {
     jwt: token || null,
     user: {
+      id: userId ? parseInt(userId, 10) : null,
       email: email || null,
       username: username || null,
     },
@@ -59,6 +62,7 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         user: {
+          id: null,
           email: null,
           username: null,
         },

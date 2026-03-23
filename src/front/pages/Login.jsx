@@ -58,22 +58,9 @@ export const Login = () => {
         background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
       }}
     >
-      <div
-        className="w-100"
-        style={{
-          maxWidth: "440px"
-        }}
-      >
-        <div
-          className="card border-0 shadow-lg"
-          style={{
-            borderRadius: "24px",
-            background: "#f8f5f2"
-          }}
-        >
-          <div className="card-body p-4 p-md-5">
+      <div className="splitty-card mx-auto">
             <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
-              <SplittyBrand2 width="50%" color="var(--color-base-dark)" contrast="var(--color-base-dark-orange)" />
+              <SplittyBrand2 width="50%" color="var(--color-base-light)" contrast="var(--color-base-dark-orange)" />
               <p
                 className="mb-0"
                 style={{
@@ -88,47 +75,35 @@ export const Login = () => {
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label
-                  className="form-label fw-semibold"
-                  style={{ color: "var(--color-base-dark)" }}
+                  className="splitty-label"
                 >
                   Email
                 </label>
                 <input
                   type="email"
-                  className="form-control border-0 shadow-sm"
+                  className="splitty-input"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="Enter your email"
                   required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: "var(--color-base-light)"
-                  }}
                 />
               </div>
 
               <div className="mb-2">
                 <label
-                  className="form-label fw-semibold"
-                  style={{ color: "var(--color-base-dark)" }}
+                  className="splitty-label"
                 >
                   Password
                 </label>
                 <input
                   type="password"
-                  className="form-control border-0 shadow-sm"
+                  className="splitty-input"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
-                  style={{
-                    height: "50px",
-                    borderRadius: "14px",
-                    backgroundColor: "var(--color-base-light)"
-                  }}
                 />
               </div>
 
@@ -146,7 +121,7 @@ export const Login = () => {
                 </button>
               </div>
 
-              {error && (
+              {error ? (
                 <div
                   key={shakeKey}
                   role="alert"
@@ -168,7 +143,7 @@ export const Login = () => {
                   </span>
                   <span>{error}</span>
                 </div>
-              )}
+              ) : null}
 
               <style>{`
                 @keyframes splitty-shake {
@@ -199,7 +174,7 @@ export const Login = () => {
             </form>
 
             <div className="text-center mt-4">
-              <span style={{ color: "#7a6f67" }}>
+              <span style={{ color: "rgba(247, 245, 251, 0.7)" }}>
                 Don’t have an account?{" "}
               </span>
               <Link
@@ -210,8 +185,6 @@ export const Login = () => {
                 Sign up
               </Link>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   );

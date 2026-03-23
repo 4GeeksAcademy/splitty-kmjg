@@ -94,15 +94,18 @@ html {
 
 .splitty-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 28px;
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   color: var(--color-base-light);
 }
 
@@ -305,6 +308,8 @@ body::-webkit-scrollbar-thumb:hover {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   z-index: 10;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .splitty-back-btn:hover {
@@ -312,11 +317,14 @@ body::-webkit-scrollbar-thumb:hover {
   color: var(--color-base-light);
   border-color: var(--color-base-dark-orange);
   transform: translateY(-50%) translateX(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .splitty-back-btn:active {
   transform: translateY(-50%) translateX(-1px) scale(0.95);
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 @media (max-width: 768px) {
@@ -364,13 +372,35 @@ body::-webkit-scrollbar-thumb:hover {
 
 /* --- CARDS & UTILITIES --- */
 .group-card, .stat-card {
-  transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
 }
 
 .group-card:hover, .stat-card:hover {
-  transform: translateY(-8px) !important;
+  transform: translateY(-8px) scale(1.02) !important;
   border-color: var(--color-base-dark-orange) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%) !important;
+  box-shadow: 0 12px 24px -10px rgba(252, 164, 52, 0.4) !important;
+}
+
+.expense-edit-hint {
+  opacity: 0.6 !important;
+}
+
+li:hover .expense-edit-hint {
+  opacity: 1 !important;
+  color: var(--color-base-orange) !important;
+}
+
+.dashboard-element {
+  will-change: transform, opacity;
 }
 
 .splitty-btn-sm {
@@ -412,6 +442,11 @@ body::-webkit-scrollbar-thumb:hover {
     align-items: flex-start; /* Start from top on mobile */
   }
 
+  /* Remove default blue tap highlight on iOS/Android */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   .container {
     padding-left: 1.25rem;
     padding-right: 1.25rem;
@@ -440,9 +475,9 @@ body::-webkit-scrollbar-thumb:hover {
     padding: 16px; /* Larger touch target */
   }
 
-  /* Handle notched phones */
+  /* Handle notched phones and Bottom Dock overlap */
   body {
-    padding-bottom: env(safe-area-inset-bottom, 20px);
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 20px));
   }
 }
 
@@ -465,4 +500,16 @@ input:-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 50px #FFE7CD inset !important;
     -webkit-text-fill-color: var(--color-base-dark) !important;
     transition: background-color 5000s ease-in-out 0s;
+}
+
+/* --- SKELETON LOADING --- */
+.skeleton-box {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }

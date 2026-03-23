@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import { Loading } from "./Loading";
+import { SkeletonDashboard } from "./SkeletonDashboard";
 import { AddExpenseForm } from "./AddExpenseForm";
 import InviteModal from "./InviteModal";
+import DeleteGroupModal from "./DeleteGroupModal";
+import DeleteExpenseModal from "./DeleteExpenseModal";
 import gsap from "gsap";
-import { color } from "motion";
 
 export const GroupDashboard = () => {
     const { id } = useParams();
@@ -17,10 +18,12 @@ export const GroupDashboard = () => {
     const [showAddForm, setShowAddForm] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState(null);
     const [showInviteModal, setShowInviteModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [expenseToDelete, setExpenseToDelete] = useState(null);
     const initialAnimation = useRef(false);
 
     // Current logged in user ID to format messages
-    const currentUserId = store.user?.id || -1; 
+    const currentUserId = React.useMemo(() => store.user?.id || -1, [store.user?.id]); 
 
     const loadDashboardData = async () => {
         setLoading(true);
@@ -38,6 +41,12 @@ export const GroupDashboard = () => {
         loadDashboardData();
     }, [id]);
 
+    // vercel-react-best-practices: use useCallback for event handlers
+    const handleDeleteExpenseClick = React.useCallback((e, expenseId) => {
+        e.stopPropagation();
+        setExpenseToDelete(expenseId);
+    }, []);
+
     useEffect(() => {
         if (!loading && data && !initialAnimation.current) {
             gsap.fromTo(".dashboard-element", 
@@ -48,9 +57,16 @@ export const GroupDashboard = () => {
         }
     }, [loading, data]);
 
-    if (loading) return <Loading />;
+    // vercel-react-best-practices: memoize derived data (rerender-memo)
+    // Hook must be called at the top level, before early returns
+    const groupMembersArray = React.useMemo(() => {
+        if (!data || !data.users) return [];
+        return Object.values(data.users);
+    }, [data]);
+
+    if (loading) return <SkeletonDashboard />;
     if (error) return (
-        <div className="container mt-5 text-center">
+        <div className="container mt-5 text-center dashboard-element">
             <h2 className="splitty-gradient-text fw-bold">Error</h2>
             <p className="mb-4" style={{ color: "var(--color-base-cream)" }}>{error}</p>
             <button className="splitty-btn" style={{ maxWidth: "200px" }} onClick={() => navigate("/")}>
@@ -60,54 +76,132 @@ export const GroupDashboard = () => {
     );
 
     const { personal_balances, settlements, users, expenses = [] } = data;
-    const groupMembersArray = Object.values(users);
+
+    const currentGroup = store.groups?.find(g => g.id.toString() === id.toString());
+    const groupName = currentGroup?.name || "the group";
+    const groupCreatorId = currentGroup?.created_by;
+    const isCreator = store.user?.id === groupCreatorId;
 
     return (
         <div className="container py-4 dashboard-element">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-                <div className="d-flex gap-2 w-100 w-md-auto">
-                    {/* Fix #2: Back button now has an orange-tinted glass style */}
+            {/* Header Section */}
+            <div className="d-flex flex-column flex-md-row align-items-center justify-content-between gap-4 mb-5">
+                {/* Left Side: Navigation & Primary Actions */}
+                <div className="d-flex align-items-center gap-3 order-2 order-md-1" style={{ flex: "1 0 0%" }}>
                     <button
-                        className="btn text-white border-0 shadow-sm flex-grow-1 flex-md-grow-0"
+                        className="btn text-white d-flex align-items-center justify-content-center"
                         onClick={() => navigate("/")}
                         style={{
-                            borderRadius: "12px",
-                            background: "rgba(187, 77, 0, 0.12)",
-                            border: "1px solid rgba(187, 77, 0, 0.35)",
-                            fontSize: "0.9rem",
-                            padding: "12px 20px",
-                            color: "var(--color-base-cream)"
+                            height: "46px",
+                            borderRadius: "14px",
+                            background: "rgba(255, 255, 255, 0.05)",
+                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            backdropFilter: "blur(12px)",
+                            fontSize: "0.95rem",
+                            fontWeight: "500",
+                            padding: "0 24px",
+                            color: "var(--color-base-cream)",
+                            transition: "all 0.3s ease",
+                            minWidth: "110px",
+                            whiteSpace: "nowrap"
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
                         }}
                     >
                         <i className="fa-solid fa-arrow-left me-2"></i> Back
                     </button>
+                    
                     <button 
-                        className="btn text-white border-0 shadow-sm px-4 flex-grow-1 flex-md-grow-0" 
+                        className="btn text-white border-0 d-flex align-items-center justify-content-center shadow-sm" 
                         onClick={() => setShowInviteModal(true)} 
                         style={{ 
+                            height: "46px",
                             borderRadius: "14px", 
                             background: "var(--splitty-gradient)", 
-                            fontSize: "0.9rem",
+                            fontSize: "0.95rem",
                             fontWeight: "600",
-                            boxShadow: "0 8px 20px -8px rgba(187, 77, 0, 0.6)",
                             transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
-                            padding: "12px 20px"
+                            padding: "0 24px",
+                            minWidth: "160px",
+                            whiteSpace: "nowrap"
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.transform = "translateY(-2px)";
+                            e.currentTarget.style.boxShadow = "0 8px 15px rgba(187, 77, 0, 0.4)";
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "none";
                         }}
                     >
                         <i className="fa-solid fa-user-plus me-2"></i> Invite Friend
                     </button>
+                    {isCreator && (
+                        <button 
+                            className="btn d-flex align-items-center justify-content-center" 
+                            onClick={() => setShowDeleteModal(true)} 
+                            style={{ 
+                                height: "46px",
+                                width: "46px",
+                                borderRadius: "14px", 
+                                background: "rgba(147, 0, 10, 0.15)",
+                                border: "1px solid rgba(147, 0, 10, 0.3)",
+                                color: "white",
+                                fontSize: "0.95rem",
+                                fontWeight: "600",
+                                transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)",
+                                padding: "0",
+                                minWidth: "46px",
+                                boxShadow: "none"
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+                                e.currentTarget.style.background = "linear-gradient(135deg, #93000a, #690005)";
+                                e.currentTarget.style.boxShadow = "0 8px 16px rgba(147, 0, 10, 0.4)";
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.transform = "translateY(0) scale(1)";
+                                e.currentTarget.style.background = "rgba(147, 0, 10, 0.15)";
+                                e.currentTarget.style.boxShadow = "none";
+                            }}
+                            title="Delete Group"
+                        >
+                            <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                    )}
                 </div>
-                {/* Fix #1: Title always left-aligned for consistency */}
-                <h1 className="fw-bold mb-0 splitty-gradient-text w-100" style={{ fontSize: "clamp(1.5rem, 4vw, 2.2rem)" }}>Group Dashboard</h1>
+
+                {/* Center: Title */}
+                <div className="order-1 order-md-2 text-center" style={{ flex: "2 0 0%" }}>
+                    <h1 className="fw-bold mb-0 splitty-gradient-text" style={{ fontSize: "clamp(1.8rem, 5vw, 2.8rem)", letterSpacing: "-1px" }}>
+                        Group Dashboard
+                    </h1>
+                </div>
+
+                {/* Right Side: User Profile / Space Balance */}
+                <div className="d-none d-md-flex align-items-center justify-content-end order-3" style={{ flex: "1 0 0%" }}>
+                    {store.user && (
+                        <div className="d-flex align-items-center p-2 px-3 rounded-pill" style={{ background: "rgba(252, 164, 52, 0.1)", border: "1px solid rgba(252, 164, 52, 0.2)" }}>
+                            <i className="fa-solid fa-circle-user me-2" style={{ color: "var(--color-base-orange)" }}></i>
+                            <span className="fw-semibold" style={{ color: "var(--color-base-cream)", fontSize: "0.9rem" }}>{store.user.username}</span>
+                        </div>
+                    )}
+                </div>
             </div>
 
-            <div className="row g-4">
-                <div className="col-12 col-md-5">
+            <div className="row g-4 align-items-start">
+                <div className="col-12 col-lg-5 d-flex flex-column">
                     {/* The Balances / Settlements Board */}
-                    <div className="splitty-card dashboard-element p-4" style={{ maxWidth: "100%", padding: "2rem" }}>
+                    <div className="splitty-card dashboard-element h-100" style={{ maxWidth: "100%", boxShadow: "none" }}>
                         <div className="p-0">
                             <h4 className="card-title fw-bold mb-4 splitty-gradient-text d-flex align-items-center">
-                                <i className="fa-solid fa-scale-balanced me-2 text-warning fs-5"></i> Settle Up (Optimal Path)
+                                <i className="fa-solid fa-scale-balanced me-2 fs-5" style={{ color: "var(--color-base-orange)" }}></i> Settle Up
                             </h4>
                             
                             {settlements.length === 0 ? (
@@ -140,7 +234,7 @@ export const GroupDashboard = () => {
                                                     <span className="mx-2" style={{ color: "#a19b95", fontSize: "0.9rem" }}>owes</span>
                                                     <strong style={{ color: "var(--color-base-cream)" }}>{toUser}</strong>
                                                 </div>
-                                                <span className="badge rounded-pill fs-6 fw-bold shadow-sm" style={{ background: "var(--splitty-gradient)", color: "var(--color-base-light)" }}>
+                                                <span className="badge rounded-pill fs-6 fw-bold" style={{ background: "var(--splitty-gradient)", color: "var(--color-base-light)", boxShadow: "none" }}>
                                                     ${tx.amount.toFixed(2)}
                                                 </span>
                                             </li>
@@ -153,48 +247,64 @@ export const GroupDashboard = () => {
 
                 </div>  {/* end left col */}
 
-                <div className="col-12 col-md-7 dashboard-element">
-                    {/* Fix #3 & #7: Add New Expense button lives in the right column, adjacent to what it controls */}
-                    <div className="mb-3">
-                        <button
-                            className="splitty-btn w-100 py-3"
-                            onClick={() => {
-                                setSelectedExpense(null);
-                                setShowAddForm(!showAddForm);
-                            }}
-                            style={{
-                                background: showAddForm && !selectedExpense ? "rgba(255,255,255,0.1)" : "var(--splitty-gradient)",
-                                color: showAddForm && !selectedExpense ? "var(--color-base-cream)" : "var(--color-base-light)",
-                                boxShadow: showAddForm && !selectedExpense ? "none" : "inherit"
-                            }}
-                        >
-                            <i className={`fa-solid ${showAddForm && !selectedExpense ? 'fa-xmark' : 'fa-receipt'} me-2`}></i>
-                            {showAddForm && !selectedExpense ? "Cancel" : "Add New Expense"}
-                        </button>
-                    </div>
-
-                    {showAddForm ? (
-                        <AddExpenseForm
-                            groupId={id}
-                            groupMembers={groupMembersArray}
-                            expenseToEdit={selectedExpense}
-                            onSuccess={() => {
-                                setShowAddForm(false);
-                                setSelectedExpense(null);
-                                loadDashboardData();
-                            }}
-                            onCancel={() => {
-                                setShowAddForm(false);
-                                setSelectedExpense(null);
-                            }}
-                        />
-                    ) : (
-                        <div className="splitty-card" style={{ maxWidth: "100%", padding: "2rem" }}>
-                            <h4 className="card-title fw-bold mb-4 splitty-gradient-text d-flex align-items-center">
-                                <i className="fa-solid fa-receipt me-2 text-warning fs-5"></i> Shared Expenses
+                <div className="col-12 col-lg-7 dashboard-element d-flex flex-column">
+                    <div className="splitty-card h-100" style={{ maxWidth: "100%", boxShadow: "none" }}>
+                        <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+                            <h4 className="card-title fw-bold mb-0 splitty-gradient-text d-flex align-items-center">
+                                <i className="fa-solid fa-receipt me-2 fs-5" style={{ color: "var(--color-base-orange)" }}></i> Shared Expenses
                             </h4>
+                            {!showAddForm && (
+                                <button
+                                    className="btn text-white px-4 d-flex align-items-center justify-content-center"
+                                    onClick={() => {
+                                        setSelectedExpense(null);
+                                        setShowAddForm(true);
+                                    }}
+                                    style={{
+                                        borderRadius: "12px",
+                                        background: "var(--splitty-gradient)",
+                                        color: "var(--color-base-light)",
+                                        fontSize: "0.85rem",
+                                        fontWeight: "600",
+                                        padding: "10px 18px",
+                                        boxShadow: "none",
+                                        transition: "all 0.3s ease"
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.boxShadow = "0 6px 15px rgba(187, 77, 0, 0.4)";
+                                        e.currentTarget.style.transform = "translateY(-1px)";
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.boxShadow = "none";
+                                        e.currentTarget.style.transform = "translateY(0)";
+                                    }}
+                                >
+                                    <i className="fa-solid fa-plus me-2"></i>
+                                    Add Expense
+                                </button>
+                            )}
+                        </div>
 
-                            {expenses.length === 0 ? (
+                        {showAddForm ? (
+                            <div className="mt-2">
+                                <AddExpenseForm
+                                    groupId={id}
+                                    groupMembers={groupMembersArray}
+                                    expenseToEdit={selectedExpense}
+                                    onSuccess={() => {
+                                        setShowAddForm(false);
+                                        setSelectedExpense(null);
+                                        loadDashboardData();
+                                    }}
+                                    onCancel={() => {
+                                        setShowAddForm(false);
+                                        setSelectedExpense(null);
+                                    }}
+                                />
+                            </div>
+                        ) : (
+                            <div className="expense-list-container">
+                                {expenses.length === 0 ? (
                                 <div className="text-center py-5 d-flex flex-column align-items-center">
                                     <i className="fa-solid fa-file-invoice-dollar mb-3" style={{ fontSize: "3.5rem", opacity: 0.25, color: "#FCA434" }}></i>
                                     <p className="fw-semibold mb-1" style={{ color: "#FFE7CD", opacity: 0.7 }}>No expenses yet</p>
@@ -220,90 +330,123 @@ export const GroupDashboard = () => {
                                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                                 }}
                                                 style={{
-                                                    background: "rgba(255,255,255,0.04)",
-                                                    border: "1px solid rgba(187, 77, 0, 0.25)",
+                                                    background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+                                                    border: "1px solid rgba(255, 255, 255, 0.08)",
                                                     borderRadius: "16px",
-                                                    padding: "1rem 1.25rem",
-                                                    backdropFilter: "blur(8px)",
+                                                    padding: "1.25rem 1.5rem",
+                                                    backdropFilter: "blur(12px)",
                                                     cursor: "pointer",
-                                                    transition: "transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28), box-shadow 0.2s ease"
+                                                    transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"
                                                 }}
                                                 onMouseEnter={e => {
                                                     e.currentTarget.style.transform = "translateY(-4px)";
-                                                    e.currentTarget.style.boxShadow = "0 10px 25px -10px rgba(187, 77, 0, 0.5)";
+                                                    e.currentTarget.style.boxShadow = "0 12px 24px -10px rgba(252, 164, 52, 0.4)";
                                                     e.currentTarget.style.borderColor = "var(--color-base-dark-orange)";
+                                                    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)";
                                                 }}
                                                 onMouseLeave={e => {
                                                     e.currentTarget.style.transform = "translateY(0)";
                                                     e.currentTarget.style.boxShadow = "none";
-                                                    e.currentTarget.style.borderColor = "rgba(187, 77, 0, 0.25)";
+                                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
+                                                    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)";
                                                 }}
                                             >
                                                 <div className="d-flex justify-content-between align-items-start gap-2">
                                                     {/* Left: icon + title + meta */}
                                                     <div className="d-flex gap-3 align-items-center" style={{ minWidth: 0 }}>
                                                         <div style={{
-                                                            width: "44px", height: "44px", flexShrink: 0,
-                                                            borderRadius: "12px",
-                                                            background: "var(--splitty-gradient)",
-                                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                                            boxShadow: "0 4px 12px -4px rgba(187, 77, 0, 0.5)"
+                                                            width: "48px", height: "48px", flexShrink: 0,
+                                                            borderRadius: "14px",
+                                                            background: "rgba(252, 164, 52, 0.15)",
+                                                            border: "1px solid rgba(252, 164, 52, 0.3)",
+                                                            display: "flex", alignItems: "center", justifyContent: "center"
                                                         }}>
-                                                            <i className="fa-solid fa-coins" style={{ color: "#FFE7CD", fontSize: "1.1rem" }}></i>
+                                                            <i className="fa-solid fa-coins" style={{ color: "var(--color-base-dark-orange)", fontSize: "1.2rem" }}></i>
                                                         </div>
                                                         <div style={{ minWidth: 0 }}>
-                                                            <p className="mb-0 fw-bold text-truncate" style={{ color: "#FFE7CD", fontSize: "0.95rem" }}>
+                                                            <p className="mb-0 fw-bold text-truncate" style={{ color: "var(--color-base-cream)", fontSize: "1.05rem", letterSpacing: "0.3px" }}>
                                                                 {exp.description || exp.title || "Expense"}
                                                             </p>
                                                             <div className="d-flex gap-2 flex-wrap mt-1">
-                                                                <small style={{ color: "#a19b95" }}>
-                                                                    <i className="fa-solid fa-user me-1" style={{ color: "#FF9F61" }}></i>
-                                                                    <span style={{ color: "#FF9F61" }}>{payerName}</span> paid
+                                                                <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
+                                                                    <i className="fa-solid fa-user me-1" style={{ color: "var(--color-base-light-coral)" }}></i>
+                                                                    <span style={{ color: "var(--color-base-light-coral)", fontWeight: "500" }}>{payerName}</span> paid
                                                                 </small>
                                                                 {dateStr && (
-                                                                    <small style={{ color: "#a19b95" }}>
+                                                                    <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
                                                                         <i className="fa-regular fa-calendar me-1"></i>{dateStr}
                                                                     </small>
                                                                 )}
-                                                                <small style={{ color: "#a19b95" }}>
+                                                                <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
                                                                     <i className="fa-solid fa-users-line me-1"></i>{splitCount} people
                                                                 </small>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     {/* Right: amount badge */}
-                                                    <div className="text-end flex-shrink-0 d-flex flex-column align-items-end gap-1">
-                                                        <span
-                                                            className="badge rounded-pill fs-6 fw-bold"
-                                                            style={{
-                                                                background: "var(--splitty-gradient)",
-                                                                color: "white",
-                                                                padding: "6px 14px",
-                                                                boxShadow: "0 4px 12px -4px rgba(187, 77, 0, 0.5)"
-                                                            }}
-                                                        >
-                                                            ${parseFloat(exp.amount || 0).toFixed(2)}
-                                                        </span>
-                                                        <small style={{ color: "#BB6D2D", fontSize: "0.7rem", fontWeight: "600", opacity: 0.8, marginTop: "0.7rem"}}>
-                                                            <i className="fa-solid fa-pen-to-square me-1"></i>Edit
-                                                        </small>
-                                                    </div>
+                                                        <div className="text-end flex-shrink-0 d-flex flex-column align-items-end gap-1">
+                                                            <span
+                                                                className="badge rounded-pill fw-bold"
+                                                                style={{
+                                                                    background: "rgba(252, 164, 52, 0.15)",
+                                                                    color: "var(--color-base-cream)",
+                                                                    border: "1px solid rgba(252, 164, 52, 0.3)",
+                                                                    padding: "8px 16px",
+                                                                    fontSize: "0.95rem"
+                                                                }}
+                                                            >
+                                                                ${parseFloat(exp.amount || 0).toFixed(2)}
+                                                            </span>
+                                                            <div className="d-flex gap-2 mt-2">
+                                                                <small 
+                                                                    onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
+                                                                    style={{ color: "#cc0000", fontSize: "0.75rem", fontWeight: "700", opacity: 0.9, transition: "all 0.3s ease" }} 
+                                                                    className="expense-action-btn"
+                                                                >
+                                                                    <i className="fa-solid fa-trash-can me-1"></i>Delete
+                                                                </small>
+                                                                <small style={{ color: "var(--color-base-orange)", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, transition: "all 0.2s" }} className="expense-action-btn">
+                                                                    <i className="fa-solid fa-pen-to-square me-1"></i>Edit
+                                                                </small>
+                                                            </div>
+                                                        </div>
                                                 </div>
                                             </li>
                                         );
                                     })}
                                 </ul>
-                            )}
-                        </div>
-                    )}
+                                )}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            {showInviteModal && (
+            {showInviteModal ? (
                 <InviteModal 
                     groupId={id} 
-                    groupName={store.groups.find(g => g.id.toString() === id.toString())?.name || "the group"} 
+                    groupName={groupName} 
                     onClose={() => setShowInviteModal(false)} 
+                />
+            ) : null}
+
+            {showDeleteModal ? (
+                <DeleteGroupModal 
+                    groupId={id} 
+                    groupName={groupName} 
+                    groupCreatorId={groupCreatorId}
+                    onClose={() => setShowDeleteModal(false)} 
+                />
+            ) : null}
+
+            {expenseToDelete && (
+                <DeleteExpenseModal
+                    expenseId={expenseToDelete}
+                    onClose={() => setExpenseToDelete(null)}
+                    onConfirm={() => {
+                        setExpenseToDelete(null);
+                        loadDashboardData();
+                    }}
                 />
             )}
         </div>
