@@ -287,7 +287,7 @@ def accept_group_invitation():
     if existing_member:
         return jsonify({"message": "Ya eres miembro de este grupo"}), 200
     try:
-        # --3- AÑADIR EL USUARIO AL GRUPA
+        # --3- AÑADIR EL USUARIO AL GRUPO
         new_member = GroupMember(
             group_id=invitation.group_id,
             user_id=user_id
@@ -509,72 +509,6 @@ def delete_expense(expense_id):
         db.session.rollback()
         return jsonify({"error": "Error deleting expense", "details": str(e)}), 500
 
-
-@api.route('/invite', methods=['POST'])
-@jwt_required()
-def send_invitation():
-    body = request.get_json()
-    email_destinatario = body.get("email")
-    group_id = body.get("group_id")
-    
-    # 1. Validaciones básicas
-    if not email_destinatario or not group_id:
-        return jsonify({"msg": "Missing data (email or group_id)"}), 400
-
-    # 2. Verificar que el grupo existe
-    group = Group.query.get(group_id)
-    if not group:
-        return jsonify({"msg": "Group not found"}), 404
-
-    try:
-        # 3. Guardar la invitación en la DB (esto genera el UUID automáticamente)
-        nueva_invitacion = Invitation(
-            email=email_destinatario,
-            group_id=group_id
-        )
-        db.session.add(nueva_invitacion)
-        db.session.commit()
-
-        # 4. Configurar el contenido del correo
-        # El token se genera gracias al 'default=lambda: str(uuid.uuid4())' de tu modelo
-        token = nueva_invitacion.token
-        
-        # URL de tu frontend (ajusta según tu entorno de Codespaces o producción)
-        url_aceptacion = f"https://fluffy-guacamole-v6jpqjjr7xw93wg4v-3000.app.github.dev/accept-invite?token={token}"
-
-        msg = Message(
-            subject=f"¡Te han invitado al grupo {group.name} en Splitty!",
-            recipients=[email_destinatario]
-        )
-        
-        # Cuerpo del correo en HTML para que se vea bien
-        msg.html = f"""
-            <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-                <h2 style="color: #2D3E50;">¡Hola!</h2>
-                <p>Tu amigo te ha invitado a unirse al grupo <strong>{group.name}</strong> para gestionar gastos juntos.</p>
-                <p>Haz clic en el siguiente botón para aceptar la invitación:</p>
-                <a href="{url_aceptacion}" 
-                   style="display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px;">
-                   Unirme al grupo
-                </a>
-                <p style="margin-top: 20px; font-size: 0.8em; color: #777;">
-                    Si no esperabas esta invitación, puedes ignorar este correo.
-                </p>
-            </div>
-        """
-
-        # 5. Enviar el correo
-        current_app.extensions['mail'].send(msg)
-
-        return jsonify({
-            "msg": "Invitación guardada y correo enviado con éxito",
-            "invitation_id": nueva_invitacion.id
-        }), 201
-
-    except Exception as e:
-        # Si algo falla, hacemos rollback para no dejar invitaciones huérfanas
-        db.session.rollback()
-        return jsonify({"msg": "Error processing invitation", "error": str(e)}), 500
 
 
 # ===============================
