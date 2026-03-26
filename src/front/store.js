@@ -1,8 +1,16 @@
 export const initialStore = () => {
-  const token = localStorage.getItem("token");
-  const email = localStorage.getItem("user_email");
-  const username = localStorage.getItem("user_username");
-  const userId = localStorage.getItem("user_id");
+  let token = localStorage.getItem("token");
+  if (token === "undefined" || token === "null") token = null;
+  
+  let email = localStorage.getItem("user_email");
+  if (email === "undefined" || email === "null") email = null;
+  
+  let username = localStorage.getItem("user_username");
+  if (username === "undefined" || username === "null") username = null;
+  
+  let userId = localStorage.getItem("user_id");
+  if (userId === "undefined" || userId === "null") userId = null;
+  
   const ts = parseInt(localStorage.getItem("token_timestamp") || "0", 10);
   const now = Date.now();
 
