@@ -12,6 +12,7 @@ import { Register } from "./pages/Register";
 import CreateGroupForm from "./components/CreateGroupForm";
 import GroupDashboard from "./components/GroupDashboard";
 import { AcceptInvite } from "./components/AcceptInvite";
+import { PrivateRoute } from "./components/PrivateRoute";
 
 // 1. Creamos un componente para atrapar los fallos de código (crashes)
 const RootErrorBoundary = () => {
@@ -38,10 +39,18 @@ export const router = createBrowserRouter(
             {/* Auth */}
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
-            <Route path="/create-group" element={<CreateGroupForm />} />
+            <Route path="/create-group" element={
+                <PrivateRoute>
+                    <CreateGroupForm />
+                </PrivateRoute>
+            } />
             
             {/* Group Dashboard */}
-            <Route path="/group/:id" element={<GroupDashboard />} />
+            <Route path="/group/:id" element={
+                <PrivateRoute>
+                    <GroupDashboard />
+                </PrivateRoute>
+            } />
 
             {/* Invitation Support */}
             <Route path="/accept-invite" element={<AcceptInvite />} />
