@@ -11,18 +11,62 @@
   color-scheme: dark;
 }
 
+::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+::-webkit-input-placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+::-moz-placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+.splitty-input-search::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+  font-weight: 500;
+}
+
+.splitty-input-search:hover {
+  border-color: var(--color-base-dark-orange) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.splitty-input-search:focus {
+  border-color: var(--color-base-dark-orange) !important;
+  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  outline: none !important;
+}
+
 html {
     scrollbar-gutter: stable;
+    overflow-x: hidden;
+    max-width: 100vw;
 }
 
 body,
 html {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%);
+  background-attachment: fixed;
   font-family: 'Outfit', sans-serif;
   color: var(--color-base-light);
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent; 
   scrollbar-width: thin;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* --- CUT TEXT ANIMATION (HOME) --- */
@@ -97,10 +141,7 @@ html {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  border-left: 1px solid rgba(255, 255, 255, 0.15);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--color-base-dark-orange);
   border-radius: 28px;
   padding: 2.5rem 2rem;
   width: 100%;
@@ -131,38 +172,42 @@ html {
 
 .splitty-label {
   display: block;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: rgba(247, 245, 251, 0.8);
-  letter-spacing: 0.5px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.3px;
 }
 
 /* Inputs and Selects */
 .splitty-input {
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
   border: 1px solid var(--color-base-dark-orange) !important;
-  border-radius: 14px;
-  padding: 14px 40px 14px 18px; /* Extra right padding for the arrow */
+  border-radius: 12px;
+  padding: 14px 18px; 
   font-size: 1rem;
   color: var(--color-base-light);
-  cursor: pointer;
+  cursor: text;
   transition: all 0.3s ease;
   outline: none;
   background-image: none !important; /* Remove Bootstrap's default arrow */
-  margin-bottom: 1.25rem;
+}
+
+select.splitty-input {
+  padding-right: 40px;
+  cursor: pointer;
 }
 
 .splitty-input:hover {
-  border-color: rgba(199, 106, 42, 0.5);
-  background-color: rgba(255, 255, 255, 0.02);
+  border-color: rgba(187, 77, 0, 0.5) !important;
+  background-color: rgba(0, 0, 0, 0.3) !important;
 }
 
 .splitty-input:focus {
-  border-color: var(--color-base-dark-orange);
-  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.2);
-  background-color: rgba(0, 0, 0, 0.3);
+  border-color: var(--color-base-dark-orange) !important;
+  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.25) !important;
+  background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
 /* Custom arrow for the container */

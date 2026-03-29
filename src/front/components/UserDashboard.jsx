@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { GroupList } from "./GroupsList.jsx";
@@ -8,16 +8,29 @@ import CountUp from "./bits/CountUp.jsx";
 
 export const UserDashboard = () => {
     const { store, actions } = useGlobalReducer();
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Load groups on mount
         actions.loadUserGroups();
+        // Load friends data
+        actions.loadFriends();
+        actions.loadPendingRequests();
+        actions.loadFriendDebts();
+
+        // Check for pending friend invitation token (from accept-friend flow)
+        const pendingToken = sessionStorage.getItem("pending_friend_token");
+        if (pendingToken) {
+            navigate(`/accept-friend?token=${pendingToken}`);
+        }
     }, []);
 
     const totalGroups = store.groups?.length || 0;
+    const totalFriends = store.friends?.length || 0;
+    const netBalance = store.friendDebts?.net_balance || 0;
 
     return (
-        <div className="min-vh-100 py-5" style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #151515 100%)" }}>
+        <div className="py-5">
             <div className="container mt-5">
 
                 {/* Header Section */}
@@ -57,19 +70,52 @@ export const UserDashboard = () => {
                             </div>
 
                             {/* Card: Overall Balance */}
-                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={{ ...statCardStyle, cursor: "pointer" }}
+                                onClick={() => navigate("/debts")}>
                                 <small style={statLabelStyle}>Overall Balance</small>
-                                <h2 className="fw-bold mb-0 mt-2" style={{ color: "#4ade80" }}>$0.00</h2>
+                                <h2 className="fw-bold mb-0 mt-2" style={{ color: netBalance >= 0 ? "#4ade80" : "#f87171" }}>
+                                    {netBalance >= 0 ? "+" : "-"}$<CountUp from={0} to={Math.abs(netBalance)} duration={0.8} decimals={2} />
+                                </h2>
+                                {store.friendDebts && (
+                                    <small style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
+                                        {netBalance >= 0 ? "You're ahead" : "You owe more"} • Tap to view
+                                    </small>
+                                )}
                             </div>
 
-                            {/* Card: Friends/Network */}
-                            <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
-                                <small style={statLabelStyle}>Friends</small>
-                                <div className="mt-2">
-                                    <span style={{ color: "var(--color-base-light)", fontSize: "0.9rem", opacity: 0.8 }}>
-                                        No friends yet
-                                    </span>
+                            {/* Card: Friends */}
+                            <div className="p-3 p-md-4 flex-fill stat-card" style={{ ...statCardStyle, cursor: "pointer" }}
+                                onClick={() => navigate("/friends")}>
+                                <div className="d-flex justify-content-between align-items-start">
+                                    <small style={statLabelStyle}>Friends</small>
+                                    <i className="fas fa-arrow-right" style={{
+                                        color: "var(--color-base-dark-orange)",
+                                        fontSize: "0.85rem",
+                                        opacity: 0.7,
+                                        transition: "transform 0.2s ease, opacity 0.2s ease"
+                                    }}></i>
                                 </div>
+                                <h2 className="fw-bold mb-0 text-white mt-2">
+                                    <CountUp from={0} to={totalFriends} duration={0.5} />
+                                </h2>
+                                {store.friendRequests?.received?.length > 0 ? (
+                                    <small style={{ color: "var(--color-base-dark-orange)", fontSize: "0.8rem", fontWeight: "600" }}>
+                                        {store.friendRequests.received.length} pending request{store.friendRequests.received.length > 1 ? "s" : ""}
+                                    </small>
+                                ) : (
+                                    <span className="d-inline-flex align-items-center mt-2 px-3 py-1"
+                                        style={{
+                                            background: "linear-gradient(135deg, rgba(252,164,52,0.15), rgba(199,106,42,0.1))",
+                                            borderRadius: "20px",
+                                            color: "var(--color-base-dark-orange)",
+                                            fontSize: "0.75rem",
+                                            fontWeight: "600",
+                                            letterSpacing: "0.3px",
+                                            gap: "6px"
+                                        }}>
+                                        View Friends <i className="fas fa-chevron-right" style={{ fontSize: "0.6rem" }}></i>
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </FadeContent>

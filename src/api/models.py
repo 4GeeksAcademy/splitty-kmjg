@@ -1,6 +1,6 @@
 import uuid
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, DateTime, ForeignKey, Numeric
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from decimal import Decimal
@@ -50,6 +50,21 @@ class User(db.Model):
     # relación con gastos donde el usuario participa
     expense_participations: Mapped[list["ExpenseParticipant"]] = relationship(
         "ExpenseParticipant", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    # relación con amistades que el usuario envió
+    friendships_sent: Mapped[list["Friendship"]] = relationship(
+        "Friendship", foreign_keys="[Friendship.requester_id]", back_populates="requester"
+    )
+
+    # relación con amistades que el usuario recibió
+    friendships_received: Mapped[list["Friendship"]] = relationship(
+        "Friendship", foreign_keys="[Friendship.addressee_id]", back_populates="addressee"
+    )
+
+    # relación con invitaciones de amistad que el usuario envió
+    friend_invitations_sent: Mapped[list["FriendInvitation"]] = relationship(
+        "FriendInvitation", back_populates="inviter"
     )
 
     def serialize(self):
@@ -248,4 +263,94 @@ class Invitation(db.Model):
             "token": self.token,
             "group_id": self.group_id,
             "is_used": self.is_used
+        }
+
+
+# =========================
+# FRIENDS SYSTEM
+# =========================
+
+class Friendship(db.Model):
+    """
+    Modelo de amistad bidireccional.
+    El requester envía la solicitud, el addressee la acepta/rechaza.
+    Status: 'pending', 'accepted', 'declined', 'blocked'
+    """
+    __tablename__ = "friendship"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    requester_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"), nullable=False)
+
+    addressee_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"), nullable=False)
+
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending")
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow)
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('requester_id', 'addressee_id', name='uq_friendship'),
+    )
+
+    # RELATIONS
+    requester: Mapped["User"] = relationship(
+        "User", foreign_keys=[requester_id], back_populates="friendships_sent")
+    addressee: Mapped["User"] = relationship(
+        "User", foreign_keys=[addressee_id], back_populates="friendships_received")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "requester_id": self.requester_id,
+            "addressee_id": self.addressee_id,
+            "status": self.status,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
+            "requester": self.requester.serialize() if self.requester else None,
+            "addressee": self.addressee.serialize() if self.addressee else None
+        }
+
+
+class FriendInvitation(db.Model):
+    """
+    Invitación de amistad por email/link.
+    Permite invitar a alguien que puede no tener cuenta aún.
+    """
+    __tablename__ = "friend_invitation"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    inviter_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id"), nullable=False)
+
+    email: Mapped[str] = mapped_column(String(120), nullable=False)
+
+    token: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+
+    is_used: Mapped[bool] = mapped_column(Boolean(), default=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, nullable=False, default=datetime.utcnow)
+
+    # RELATIONS
+    inviter: Mapped["User"] = relationship(
+        "User", back_populates="friend_invitations_sent")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "inviter_id": self.inviter_id,
+            "email": self.email,
+            "token": self.token,
+            "is_used": self.is_used,
+            "created_at": self.created_at.isoformat(),
+            "inviter": self.inviter.serialize() if self.inviter else None
         }

@@ -46,6 +46,10 @@ export const initialStore = () => {
       username: username || null,
     },
     groups: groups,
+    friends: [],
+    friendRequests: { received: [], sent: [] },
+    friendDebts: null,
+    friendsLoading: false,
   };
 };
 
@@ -75,13 +79,40 @@ export default function storeReducer(store, action = {}) {
           username: null,
         },
         jwt: null,
-        groups: [], // When logging out, we also clear the groups from state
+        groups: [],
+        friends: [],
+        friendRequests: { received: [], sent: [] },
+        friendDebts: null,
       };
 
     case "SET_GROUPS":
       return {
         ...store,
         groups: action.payload,
+      };
+
+    case "SET_FRIENDS":
+      return {
+        ...store,
+        friends: action.payload,
+      };
+
+    case "SET_FRIEND_REQUESTS":
+      return {
+        ...store,
+        friendRequests: action.payload,
+      };
+
+    case "SET_FRIEND_DEBTS":
+      return {
+        ...store,
+        friendDebts: action.payload,
+      };
+
+    case "SET_FRIENDS_LOADING":
+      return {
+        ...store,
+        friendsLoading: action.payload,
       };
 
     default:

@@ -27,8 +27,12 @@ class Actions {
     const fetchParams = { method, headers: {} };
 
     if (body) {
-      fetchParams.body = JSON.stringify(body);
-      fetchParams.headers["Content-Type"] = "application/json";
+      if (body instanceof FormData) {
+        fetchParams.body = body;
+      } else {
+        fetchParams.body = JSON.stringify(body);
+        fetchParams.headers["Content-Type"] = "application/json";
+      }
     }
 
     if (isPrivate) {
@@ -211,6 +215,33 @@ class Actions {
     return { success: true, data: resp.data };
   };
 
+  uploadReceipt = async (expenseId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const resp = await this.apiFetch(`/expense/${expenseId}/receipt`, "POST", formData, true);
+    
+    if (!resp.ok) {
+        console.error("Error uploading receipt:", resp.error || resp.data?.error);
+        return { success: false, error: resp.error || resp.data?.error || "Error uploading receipt" };
+    }
+    
+    await this.loadUserGroups();
+    return { success: true, data: resp.data };
+  };
+
+  deleteReceipt = async (expenseId) => {
+    const resp = await this.apiFetch(`/expense/${expenseId}/receipt`, "DELETE", null, true);
+    
+    if (!resp.ok) {
+        console.error("Error deleting receipt:", resp.error || resp.data?.error);
+        return { success: false, error: resp.error || resp.data?.error || "Error deleting receipt" };
+    }
+    
+    await this.loadUserGroups();
+    return { success: true, data: resp.data };
+  };
+
   fetchGroupBalances = async (groupId) => {
     // Fetch real group data (members) from backend
     const groupResp = await this.apiFetch(`/groups/${groupId}`, "GET", null, true);
@@ -324,8 +355,95 @@ class Actions {
   };
 
   
+  // ===============================
+  // FRIENDS SYSTEM
+  // ===============================
+
+  loadFriends = async () => {
+    this.dispatch({ type: "SET_FRIENDS_LOADING", payload: true });
+    const resp = await this.apiFetch("/friends");
+    if (resp.ok) {
+      this.dispatch({ type: "SET_FRIENDS", payload: resp.data.friends });
+    }
+    this.dispatch({ type: "SET_FRIENDS_LOADING", payload: false });
+    return resp;
+  };
+
+  loadPendingRequests = async () => {
+    const resp = await this.apiFetch("/friends/pending");
+    if (resp.ok) {
+      this.dispatch({ type: "SET_FRIEND_REQUESTS", payload: resp.data });
+    }
+    return resp;
+  };
+
+  sendFriendRequest = async (userIdOrEmail) => {
+    const body = typeof userIdOrEmail === "number"
+      ? { user_id: userIdOrEmail }
+      : { email: userIdOrEmail };
+    
+    const resp = await this.apiFetch("/friends/request", "POST", body);
+    if (resp.ok) {
+      await this.loadPendingRequests();
+    }
+    return resp;
+  };
+
+  acceptFriendRequest = async (friendshipId) => {
+    const resp = await this.apiFetch(`/friends/accept/${friendshipId}`, "POST");
+    if (resp.ok) {
+      await this.loadFriends();
+      await this.loadPendingRequests();
+    }
+    return resp;
+  };
+
+  declineFriendRequest = async (friendshipId) => {
+    const resp = await this.apiFetch(`/friends/decline/${friendshipId}`, "POST");
+    if (resp.ok) {
+      await this.loadPendingRequests();
+    }
+    return resp;
+  };
+
+  removeFriend = async (friendshipId) => {
+    const resp = await this.apiFetch(`/friends/${friendshipId}`, "DELETE");
+    if (resp.ok) {
+      await this.loadFriends();
+      await this.loadFriendDebts();
+    }
+    return resp;
+  };
+
+  loadFriendDebts = async () => {
+    const resp = await this.apiFetch("/friends/debts");
+    if (resp.ok) {
+      this.dispatch({ type: "SET_FRIEND_DEBTS", payload: resp.data });
+    }
+    return resp;
+  };
+
+  generateFriendInviteLink = async (email = null) => {
+    const body = email ? { email } : {};
+    const resp = await this.apiFetch("/friends/invite-link", "POST", body);
+    return resp;
+  };
+
+  acceptFriendInvite = async (token) => {
+    const resp = await this.apiFetch("/friends/accept-invite", "POST", { token });
+    if (resp.ok) {
+      await this.loadFriends();
+    }
+    return resp;
+  };
+
+  searchUsers = async (query) => {
+    if (!query || query.length < 1) return { ok: false, data: { users: [] } };
+    const resp = await this.apiFetch(`/users/search?q=${encodeURIComponent(query)}`);
+    return resp;
+  };
 }
 
 
 
-export default Actions;
+export default Actions;
