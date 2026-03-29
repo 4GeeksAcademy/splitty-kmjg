@@ -135,8 +135,8 @@ export const Navbar = memo(() => {
                             style={{
                                 ...glassStyle,
                                 borderRadius: "999px",
-                                width: "90%",
-                                maxWidth: "360px",
+                                width: "95%",
+                                maxWidth: "420px",
                                 pointerEvents: "auto",
                                 height: "72px"
                             }}
@@ -144,37 +144,71 @@ export const Navbar = memo(() => {
                             {/* Dashboard / Home */}
                             <Link to="/" className="d-flex flex-column align-items-center justify-content-center text-decoration-none"
                                 style={{
-                                    width: "60px", height: "60px", borderRadius: "50%",
+                                    width: "54px", height: "54px", borderRadius: "50%",
                                     background: location.pathname === "/" ? "rgba(252, 164, 52, 0.15)" : "transparent",
                                     transition: "all 0.2s ease"
                                 }}
                             >
                                 <i className="bi bi-house-door-fill fs-4" style={location.pathname === "/" ? gradientText : { color: "rgba(255,255,255,0.5)" }}></i>
-                                <span style={{ fontSize: "0.65rem", fontWeight: "700", marginTop: "2px", color: location.pathname === "/" ? "var(--color-base-orange)" : "rgba(255,255,255,0.5)" }}>Home</span>
+                                <span style={{ fontSize: "0.6rem", fontWeight: "700", marginTop: "2px", color: location.pathname === "/" ? "var(--color-base-orange)" : "rgba(255,255,255,0.5)" }}>Home</span>
+                            </Link>
+
+                            {/* Friends */}
+                            <Link to="/friends" className="d-flex flex-column align-items-center justify-content-center text-decoration-none position-relative"
+                                style={{
+                                    width: "54px", height: "54px", borderRadius: "50%",
+                                    background: location.pathname === "/friends" ? "rgba(252, 164, 52, 0.15)" : "transparent",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <i className="fas fa-user-group fs-5" style={location.pathname === "/friends" ? gradientText : { color: "rgba(255,255,255,0.5)" }}></i>
+                                <span style={{ fontSize: "0.6rem", fontWeight: "700", marginTop: "2px", color: location.pathname === "/friends" ? "var(--color-base-orange)" : "rgba(255,255,255,0.5)" }}>Friends</span>
+                                {(store.friendRequests?.received?.length > 0) && (
+                                    <span style={{
+                                        position: "absolute", top: "2px", right: "4px",
+                                        background: "#f87171", color: "#fff", borderRadius: "50%",
+                                        width: "16px", height: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                                        fontSize: "0.6rem", fontWeight: "700"
+                                    }}>
+                                        {store.friendRequests.received.length}
+                                    </span>
+                                )}
                             </Link>
 
                             {/* Create Group (Primary Action) */}
                             <Link to="/create-group" className="d-flex flex-column align-items-center justify-content-center text-decoration-none"
                                 style={{
-                                    width: "56px", height: "56px", borderRadius: "50%",
+                                    width: "52px", height: "52px", borderRadius: "50%",
                                     background: "var(--splitty-gradient)",
                                     boxShadow: "0 8px 16px rgba(252, 164, 52, 0.2)",
                                     transition: "transform 0.2s ease"
                                 }}
                             >
-                                <i className="bi bi-plus-lg fs-2" style={{ color: "#fff" }}></i>
+                                <i className="bi bi-plus-lg fs-3" style={{ color: "#fff" }}></i>
+                            </Link>
+
+                            {/* Debts */}
+                            <Link to="/debts" className="d-flex flex-column align-items-center justify-content-center text-decoration-none"
+                                style={{
+                                    width: "54px", height: "54px", borderRadius: "50%",
+                                    background: location.pathname === "/debts" ? "rgba(252, 164, 52, 0.15)" : "transparent",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                <i className="fas fa-money-bill-transfer fs-5" style={location.pathname === "/debts" ? gradientText : { color: "rgba(255,255,255,0.5)" }}></i>
+                                <span style={{ fontSize: "0.6rem", fontWeight: "700", marginTop: "2px", color: location.pathname === "/debts" ? "var(--color-base-orange)" : "rgba(255,255,255,0.5)" }}>Debts</span>
                             </Link>
 
                             {/* Profile / Logout */}
                             <div className="d-flex flex-column align-items-center justify-content-center text-decoration-none"
                                 onClick={handleLogout}
                                 style={{
-                                    width: "60px", height: "60px", borderRadius: "50%", cursor: "pointer",
+                                    width: "54px", height: "54px", borderRadius: "50%", cursor: "pointer",
                                     transition: "all 0.2s ease"
                                 }}
                             >
                                 <i className="bi bi-box-arrow-right fs-4" style={{ color: "rgba(255,255,255,0.5)" }}></i>
-                                <span style={{ fontSize: "0.65rem", fontWeight: "700", marginTop: "2px", color: "rgba(255,255,255,0.5)" }}>Logout</span>
+                                <span style={{ fontSize: "0.6rem", fontWeight: "700", marginTop: "2px", color: "rgba(255,255,255,0.5)" }}>Logout</span>
                             </div>
                         </div>
                     </div>

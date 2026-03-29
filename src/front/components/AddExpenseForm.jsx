@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
-import { Loading } from "./Loading";
 import CustomSelect from "./CustomSelect";
 import InviteModal from "./InviteModal";
 import ReceiptUploader from "./ReceiptUploader";
@@ -48,23 +47,42 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
         }
     }, [expenseToEdit]);
 
-    // Initialize paidBy and members for NEW expense
+    // Fetch friends if not available
     useEffect(() => {
-        if (!isEditing && groupMembers.length > 0) {
-            if (!paidBy && store.user?.username) {
-                const currentUserMember = groupMembers.find(m => m.username === store.user.username || m.email === store.user.email);
-                setPaidBy(currentUserMember ? currentUserMember.id.toString() : groupMembers[0].id.toString());
-            } else if (!paidBy) {
-                setPaidBy(groupMembers[0].id.toString());
-            }
-            if (selectedMembers.length === 0) {
-                setSelectedMembers(groupMembers.map(m => m.id));
-            }
+        if (!store.friends) {
+            actions.getFriends();
         }
-    }, [groupMembers, store.user?.username, isEditing]);
+    }, [store.friends, actions]);
+
+    // Merge group members and user friends, deduplicating by ID
+    const allParticipants = React.useMemo(() => {
+        const pMap = new Map();
+        groupMembers.forEach(m => pMap.set(m.id, m));
+        if (store.friends?.length > 0) {
+            store.friends.forEach(f => {
+                if (f.friend && !pMap.has(f.friend.id)) {
+                    pMap.set(f.friend.id, f.friend);
+                }
+            });
+        }
+        return Array.from(pMap.values());
+    }, [groupMembers, store.friends]);
+
+    // Initialize paidBy for NEW expense (members start unchecked based on user request)
+    useEffect(() => {
+        if (!isEditing && allParticipants.length > 0) {
+            if (!paidBy && store.user?.username) {
+                const currentUserMember = allParticipants.find(m => m.username === store.user.username || m.email === store.user.email);
+                setPaidBy(currentUserMember ? currentUserMember.id.toString() : allParticipants[0].id.toString());
+            } else if (!paidBy) {
+                setPaidBy(allParticipants[0].id.toString());
+            }
+            // Start unchecked (sin marcar) for manual selection
+        }
+    }, [allParticipants, store.user?.username, isEditing]);
 
     // vercel-react-best-practices: Memoize derived data
-    const selectedGroupMembers = React.useMemo(() => groupMembers.filter(m => selectedMembers.includes(m.id)), [groupMembers, selectedMembers]);
+    const selectedGroupMembers = React.useMemo(() => allParticipants.filter(m => selectedMembers.includes(m.id)), [allParticipants, selectedMembers]);
 
     const handleMemberToggle = (id) => {
         setSelectedMembers(prev => 
@@ -165,6 +183,17 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
             : await actions.addExpense(groupId, expenseData);
 
         if (resp.success) {
+            if (receiptFile?.file) {
+                const expenseId = isEditing ? expenseToEdit.expense.id : resp.data?.expense?.id;
+                if (expenseId) {
+                    const uploadResp = await actions.uploadReceipt(expenseId, receiptFile.file);
+                    if (!uploadResp.success) {
+                        setError(uploadResp.error || "Expense saved, but receipt upload failed");
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
             onSuccess();
         } else {
             setError(resp.error || "Error saving expense");
@@ -172,7 +201,81 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
         }
     };
 
-    if (loading) return <Loading />;
+    if (loading) return (
+        <div className="w-100 form-skeleton-pulse" style={{ maxWidth: "100%" }}>
+            <style>
+                {`
+                @keyframes pulse-dark {
+                    0% { background-color: rgba(255, 255, 255, 0.02); }
+                    50% { background-color: rgba(255, 255, 255, 0.08); }
+                    100% { background-color: rgba(255, 255, 255, 0.02); }
+                }
+                @keyframes pulse-orange {
+                    0% { background-color: rgba(252, 164, 52, 0.1); }
+                    50% { background-color: rgba(252, 164, 52, 0.25); }
+                    100% { background-color: rgba(252, 164, 52, 0.1); }
+                }
+                .skel-block {
+                    animation: pulse-dark 1.5s infinite ease-in-out;
+                }
+                .skel-orange {
+                    animation: pulse-orange 1.5s infinite ease-in-out;
+                }
+                `}
+            </style>
+
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4 pb-2">
+                <div className="skel-block" style={{ width: "200px", height: "36px", borderRadius: "8px" }}></div>
+                <div className="skel-block" style={{ width: "36px", height: "36px", borderRadius: "50%" }}></div>
+            </div>
+
+            {/* Description */}
+            <div className="mb-2">
+                <div className="skel-block mb-2" style={{ width: "100px", height: "16px", borderRadius: "4px" }}></div>
+                <div className="skel-block w-100" style={{ height: "54px", borderRadius: "16px" }}></div>
+            </div>
+
+            {/* Amount & Paid By */}
+            <div className="row mb-4 g-3">
+                <div className="col-12 col-md-6">
+                    <div className="skel-block mb-2" style={{ width: "120px", height: "16px", borderRadius: "4px" }}></div>
+                    <div className="skel-block w-100" style={{ height: "54px", borderRadius: "16px" }}></div>
+                </div>
+                <div className="col-12 col-md-6">
+                    <div className="skel-block mb-2" style={{ width: "80px", height: "16px", borderRadius: "4px" }}></div>
+                    <div className="skel-block w-100" style={{ height: "54px", borderRadius: "16px" }}></div>
+                </div>
+            </div>
+
+            {/* Participants */}
+            <div className="mb-4">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="skel-block" style={{ width: "100px", height: "16px", borderRadius: "4px" }}></div>
+                    <div className="skel-block" style={{ width: "90px", height: "28px", borderRadius: "10px" }}></div>
+                </div>
+                <div className="d-flex flex-wrap gap-2 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="skel-block" style={{ width: i % 2 === 0 ? "80px" : "110px", height: "36px", borderRadius: "99px" }}></div>
+                    ))}
+                </div>
+            </div>
+
+            {/* How to split */}
+            <div className="mb-4">
+                <div className="skel-block mb-2" style={{ width: "120px", height: "16px", borderRadius: "4px" }}></div>
+                <div className="skel-block w-100" style={{ height: "46px", borderRadius: "99px" }}></div>
+            </div>
+
+            {/* Receipt Uploader Skeleton */}
+            <div className="mb-4">
+                <div className="skel-block w-100 rounded-4" style={{ height: "120px", border: "1px dashed rgba(255,255,255,0.05)" }}></div>
+            </div>
+
+            {/* Button */}
+            <div className="skel-orange w-100 mt-4" style={{ height: "56px", borderRadius: "16px" }}></div>
+        </div>
+    );
 
     return (
         <div className="w-100" style={{ maxWidth: "100%" }}>
@@ -284,7 +387,7 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         <CustomSelect
                             value={paidBy}
                             onChange={setPaidBy}
-                            options={groupMembers.map(m => ({ value: m.id.toString(), label: m.username }))}
+                            options={allParticipants.map(m => ({ value: m.id.toString(), label: m.username }))}
                         />
                     </div>
                 </div>
@@ -308,8 +411,8 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                             <i className="fa-solid fa-user-plus me-1"></i> Missing?
                         </button>
                     </div>
-                    <div className="d-flex flex-wrap gap-2 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)" }}>
-                        {groupMembers.map(m => {
+                    <div className="d-flex flex-wrap gap-2 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)", maxHeight: "200px", overflowY: "auto" }}>
+                        {allParticipants.map(m => {
                             const isChecked = selectedMembers.includes(m.id);
                             return (
                                 <div key={m.id} 

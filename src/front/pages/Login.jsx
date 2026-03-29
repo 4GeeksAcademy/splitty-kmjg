@@ -52,20 +52,17 @@ export const Login = () => {
   }
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center px-3"
-      style={{
-        background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
-      }}
-    >
+    <div className="form-wrapper">
       <div className="splitty-card mx-auto">
-            <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
+            <div className="text-center mb-5 d-flex flex-column align-items-center justify-content-center gap-2">
               <SplittyBrand2 width="50%" color="var(--color-base-light)" contrast="var(--color-base-dark-orange)" />
               <p
-                className="mb-0"
+                className="mb-0 mt-1"
                 style={{
                   color: "var(--color-base-dark-orange)",
-                  fontSize: "1rem"
+                  fontSize: "1.05rem",
+                  fontWeight: "500",
+                  letterSpacing: "0.5px"
                 }}
               >
                 Share moments, not math
@@ -74,9 +71,7 @@ export const Login = () => {
 
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label
-                  className="splitty-label"
-                >
+                <label className="splitty-label">
                   Email
                 </label>
                 <input
@@ -91,9 +86,7 @@ export const Login = () => {
               </div>
 
               <div className="mb-2">
-                <label
-                  className="splitty-label"
-                >
+                <label className="splitty-label">
                   Password
                 </label>
                 <input
@@ -113,8 +106,8 @@ export const Login = () => {
                   className="btn btn-link p-0 text-decoration-none"
                   style={{
                     color: "var(--color-base-dark-orange)",
-                    fontWeight: "600",
-                    fontSize: "0.92rem"
+                    fontWeight: "500",
+                    fontSize: "0.9rem"
                   }}
                 >
                   Forgot password?
@@ -125,17 +118,16 @@ export const Login = () => {
                 <div
                   key={shakeKey}
                   role="alert"
-                  className="d-flex align-items-center gap-2 border-0 mb-4"
+                  className="d-flex align-items-center gap-2 mb-4"
                   style={{
-                    backgroundColor: "#FFE7CD",
-                    color: "#BB6D2D",
-                    borderRadius: "14px",
+                    backgroundColor: "rgba(248, 113, 113, 0.1)",
+                    color: "#f87171",
+                    borderRadius: "12px",
                     padding: "12px 16px",
                     fontSize: "0.9rem",
                     fontWeight: "500",
-                    lineHeight: "1.4",
                     animation: "splitty-shake 0.4s ease",
-                    border: "1px solid rgba(187, 109, 45, 0.4)"
+                    border: "1px solid rgba(248, 113, 113, 0.2)"
                   }}
                 >
                   <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>
@@ -173,14 +165,19 @@ export const Login = () => {
               </button>
             </form>
 
-            <div className="text-center mt-4">
+            <div className="text-center mt-4 pt-2">
               <span style={{ color: "rgba(247, 245, 251, 0.7)" }}>
                 Don’t have an account?{" "}
               </span>
               <Link
                 to="/register"
                 className="text-decoration-none fw-semibold"
-                style={{ color: "var(--color-base-dark-orange)" }}
+                style={{
+                  color: "var(--color-base-dark-orange)",
+                  transition: "opacity 0.2s"
+                }}
+                onMouseOver={(e) => e.target.style.opacity = "0.8"}
+                onMouseOut={(e) => e.target.style.opacity = "1"}
               >
                 Sign up
               </Link>

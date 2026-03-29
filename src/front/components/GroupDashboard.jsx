@@ -6,6 +6,7 @@ import { AddExpenseForm } from "./AddExpenseForm";
 import InviteModal from "./InviteModal";
 import DeleteGroupModal from "./DeleteGroupModal";
 import DeleteExpenseModal from "./DeleteExpenseModal";
+import ReceiptViewerLightbox from "./ReceiptViewerLightbox";
 import gsap from "gsap";
 
 export const GroupDashboard = () => {
@@ -20,6 +21,7 @@ export const GroupDashboard = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [expenseToDelete, setExpenseToDelete] = useState(null);
+    const [lightboxData, setLightboxData] = useState({ isOpen: false, url: null, type: null });
     const initialAnimation = useRef(false);
 
     // Current logged in user ID to format messages
@@ -325,91 +327,101 @@ export const GroupDashboard = () => {
                                             <li
                                                 key={exp.id || idx}
                                                 onClick={() => {
+                                                    if (!isCreator) return;
                                                     setSelectedExpense(entry);
                                                     setShowAddForm(true);
                                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                                 }}
+                                                className="expense-card-item mb-3"
                                                 style={{
                                                     background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
                                                     border: "1px solid rgba(255, 255, 255, 0.08)",
-                                                    borderRadius: "16px",
-                                                    padding: "1.25rem 1.5rem",
+                                                    borderRadius: "18px",
+                                                    padding: "1rem",
                                                     backdropFilter: "blur(12px)",
-                                                    cursor: "pointer",
-                                                    transition: "all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)"
-                                                }}
-                                                onMouseEnter={e => {
-                                                    e.currentTarget.style.transform = "translateY(-4px)";
-                                                    e.currentTarget.style.boxShadow = "0 12px 24px -10px rgba(252, 164, 52, 0.4)";
-                                                    e.currentTarget.style.borderColor = "var(--color-base-dark-orange)";
-                                                    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)";
-                                                }}
-                                                onMouseLeave={e => {
-                                                    e.currentTarget.style.transform = "translateY(0)";
-                                                    e.currentTarget.style.boxShadow = "none";
-                                                    e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.08)";
-                                                    e.currentTarget.style.background = "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)";
+                                                    cursor: isCreator ? "pointer" : "default",
+                                                    transition: "all 0.3s ease"
                                                 }}
                                             >
-                                                <div className="d-flex justify-content-between align-items-start gap-2">
-                                                    {/* Left: icon + title + meta */}
-                                                    <div className="d-flex gap-3 align-items-center" style={{ minWidth: 0 }}>
-                                                        <div style={{
-                                                            width: "48px", height: "48px", flexShrink: 0,
-                                                            borderRadius: "14px",
-                                                            background: "rgba(252, 164, 52, 0.15)",
-                                                            border: "1px solid rgba(252, 164, 52, 0.3)",
+                                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                                                    {/* Left: icon + info section */}
+                                                    <div className="d-flex align-items-center gap-3 w-100" style={{ minWidth: 0 }}>
+                                                        <div className="flex-shrink-0" style={{
+                                                            width: "44px", height: "44px",
+                                                            borderRadius: "12px",
+                                                            background: "rgba(252, 164, 52, 0.12)",
+                                                            border: "1px solid rgba(252, 164, 52, 0.2)",
                                                             display: "flex", alignItems: "center", justifyContent: "center"
                                                         }}>
-                                                            <i className="fa-solid fa-coins" style={{ color: "var(--color-base-dark-orange)", fontSize: "1.2rem" }}></i>
+                                                            <i className="fa-solid fa-coins" style={{ color: "var(--color-base-orange)", fontSize: "1.1rem" }}></i>
                                                         </div>
-                                                        <div style={{ minWidth: 0 }}>
-                                                            <p className="mb-0 fw-bold text-truncate" style={{ color: "var(--color-base-cream)", fontSize: "1.05rem", letterSpacing: "0.3px" }}>
-                                                                {exp.description || exp.title || "Expense"}
-                                                            </p>
-                                                            <div className="d-flex gap-2 flex-wrap mt-1">
-                                                                <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
-                                                                    <i className="fa-solid fa-user me-1" style={{ color: "var(--color-base-light-coral)" }}></i>
-                                                                    <span style={{ color: "var(--color-base-light-coral)", fontWeight: "500" }}>{payerName}</span> paid
-                                                                </small>
+                                                        
+                                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                                <h6 className="mb-0 fw-bold text-truncate" style={{ color: "var(--color-base-cream)", fontSize: "1rem" }}>
+                                                                    {exp.description || exp.title || "Expense"}
+                                                                </h6>
+                                                                <span className="badge d-md-none" style={{ background: "rgba(252, 164, 52, 0.15)", color: "var(--color-base-orange)", fontSize: "0.85rem" }}>
+                                                                    ${parseFloat(exp.amount || 0).toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                            
+                                                            <div className="d-flex flex-wrap gap-2 align-items-center my-1" style={{ opacity: 0.75, fontSize: "0.82rem" }}>
+                                                                <span style={{ color: "var(--color-base-light-coral)", fontWeight: "500" }}>
+                                                                    <i className="fa-solid fa-user me-1"></i>{payerName}
+                                                                </span>
+                                                                <span className="text-white-50">paid</span>
                                                                 {dateStr && (
-                                                                    <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
+                                                                    <span className="ms-1">
                                                                         <i className="fa-regular fa-calendar me-1"></i>{dateStr}
-                                                                    </small>
+                                                                    </span>
                                                                 )}
-                                                                <small style={{ color: "rgba(255, 231, 205, 0.6)", fontSize: "0.85rem" }}>
-                                                                    <i className="fa-solid fa-users-line me-1"></i>{splitCount} people
-                                                                </small>
+                                                                <span className="ms-1">
+                                                                    <i className="fa-solid fa-users me-1"></i>{splitCount}
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    {/* Right: amount badge */}
-                                                        <div className="text-end flex-shrink-0 d-flex flex-column align-items-end gap-1">
-                                                            <span
-                                                                className="badge rounded-pill fw-bold"
-                                                                style={{
-                                                                    background: "rgba(252, 164, 52, 0.15)",
-                                                                    color: "var(--color-base-cream)",
-                                                                    border: "1px solid rgba(252, 164, 52, 0.3)",
-                                                                    padding: "8px 16px",
-                                                                    fontSize: "0.95rem"
-                                                                }}
-                                                            >
-                                                                ${parseFloat(exp.amount || 0).toFixed(2)}
-                                                            </span>
-                                                            <div className="d-flex gap-2 mt-2">
-                                                                <small 
-                                                                    onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
-                                                                    style={{ color: "#cc0000", fontSize: "0.75rem", fontWeight: "700", opacity: 0.9, transition: "all 0.3s ease" }} 
-                                                                    className="expense-action-btn"
+
+                                                    {/* Right: desktop amount + actions */}
+                                                    <div className="d-flex flex-row flex-md-column align-items-center align-items-md-end justify-content-between w-100 w-md-auto gap-2 pt-2 pt-md-0 mt-md-0">
+                                                        <span className="badge d-none d-md-block" style={{ background: "rgba(252, 164, 52, 0.15)", color: "var(--color-base-orange)", fontSize: "0.95rem", padding: "8px 14px", borderRadius: "10px" }}>
+                                                            ${parseFloat(exp.amount || 0).toFixed(2)}
+                                                        </span>
+                                                        
+                                                        <div className="d-flex gap-3 align-items-center flex-wrap">
+                                                            {exp.receipt_url && (
+                                                                <button 
+                                                                    className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setLightboxData({ 
+                                                                            isOpen: true, 
+                                                                            url: exp.receipt_url, 
+                                                                            type: exp.receipt_url.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image' 
+                                                                        });
+                                                                    }}
+                                                                    style={{ color: "var(--color-base-orange)", fontSize: "0.8rem", fontWeight: "600" }}
                                                                 >
-                                                                    <i className="fa-solid fa-trash-can me-1"></i>Delete
-                                                                </small>
-                                                                <small style={{ color: "var(--color-base-orange)", fontSize: "0.75rem", fontWeight: "600", opacity: 0.8, transition: "all 0.2s" }} className="expense-action-btn">
-                                                                    <i className="fa-solid fa-pen-to-square me-1"></i>Edit
-                                                                </small>
-                                                            </div>
+                                                                    <i className="fa-solid fa-file-invoice"></i>Receipt
+                                                                </button>
+                                                            )}
+                                                            {isCreator && (
+                                                                <>
+                                                                    <button 
+                                                                        className="btn btn-link p-0 text-decoration-none text-danger d-flex align-items-center gap-1"
+                                                                        onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
+                                                                        style={{ fontSize: "0.8rem", fontWeight: "600" }}
+                                                                    >
+                                                                        <i className="fa-solid fa-trash-can"></i>Delete
+                                                                    </button>
+                                                                    <button className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1" style={{ color: "var(--color-base-light)", opacity: 0.6, fontSize: "0.8rem" }}>
+                                                                        <i className="fa-solid fa-pen-to-square"></i>Edit
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
+                                                    </div>
                                                 </div>
                                             </li>
                                         );
@@ -449,6 +461,13 @@ export const GroupDashboard = () => {
                     }}
                 />
             )}
+            
+            <ReceiptViewerLightbox 
+                isOpen={lightboxData.isOpen}
+                onClose={() => setLightboxData({ isOpen: false, url: null, type: null })}
+                fileUrl={lightboxData.url}
+                fileType={lightboxData.type}
+            />
         </div>
     );
 };

@@ -73,20 +73,17 @@ export const Register = () => {
   }
 
   return (
-    <div
-      className="min-vh-100 d-flex align-items-center justify-content-center px-3 my-5"
-      style={{
-        background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)"
-      }}
-    >
+    <div className="form-wrapper">
       <div className="splitty-card mx-auto">
-            <div className="text-center mb-4 d-flex align-items-center justify-content-start flex-column gap-1">
+            <div className="text-center mb-5 d-flex flex-column align-items-center justify-content-center gap-2">
               <SplittyBrand2 width="50%" color="var(--color-base-light)" contrast="var(--color-base-dark-orange)" />
               <p
-                className="mb-0"
+                className="mb-0 mt-1"
                 style={{
                   color: "var(--color-base-dark-orange)",
-                  fontSize: "1rem"
+                  fontSize: "1.05rem",
+                  fontWeight: "500",
+                  letterSpacing: "0.5px"
                 }}
               >
                 Share moments, not math
@@ -146,15 +143,14 @@ export const Register = () => {
                   role="alert"
                   className="d-flex align-items-center gap-2 mb-4"
                   style={{
-                    backgroundColor: "#FFE7CD",
-                    color: "#BB6D2D",
-                    borderRadius: "14px",
+                    backgroundColor: "rgba(248, 113, 113, 0.1)",
+                    color: "#f87171",
+                    borderRadius: "12px",
                     padding: "12px 16px",
                     fontSize: "0.9rem",
                     fontWeight: "500",
-                    lineHeight: "1.4",
                     animation: "splitty-shake 0.4s ease",
-                    border: "1px solid rgba(187, 109, 45, 0.4)"
+                    border: "1px solid rgba(248, 113, 113, 0.2)"
                   }}
                 >
                   <span style={{ fontSize: "1.2rem", flexShrink: 0 }}>
@@ -180,17 +176,16 @@ export const Register = () => {
                   role="status"
                   className="d-flex align-items-center gap-2 mb-4"
                   style={{
-                    backgroundColor: "#e6f7ee",
-                    color: "#1f6b35",
-                    borderRadius: "14px",
+                    backgroundColor: "rgba(74, 222, 128, 0.1)",
+                    color: "#4ade80",
+                    borderRadius: "12px",
                     padding: "12px 16px",
                     fontSize: "0.9rem",
                     fontWeight: "500",
-                    lineHeight: "1.4",
-                    border: "1px solid #a8e0bd"
+                    border: "1px solid rgba(74, 222, 128, 0.2)"
                   }}
                 >
-                  <span style={{ fontSize: "1.2rem", flexShrink: 0, color: "#1f6b35" }}>
+                  <span style={{ fontSize: "1.2rem", flexShrink: 0, color: "#4ade80" }}>
                     <i className="bi bi-check-circle-fill"></i>
                   </span>
                   <span>{success}</span>
@@ -214,14 +209,19 @@ export const Register = () => {
               </button>
             </form>
 
-            <div className="text-center mt-4">
+            <div className="text-center mt-4 pt-2">
               <span style={{ color: "rgba(247, 245, 251, 0.7)" }}>
                 Already have an account?{" "}
               </span>
               <Link
                 to="/login"
                 className="text-decoration-none fw-semibold"
-                style={{ color: "var(--color-base-dark-orange)" }}
+                style={{
+                  color: "var(--color-base-dark-orange)",
+                  transition: "opacity 0.2s"
+                }}
+                onMouseOver={(e) => e.target.style.opacity = "0.8"}
+                onMouseOut={(e) => e.target.style.opacity = "1"}
               >
                 Login
               </Link>

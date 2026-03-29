@@ -13,10 +13,30 @@ from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_cors import CORS
 from flask_mail import Mail, Message
+import cloudinary
 from dotenv import load_dotenv
 
 # Load environment variables from .env
 load_dotenv()
+
+# Cloudinary configuration
+# DEBUG: Help user identify missing keys
+cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+api_key = os.getenv("CLOUDINARY_API_KEY")
+api_secret = os.getenv("CLOUDINARY_API_SECRET")
+
+if not all([cloud_name, api_key, api_secret]):
+    print("WARNING: Cloudinary configuration is incomplete. Receipt uploads will FAIL.")
+    print(f"Loaded: cloud_name={bool(cloud_name)}, api_key={bool(api_key)}, api_secret={bool(api_secret)}")
+else:
+    print(f"Cloudinary configured successfully for cloud: {cloud_name}")
+
+cloudinary.config(
+    cloud_name=cloud_name,
+    api_key=api_key,
+    api_secret=api_secret,
+    secure=True
+)
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(

@@ -58,7 +58,7 @@ export const Layout = () => {
             ) : (
                 <div className="d-flex flex-column min-vh-100">
                     <Navbar />
-                    <main className="flex-grow-1" style={{ minHeight: "100vh" }}>
+                    <main className="flex-grow-1">
                         <Outlet />
                     </main>
                     <Footer />

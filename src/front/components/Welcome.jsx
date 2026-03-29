@@ -72,7 +72,7 @@ export const Welcome = () => {
     
 
     return (
-        <div className="min-vh-100 d-flex align-items-start" style={{ background: "linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%)" }}>
+        <div className="d-flex align-items-start">
             <div className="container mt-5 py-5">
                 <div className="row align-items-start mt-1 g-5">
                     {/* Left Column */}

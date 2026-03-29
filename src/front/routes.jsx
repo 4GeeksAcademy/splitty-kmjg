@@ -13,6 +13,9 @@ import CreateGroupForm from "./components/CreateGroupForm";
 import GroupDashboard from "./components/GroupDashboard";
 import { AcceptInvite } from "./components/AcceptInvite";
 import { PrivateRoute } from "./components/PrivateRoute";
+import FriendsPage from "./pages/FriendsPage";
+import DebtsPage from "./pages/DebtsPage";
+import AcceptFriendInvite from "./pages/AcceptFriendInvite";
 
 // 1. Creamos un componente para atrapar los fallos de código (crashes)
 const RootErrorBoundary = () => {
@@ -52,8 +55,21 @@ export const router = createBrowserRouter(
                 </PrivateRoute>
             } />
 
+            {/* Friends & Debts */}
+            <Route path="/friends" element={
+                <PrivateRoute>
+                    <FriendsPage />
+                </PrivateRoute>
+            } />
+            <Route path="/debts" element={
+                <PrivateRoute>
+                    <DebtsPage />
+                </PrivateRoute>
+            } />
+
             {/* Invitation Support */}
             <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/accept-friend" element={<AcceptFriendInvite />} />
 
             {/* 3. ESTA es la forma correcta de manejar un "Page not found" (404) */}
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
