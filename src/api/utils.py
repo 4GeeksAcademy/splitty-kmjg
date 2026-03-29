@@ -43,6 +43,88 @@ def generate_sitemap(app):
 
 
 # ============================================
+# DEBT SIMPLIFICATION ALGORITHM
+# Greedy max-heap approach for minimizing
+# the number of transactions in a group.
+# ============================================
+
+def simplify_debts(balances: dict) -> list:
+    """
+    Simplifies a set of net balances into the minimum number of
+    direct peer-to-peer transactions using a greedy algorithm.
+
+    Algorithm (Network Flow / Greedy Max-Heap):
+    1. Filter out users with zero balance (they owe nothing / are owed nothing).
+    2. Separate users into Debtors (negative balance) and Creditors (positive balance).
+    3. Sort both lists by absolute value descending (simulates max-heaps).
+    4. Iteratively pair the largest debtor with the largest creditor:
+       - Transfer the minimum of their absolute balances.
+       - Reduce both balances accordingly.
+       - Remove any user whose balance reaches zero.
+       - Re-sort after each iteration to maintain the greedy invariant.
+    5. Repeat until all balances are zero.
+
+    Args:
+        balances: dict mapping user_id (str or int) to their net balance (Decimal).
+                  Positive = creditor (is owed money).
+                  Negative = debtor (owes money).
+                  The sum of all values MUST equal 0.
+
+    Returns:
+        list of dicts: [{"from": debtor_id, "to": creditor_id, "amount": float}]
+        Amounts are rounded to 2 decimal places.
+    """
+    transactions = []
+
+    # --- Step 1: Build debtors and creditors lists ---
+    # Use Decimal throughout for cent-level precision.
+    debtors = []   # (user_id, abs_amount)  — people who OWE money
+    creditors = [] # (user_id, amount)       — people who ARE OWED money
+
+    for user, balance in balances.items():
+        bal = Decimal(str(balance))
+        if bal < 0:
+            debtors.append([user, abs(bal)])
+        elif bal > 0:
+            creditors.append([user, bal])
+        # bal == 0 → skip (no debt)
+
+    # --- Step 2: Sort descending by amount (greedy: biggest first) ---
+    debtors.sort(key=lambda x: x[1], reverse=True)
+    creditors.sort(key=lambda x: x[1], reverse=True)
+
+    # --- Step 3: Greedy matching loop ---
+    while debtors and creditors:
+        debtor_id, debt_amount = debtors[0]
+        creditor_id, credit_amount = creditors[0]
+
+        # Transfer the smaller of the two amounts
+        transfer = min(debt_amount, credit_amount)
+
+        transactions.append({
+            "from": debtor_id,
+            "to": creditor_id,
+            "amount": float(transfer.quantize(Decimal("0.01")))
+        })
+
+        # Update balances
+        debtors[0][1] -= transfer
+        creditors[0][1] -= transfer
+
+        # Remove settled users
+        if debtors[0][1] == 0:
+            debtors.pop(0)
+        if creditors and creditors[0][1] == 0:
+            creditors.pop(0)
+
+        # Re-sort to maintain greedy invariant
+        debtors.sort(key=lambda x: x[1], reverse=True)
+        creditors.sort(key=lambda x: x[1], reverse=True)
+
+    return transactions
+
+
+# ============================================
 # FRIENDS & DEBTS UTILITIES
 # ============================================
 
