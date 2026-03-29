@@ -450,6 +450,96 @@ def get_group_expenses(group_id):
         "expenses": response
     }), 200
 
+
+# --- BALANCES (Debt Simplification) ---
+
+@api.route('/groups/<int:group_id>/balances', methods=['GET'])
+@jwt_required()
+def get_group_balances(group_id):
+    """
+    Calculate net balances for all members of a group, then run the
+    greedy debt-simplification algorithm to return the minimum set of
+    peer-to-peer transfers needed to settle all debts.
+
+    Response JSON:
+    {
+      "group_id": int,
+      "balances": { user_id: float },      # raw net balances
+      "transactions": [                     # simplified transfers
+        {"from": user_id, "to": user_id, "amount": float}
+      ],
+      "members": [                          # enriched member info
+        {"id": int, "username": str, "balance": float}
+      ]
+    }
+    """
+    user_id = int(get_jwt_identity())
+
+    # Validate membership
+    membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=user_id
+    ).first()
+    if not membership:
+        return jsonify({"error": "You do not have access to this group"}), 403
+
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Get all members of the group
+    members = GroupMember.query.filter_by(group_id=group_id).all()
+    member_ids = [m.user_id for m in members]
+
+    # Initialize balances with Decimal for precision
+    net_balances = {mid: Decimal("0") for mid in member_ids}
+
+    # Get all expenses in this group
+    expenses = Expense.query.filter_by(group_id=group_id).all()
+
+    for expense in expenses:
+        payer_id = expense.paid_by
+        participants = ExpenseParticipant.query.filter_by(
+            expense_id=expense.id
+        ).all()
+
+        for p in participants:
+            amount_owed = Decimal(str(p.amount_owed))
+
+            if p.user_id == payer_id:
+                # The payer's own share — they paid for it, no net change from this
+                # But they ARE credited the full expense amount below
+                pass
+            else:
+                # This participant owes the payer
+                net_balances[p.user_id] = net_balances.get(
+                    p.user_id, Decimal("0")
+                ) - amount_owed
+                net_balances[payer_id] = net_balances.get(
+                    payer_id, Decimal("0")
+                ) + amount_owed
+
+    # Run the simplification algorithm
+    from api.utils import simplify_debts
+    transactions = simplify_debts(net_balances)
+
+    # Build enriched member info
+    members_info = []
+    for mid in member_ids:
+        user = User.query.get(mid)
+        if user:
+            members_info.append({
+                "id": user.id,
+                "username": user.username,
+                "balance": float(net_balances.get(mid, Decimal("0")))
+            })
+
+    return jsonify({
+        "group_id": group_id,
+        "balances": {str(k): float(v) for k, v in net_balances.items()},
+        "transactions": transactions,
+        "members": members_info
+    }), 200
+
 # Actualizar un gasto
 @api.route('/expenses/<int:expense_id>', methods=['PUT'])
 @jwt_required()
