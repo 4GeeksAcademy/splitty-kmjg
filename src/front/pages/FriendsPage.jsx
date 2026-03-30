@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import FadeContent from "../components/bits/FadeContent.jsx";
@@ -6,6 +7,7 @@ import CountUp from "../components/bits/CountUp.jsx";
 
 const FriendsPage = () => {
     const { store, actions } = useGlobalReducer();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState("friends");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -104,13 +106,45 @@ const FriendsPage = () => {
             <div className="container mt-5">
                 {/* Header */}
                 <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0}>
-                    <h1 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
-                        <i className="fas fa-user-group me-3" style={{ color: "var(--color-base-dark-orange)" }}></i>
-                        Friends
-                    </h1>
-                    <p style={{ color: "var(--color-base-light)", opacity: 0.6, fontSize: "1rem" }}>
-                        Manage your friends and share expenses together.
-                    </p>
+                    <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <h1 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
+                                <i className="fas fa-user-group me-3" style={{ color: "var(--color-base-dark-orange)" }}></i>
+                                Friends
+                            </h1>
+                            <p className="mb-0" style={{ color: "var(--color-base-light)", opacity: 0.6, fontSize: "1rem" }}>
+                                Manage your friends and share expenses together.
+                            </p>
+                        </div>
+                        <button
+                            className="btn text-white d-flex align-items-center justify-content-center"
+                            onClick={() => navigate("/")}
+                            style={{
+                                height: "46px",
+                                borderRadius: "14px",
+                                background: "rgba(255, 255, 255, 0.05)",
+                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                backdropFilter: "blur(12px)",
+                                fontSize: "0.95rem",
+                                fontWeight: "500",
+                                padding: "0 24px",
+                                color: "var(--color-base-cream)",
+                                transition: "all 0.3s ease",
+                                minWidth: "110px",
+                                whiteSpace: "nowrap"
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.1)";
+                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.2)";
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)";
+                                e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                            }}
+                        >
+                            <i className="fa-solid fa-arrow-left me-2"></i> Back
+                        </button>
+                    </div>
                 </FadeContent>
 
                 {/* Tabs */}

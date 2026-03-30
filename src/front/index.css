@@ -558,3 +558,105 @@ input:-webkit-autofill:active {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+/* --- AI GLOW EFFECT (Apple Intelligence Style) --- */
+@keyframes spin-glow {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.ai-glow-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-glow-container::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 300%;
+    background: conic-gradient(from 0deg, transparent 0%, #FF5722 25%, #9C27B0 50%, #00BFFF 75%, transparent 100%);
+    animation: spin-glow 4s linear infinite;
+    filter: blur(20px);
+    z-index: -2;
+    opacity: 0.85;
+}
+
+.ai-glow-container::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: rgb(24, 24, 24); /* Splitty dark base color approximation */
+    border-radius: 14px;
+    z-index: -1;
+}
+
+/* --- APP-WIDE EDGE GLOW (Apple Intelligence Style / Frameless) --- */
+.ai-edge-glow-fullscreen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0; /* Pegado absolutamente al extremo de la pantalla */
+    z-index: 99999;
+    pointer-events: none;
+    
+    /* 4-way inward fading mask (simulates a gradient inset shadow) */
+    -webkit-mask-image: 
+        linear-gradient(to right, black 0%, transparent 30px),
+        linear-gradient(to left, black 0%, transparent 30px),
+        linear-gradient(to bottom, black 0%, transparent 30px),
+        linear-gradient(to top, black 0%, transparent 30px);
+    mask-image: 
+        linear-gradient(to right, black 0%, transparent 30px),
+        linear-gradient(to left, black 0%, transparent 30px),
+        linear-gradient(to bottom, black 0%, transparent 30px),
+        linear-gradient(to top, black 0%, transparent 30px);
+    
+    /* Default compositing mixes the alphas together nicely at the corners */
+    -webkit-mask-composite: source-over;
+    mask-composite: add;
+    
+    opacity: 0.95;
+    overflow: hidden;
+}
+
+.ai-edge-glow-fullscreen::before {
+    content: "";
+    position: absolute;
+    /* Center it perfectly using top/left 50% instead of 0 for easier infinite rotation */
+    top: 50%;
+    left: 50%;
+    
+    /* Box must be larger than screen diagonal for 360-degree rotation without clipping */
+    width: 250vmax;
+    height: 250vmax;
+    
+    /* Center the oversized box using margins to keep transforms strictly for rotation */
+    margin-top: -125vmax;
+    margin-left: -125vmax;
+    
+    /* The Apple Intelligence sweeping light */
+    background: conic-gradient(
+        from 0deg,
+        transparent 60deg,
+        #BB4D00 120deg,
+        #FFC107 180deg,
+        #00BFFF 240deg,
+        transparent 300deg
+    );
+    animation: spin-glow 1.2s linear infinite;
+    
+    /* Blur the conic gradient colors together smoothly */
+    filter: blur(8px);
+    z-index: -1;
+}
+
+@keyframes spin-glow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

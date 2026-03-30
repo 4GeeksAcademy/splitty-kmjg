@@ -226,3 +226,83 @@ def calculate_friend_debts(user_id, friend_id):
         "total_user_owes": float(total_user_owes)
     }
 
+def distribute_proportional_costs(items, tax: Decimal, tip: Decimal) -> list:
+    """
+    Distributes tax and tip across a list of items proportionally based on their price.
+    Uses the largest remainder algorithm to ensure no pennies are lost to precision rounding.
+    Arguments:
+        items: list of dicts [{"id": str, "price": Decimal}]
+        tax: Decimal (total tax)
+        tip: Decimal (total tip)
+    Returns:
+        list of dicts with original data + tax_share, tip_share, and final_price
+    """
+    if not items:
+        return []
+        
+    total_price = sum(item["price"] for item in items)
+    if total_price == 0:
+        return [
+            {**item, "tax_share": Decimal("0.00"), "tip_share": Decimal("0.00"), "final_price": Decimal("0.00")}
+            for item in items
+        ]
+
+    # Calculate exact shares (float-like) and floor-rounded (cent-level) shares
+    processed = []
+    
+    # Track allocations and remainders
+    tax_allocations = []
+    tip_allocations = []
+    
+    allocated_tax = Decimal("0.00")
+    allocated_tip = Decimal("0.00")
+    
+    for i, item in enumerate(items):
+        price = item["price"]
+        proportion = price / total_price
+        
+        # Unrounded shares
+        raw_tax = proportion * tax
+        raw_tip = proportion * tip
+        
+        # Floored shares (cents)
+        base_tax = (raw_tax).quantize(Decimal("0.01"), rounding="ROUND_DOWN")
+        base_tip = (raw_tip).quantize(Decimal("0.01"), rounding="ROUND_DOWN")
+        
+        # Calculate remainder
+        rem_tax = raw_tax - base_tax
+        rem_tip = raw_tip - base_tip
+        
+        allocated_tax += base_tax
+        allocated_tip += base_tip
+        
+        tax_allocations.append({"index": i, "base": base_tax, "remainder": rem_tax})
+        tip_allocations.append({"index": i, "base": base_tip, "remainder": rem_tip})
+        
+        processed.append({**item})
+        
+    # Distribute remaining tax pennies
+    remaining_tax_cents = int((tax - allocated_tax) * 100)
+    tax_allocations.sort(key=lambda x: x["remainder"], reverse=True)
+    for i in range(remaining_tax_cents):
+        idx = tax_allocations[i]["index"]
+        tax_allocations[i]["base"] += Decimal("0.01")
+        
+    # Distribute remaining tip pennies
+    remaining_tip_cents = int((tip - allocated_tip) * 100)
+    tip_allocations.sort(key=lambda x: x["remainder"], reverse=True)
+    for i in range(remaining_tip_cents):
+        idx = tip_allocations[i]["index"]
+        tip_allocations[i]["base"] += Decimal("0.01")
+        
+    # Apply logic to the final dataset
+    for tax_obj in tax_allocations:
+        processed[tax_obj["index"]]["tax_share"] = tax_obj["base"]
+        
+    for tip_obj in tip_allocations:
+        processed[tip_obj["index"]]["tip_share"] = tip_obj["base"]
+        
+    for result in processed:
+        result["final_price"] = result["price"] + result["tax_share"] + result["tip_share"]
+        
+    return processed

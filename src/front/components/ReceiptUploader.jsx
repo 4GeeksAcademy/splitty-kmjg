@@ -3,10 +3,10 @@ import React, { useState, useRef } from "react";
 export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
     const [previewUrl, setPreviewUrl] = useState(null);
     const [fileType, setFileType] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef(null);
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
+    const handleFileProcess = (file) => {
         if (file) {
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
@@ -21,6 +21,36 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
         }
     };
 
+    const handleFileChange = (e) => {
+        handleFileProcess(e.target.files[0]);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDragEnter = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            handleFileProcess(e.dataTransfer.files[0]);
+        }
+    };
+
     const handleContainerClick = () => {
         if (fileInputRef.current) {
             fileInputRef.current.click();
@@ -31,13 +61,17 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
         <div className="mb-4">
             <label className="splitty-label splitty-gradient-text" style={{ fontWeight: 700 }}>Receipt (Optional)</label>
             <div 
-                className="receipt-uploader-container"
+                className={`receipt-uploader-container ${isDragging ? 'dragging' : ''}`}
                 onClick={handleContainerClick}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 style={{
-                    background: previewUrl ? "rgba(252, 164, 52, 0.05)" : "rgba(255, 255, 255, 0.03)",
-                    border: previewUrl ? "1px solid rgba(252, 164, 52, 0.3)" : "1px solid rgba(255, 255, 255, 0.05)",
+                    background: isDragging ? "rgba(252, 164, 52, 0.15)" : (previewUrl ? "rgba(252, 164, 52, 0.05)" : "rgba(255, 255, 255, 0.03)"),
+                    border: isDragging ? "2px dashed rgba(252, 164, 52, 0.8)" : (previewUrl ? "1px solid rgba(252, 164, 52, 0.3)" : "1px solid rgba(255, 255, 255, 0.05)"),
                     borderRadius: "16px",
-                    padding: previewUrl ? "8px" : "24px",
+                    padding: previewUrl && !isDragging ? "8px" : "24px",
                     textAlign: "center",
                     cursor: "pointer",
                     transition: "all 0.3s ease",
@@ -46,7 +80,8 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
                     alignItems: "center",
                     justifyContent: "center",
                     minHeight: "120px",
-                    boxShadow: previewUrl ? "0 0 20px rgba(252, 164, 52, 0.1)" : "none"
+                    boxShadow: isDragging ? "0 0 25px rgba(252, 164, 52, 0.2) inset" : (previewUrl ? "0 0 20px rgba(252, 164, 52, 0.1)" : "none"),
+                    transform: isDragging ? "scale(0.98)" : "scale(1)"
                 }}
             >
                 <input 
