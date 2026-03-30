@@ -87,7 +87,6 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
                 <input 
                     type="file"
                     accept="image/jpeg, image/png, application/pdf"
-                    capture="environment"
                     className="d-none"
                     ref={fileInputRef}
                     onChange={handleFileChange}
