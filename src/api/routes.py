@@ -553,7 +553,7 @@ def update_expense(expense_id):
 
     # Verificar que el usuario es el creador del grupo
     group = Group.query.get(expense.group_id)
-    if not group or group.creator_id != user_id:
+    if not group or group.created_by != user_id:
         return jsonify({"error": "Only the group creator can modify expenses."}), 403
 
     description = data.get('description')
@@ -615,7 +615,7 @@ def delete_expense(expense_id):
 
     # Verificar que el usuario es el creador del grupo
     group = Group.query.get(expense.group_id)
-    if not group or group.creator_id != user_id:
+    if not group or group.created_by != user_id:
         return jsonify({"error": "Only the group creator can delete expenses."}), 403
 
     try:
@@ -629,7 +629,45 @@ def delete_expense(expense_id):
         return jsonify({"error": "Error deleting expense", "details": str(e)}), 500
 
 # ===============================
-# RECEIPTS (SUBIR / ELIMINAR)
+# RECEIPTS (OCR ANALYZE)
+# ===============================
+
+@api.route('/receipt/analyze', methods=['POST'])
+@jwt_required()
+def analyze_receipt():
+    """
+    Recibe una imagen, la sube a Cloudinary y la procesa con Azure OCR.
+    Devuelve los ítems prorrateados para que el frontend pueda pintar la UI interactiva.
+    """
+    if 'file' not in request.files:
+        return jsonify({"error": "No file provided"}), 400
+
+    file = request.files['file']
+
+    try:
+        # 1. Subir a Cloudinary
+        upload_result = cloudinary.uploader.upload(file)
+        secure_url = upload_result['secure_url']
+
+        # 2. Procesar con Azure (pipeline OCR + Proporcionalidad)
+        from api.ocr_service import process_receipt_with_azure
+        
+        analysis = process_receipt_with_azure(secure_url)
+        analysis['receipt_url'] = secure_url
+        
+        return jsonify({
+            "message": "Receipt analyzed successfully",
+            "data": analysis
+        }), 200
+
+    except Exception as e:
+        import traceback
+        print(f"Error Analyzing Receipt: {traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ===============================
+# RECEIPTS (SUBIR / ELIMINAR DEFAULT)
 # ===============================
 
 @api.route('/expense/<int:expense_id>/receipt', methods=['POST'])

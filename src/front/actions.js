@@ -1,4 +1,6 @@
 class Actions {
+  static useLocalFallback = false;
+
   constructor(store, dispatch) {
     this.store = store;
     this.dispatch = dispatch;
@@ -11,9 +13,15 @@ class Actions {
     isPrivate = true,
   ) => {
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+    
+    // Si ya detectamos que el túnel no funciona esta sesión, usamos la URL local
+    if (Actions.useLocalFallback) {
+      backendUrl = import.meta.env.VITE_BACKEND_URL_LOCAL || backendUrl;
+    }
+
     backendUrl = backendUrl.replace(/\/+$/, "");
 
-    if (!backendUrl.endsWith("/api")) {
+    if (backendUrl && !backendUrl.endsWith("/api")) {
       backendUrl += "/api";
     }
 
@@ -66,6 +74,13 @@ class Actions {
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
+      // Si el fetch falla (error de red/túnel caído), activamos el fallback local para el resto de la sesión
+      if (!Actions.useLocalFallback && backendUrl !== import.meta.env.VITE_BACKEND_URL_LOCAL) {
+        console.warn("Tunnel unreachable, switching to local fallback...");
+        Actions.useLocalFallback = true;
+        // Reintentamos la petición una sola vez con la URL local
+        return this.apiFetch(endpoint, method, body, isPrivate);
+      }
       return { code: 0, ok: false, error: error.message, data: null };
     }
   };
@@ -215,11 +230,26 @@ class Actions {
     return { success: true, data: resp.data };
   };
 
+  analyzeReceipt = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const resp = await this.apiFetch(`/receipt/analyze`, "POST", formData, true);
+    
+    if (!resp.ok) {
+        console.error("Error analyzing receipt:", resp.error || resp.data?.error);
+        return { success: false, error: resp.error || resp.data?.error || "Error analyzing receipt" };
+    }
+    
+    return { success: true, data: resp.data.data };
+  };
+
   uploadReceipt = async (expenseId, file) => {
     const formData = new FormData();
     formData.append("file", file);
 
     const resp = await this.apiFetch(`/expense/${expenseId}/receipt`, "POST", formData, true);
+
     
     if (!resp.ok) {
         console.error("Error uploading receipt:", resp.error || resp.data?.error);

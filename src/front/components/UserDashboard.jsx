@@ -5,6 +5,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { GroupList } from "./GroupsList.jsx";
 import FadeContent from "./bits/FadeContent.jsx";
 import CountUp from "./bits/CountUp.jsx";
+import SplittyLogo from "../logos/SplittyLogo.jsx";
 
 export const UserDashboard = () => {
     const { store, actions } = useGlobalReducer();
@@ -31,19 +32,30 @@ export const UserDashboard = () => {
 
     return (
         <div className="py-5">
-            <div className="container mt-5">
+            <div className="container mt-3 mt-md-5">
+
+
 
                 {/* Header Section */}
                 <FadeContent blur={true} duration={1200} easing="ease-out" initialOpacity={0} className="row mb-5 align-items-center">
-                    <div className="col-12 col-md-8 text-start">
-                        <h1 className="fw-bold" style={{ color: "var(--color-base-light)", fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
-                            Hello, <span className="splitty-gradient-text" style={{ color: "var(--color-base-dark-orange)" }}>{store.user?.username || "User"}</span>
-                        </h1>
-                        <p style={{ color: "var(--color-base-light)", opacity: 0.7, fontSize: "1.1rem" }}>
-                            Welcome back to Splitty.
-                        </p>
+                    <div className="col-12 col-md-8 d-flex justify-content-between align-items-center text-start">
+                        <div>
+                            <h1 className="fw-bold mb-1" style={{ color: "var(--color-base-light)", fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
+                                Hello, <span className="splitty-gradient-text" style={{ color: "var(--color-base-dark-orange)" }}>{store.user?.username || "User"}</span>
+                            </h1>
+                            <p className="mb-0" style={{ color: "var(--color-base-light)", opacity: 0.7, fontSize: "1.1rem" }}>
+                                Welcome back to Splitty.
+                            </p>
+                        </div>
+                        <div className="d-md-none" style={{ 
+                            width: "60px",
+                            flexShrink: 0,
+                            filter: "drop-shadow(0px 2px 20px rgba(252, 164, 52, 0.45))"
+                        }}>
+                            <SplittyLogo color="var(--color-base-dark-orange)" />
+                        </div>
                     </div>
-                    <div className="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+                    <div className="col-12 col-md-4 text-md-end mt-4 mt-md-0">
                         <Link to="/create-group" className="btn splitty-btn shadow-lg p-3 px-md-5"
                             style={{
                                 background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
@@ -72,14 +84,36 @@ export const UserDashboard = () => {
                             {/* Card: Overall Balance */}
                             <div className="p-3 p-md-4 flex-fill stat-card" style={{ ...statCardStyle, cursor: "pointer" }}
                                 onClick={() => navigate("/debts")}>
-                                <small style={statLabelStyle}>Overall Balance</small>
+                                <div className="d-flex justify-content-between align-items-start">
+                                    <small style={statLabelStyle}>Overall Balance</small>
+                                    <i className="fas fa-arrow-right" style={{
+                                        color: "var(--color-base-dark-orange)",
+                                        fontSize: "0.85rem",
+                                        opacity: 0.7,
+                                        transition: "transform 0.2s ease, opacity 0.2s ease"
+                                    }}></i>
+                                </div>
                                 <h2 className="fw-bold mb-0 mt-2" style={{ color: netBalance >= 0 ? "#4ade80" : "#f87171" }}>
                                     {netBalance >= 0 ? "+" : "-"}$<CountUp from={0} to={Math.abs(netBalance)} duration={0.8} decimals={2} />
                                 </h2>
                                 {store.friendDebts && (
-                                    <small style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem" }}>
-                                        {netBalance >= 0 ? "You're ahead" : "You owe more"} • Tap to view
-                                    </small>
+                                    <div className="mt-2 d-flex align-items-center gap-2">
+                                        <small style={{ color: "rgba(255,255,255,0.4)", fontSize: "0.75rem", margin: 0 }}>
+                                            {netBalance >= 0 ? "You're ahead" : "You owe more"}
+                                        </small>
+                                        <span className="d-inline-flex align-items-center px-3 py-1"
+                                            style={{
+                                                background: "linear-gradient(135deg, rgba(252,164,52,0.15), rgba(199,106,42,0.1))",
+                                                borderRadius: "20px",
+                                                color: "var(--color-base-dark-orange)",
+                                                fontSize: "0.75rem",
+                                                fontWeight: "600",
+                                                letterSpacing: "0.3px",
+                                                gap: "6px"
+                                            }}>
+                                            Tap to view <i className="fas fa-chevron-right" style={{ fontSize: "0.6rem" }}></i>
+                                        </span>
+                                    </div>
                                 )}
                             </div>
 

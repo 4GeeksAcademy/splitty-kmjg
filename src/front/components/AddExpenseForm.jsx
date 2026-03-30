@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import CustomSelect from "./CustomSelect";
 import InviteModal from "./InviteModal";
@@ -27,6 +28,11 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     // Receipt upload state
     const [receiptFile, setReceiptFile] = useState(null);
     const [lightboxData, setLightboxData] = useState({ isOpen: false, url: null, type: null });
+
+    // AI Receipt Scanning State
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [ocrData, setOcrData] = useState(null);
+    const [itemAssignments, setItemAssignments] = useState({});
 
     // Pre-populate participants and splits if editing
     useEffect(() => {
@@ -80,6 +86,51 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
             // Start unchecked (sin marcar) for manual selection
         }
     }, [allParticipants, store.user?.username, isEditing]);
+
+    // Handle OCR Analyzing
+    useEffect(() => {
+        const processReceipt = async () => {
+            if (receiptFile?.file && !isEditing && !ocrData) {
+                setIsAnalyzing(true);
+                const resp = await actions.analyzeReceipt(receiptFile.file);
+                setIsAnalyzing(false);
+                if (resp.success && resp.data) {
+                    setOcrData(resp.data);
+                    if (resp.data.total && !totalAmount) {
+                        setTotalAmount(resp.data.total.toString());
+                    }
+                    if (resp.data.merchant_name && !description) {
+                        setDescription(resp.data.merchant_name + " Receipt");
+                    }
+                } else {
+                    setError("Failed to analyze receipt: " + (resp.error || "Unknown error"));
+                }
+            }
+        };
+        processReceipt();
+    }, [receiptFile]);
+
+    // Auto-update exact splits when OCR item assignments change
+    useEffect(() => {
+        if (ocrData?.items?.length > 0) {
+            setSplitMode("exact");
+            const newSplits = {};
+            
+            ocrData.items.forEach(item => {
+                const uid = itemAssignments[item.id];
+                if (uid) {
+                    newSplits[uid] = (newSplits[uid] || 0) + item.final_price;
+                }
+            });
+            
+            // Format sums
+            Object.keys(newSplits).forEach(k => {
+                newSplits[k] = newSplits[k].toFixed(2);
+            });
+            
+            setSplits(newSplits);
+        }
+    }, [itemAssignments, ocrData]);
 
     // vercel-react-best-practices: Memoize derived data
     const selectedGroupMembers = React.useMemo(() => allParticipants.filter(m => selectedMembers.includes(m.id)), [allParticipants, selectedMembers]);
@@ -276,6 +327,23 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
             <div className="skel-orange w-100 mt-4" style={{ height: "56px", borderRadius: "16px" }}></div>
         </div>
     );
+
+    const handleItemAssignment = (itemId, userId) => {
+        setItemAssignments(prev => {
+            const next = {...prev};
+            if (next[itemId] === userId) {
+                delete next[itemId]; // toggle off if same clicked
+            } else {
+                next[itemId] = userId;
+            }
+            return next;
+        });
+
+        // Ensure user is selected as a participant if they get an item
+        if (userId && !selectedMembers.includes(userId)) {
+            handleMemberToggle(userId);
+        }
+    };
 
     return (
         <div className="w-100" style={{ maxWidth: "100%" }}>
@@ -527,10 +595,86 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                     </div>
                 </div>
 
-                <ReceiptUploader 
-                    onChange={(file, url) => setReceiptFile({ file, url })}
-                    onPreviewClick={(url, type) => setLightboxData({ isOpen: true, url, type })}
-                />
+                {isAnalyzing ? (
+                    <>
+                        {createPortal(
+                            <div className="ai-edge-glow-fullscreen"></div>,
+                            document.body
+                        )}
+                        <div className="mb-4 text-center ai-glow-container" style={{ minHeight: "130px", width: "100%" }}>
+                            <div className="d-flex flex-column align-items-center justify-content-center w-100 h-100" style={{ position: "relative", zIndex: 10 }}>
+                                <div className="spinner-border mb-3" style={{ color: "var(--color-base-dark-orange)", width: "2.5rem", height: "2.5rem", borderWidth: "0.2em" }} role="status"></div>
+                                <span className="splitty-gradient-text fw-bold" style={{ letterSpacing: "1px", fontSize: "1.05rem", zIndex: 10 }}>
+                                    ANALYZING RECEIPT WITH AI...
+                                </span>
+                            </div>
+                        </div>
+                    </>
+                ) : ocrData?.items?.length > 0 ? (
+                    <div className="mb-4 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <label className="splitty-gradient-text mb-0" style={{ fontWeight: 700, fontSize: "1.1rem" }}>
+                                <i className="fa-solid fa-wand-magic-sparkles me-2"></i>Items Details
+                            </label>
+                            <span className="badge rounded-pill bg-dark border border-secondary text-light px-2 py-1" style={{ fontSize: "0.75rem" }}>
+                                Tax: {currency}{ocrData.tax.toFixed(2)} | Tip: {currency}{ocrData.tip.toFixed(2)}
+                            </span>
+                        </div>
+                        <p className="text-secondary small mb-3">Tap an item to assign it. Tax and tip are distributed proportionally automatically.</p>
+                        
+                        <div className="d-flex flex-column gap-3">
+                            {ocrData.items.map(item => {
+                                const assignedUserId = itemAssignments[item.id];
+                                const assignedUser = assignedUserId ? selectedGroupMembers.find(m => m.id.toString() === assignedUserId.toString()) : null;
+                                
+                                return (
+                                    <div key={item.id} className="p-3 rounded-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.2s" }}>
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                <div className="fw-bold text-white mb-1" style={{ fontSize: "0.95rem" }}>{item.name}</div>
+                                                <div style={{ fontSize: "0.75rem", color: "#a19b95" }}>
+                                                    Base: {currency}{item.price.toFixed(2)} + Extras: {currency}{(item.tax_share + item.tip_share).toFixed(2)}
+                                                </div>
+                                            </div>
+                                            <div className="fw-bold" style={{ color: "var(--color-base-dark-orange)", fontSize: "1.05rem" }}>
+                                                {currency}{item.final_price.toFixed(2)}
+                                            </div>
+                                        </div>
+
+                                        <div className="d-flex flex-wrap gap-2 mt-3 pt-2 border-top" style={{ borderColor: "rgba(255,255,255,0.05) !important" }}>
+                                            {selectedGroupMembers.map(m => {
+                                                const isActive = assignedUserId === m.id.toString();
+                                                return (
+                                                    <button
+                                                        key={m.id}
+                                                        type="button"
+                                                        onClick={() => handleItemAssignment(item.id, m.id.toString())}
+                                                        className="btn d-flex align-items-center justify-content-center py-1 px-3 m-0 border-0"
+                                                        style={{
+                                                            background: isActive ? "var(--splitty-gradient)" : "rgba(255,255,255,0.05)",
+                                                            color: isActive ? "#fff" : "#a19b95",
+                                                            borderRadius: "99px",
+                                                            fontSize: "0.8rem",
+                                                            fontWeight: isActive ? "700" : "500",
+                                                            transition: "all 0.15s ease"
+                                                        }}
+                                                    >
+                                                        {m.username}
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+                ) : (
+                    <ReceiptUploader 
+                        onChange={(file, url) => setReceiptFile({ file, url })}
+                        onPreviewClick={(url, type) => setLightboxData({ isOpen: true, url, type })}
+                    />
+                )}
 
                 {/* Fix #4: Contextual submit button label */}
                 <button 
