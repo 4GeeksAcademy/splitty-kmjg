@@ -129,6 +129,11 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
             });
             
             setSplits(newSplits);
+
+            // Always sync totalAmount to the real sum of ALL ocr items
+            // so the validation never sees a mismatch between assigned and total
+            const ocrTotal = ocrData.items.reduce((acc, item) => acc + (item.final_price || 0), 0);
+            setTotalAmount(ocrTotal.toFixed(2));
         }
     }, [itemAssignments, ocrData]);
 
@@ -623,12 +628,24 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         <p className="text-secondary small mb-3">Tap an item to assign it. Tax and tip are distributed proportionally automatically.</p>
                         
                         <div className="d-flex flex-column gap-3">
-                            {ocrData.items.map(item => {
+                            {ocrData.items.map((item, idx) => {
                                 const assignedUserId = itemAssignments[item.id];
                                 const assignedUser = assignedUserId ? selectedGroupMembers.find(m => m.id.toString() === assignedUserId.toString()) : null;
                                 
                                 return (
-                                    <div key={item.id} className="p-3 rounded-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", transition: "all 0.2s" }}>
+                                    <div key={item.id} className="p-3 rounded-4" style={{
+                                    position: "relative",
+                                    zIndex: ocrData.items.length - idx,
+                                    background: assignedUserId
+                                        ? "rgba(187, 77, 0, 0.08)"
+                                        : "rgba(255,255,255,0.03)",
+                                    border: assignedUserId
+                                        ? "1px solid rgba(187, 77, 0, 0.35)"
+                                        : "1px solid rgba(255,255,255,0.05)",
+                                    backdropFilter: "blur(8px)",
+                                    WebkitBackdropFilter: "blur(8px)",
+                                    transition: "all 0.2s"
+                                }}>
                                         <div className="d-flex justify-content-between align-items-start mb-2">
                                             <div>
                                                 <div className="fw-bold text-white mb-1" style={{ fontSize: "0.95rem" }}>{item.name}</div>
@@ -641,28 +658,16 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                                             </div>
                                         </div>
 
-                                        <div className="d-flex flex-wrap gap-2 mt-3 pt-2 border-top" style={{ borderColor: "rgba(255,255,255,0.05) !important" }}>
-                                            {selectedGroupMembers.map(m => {
-                                                const isActive = assignedUserId === m.id.toString();
-                                                return (
-                                                    <button
-                                                        key={m.id}
-                                                        type="button"
-                                                        onClick={() => handleItemAssignment(item.id, m.id.toString())}
-                                                        className="btn d-flex align-items-center justify-content-center py-1 px-3 m-0 border-0"
-                                                        style={{
-                                                            background: isActive ? "var(--splitty-gradient)" : "rgba(255,255,255,0.05)",
-                                                            color: isActive ? "#fff" : "#a19b95",
-                                                            borderRadius: "99px",
-                                                            fontSize: "0.8rem",
-                                                            fontWeight: isActive ? "700" : "500",
-                                                            transition: "all 0.15s ease"
-                                                        }}
-                                                    >
-                                                        {m.username}
-                                                    </button>
-                                                )
-                                            })}
+                                        <div className="mt-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                            <CustomSelect
+                                                placeholder="Assign to a member..."
+                                                value={assignedUserId || ""}
+                                                onChange={(val) => handleItemAssignment(item.id, val)}
+                                                options={[
+                                                    { value: "", label: "— Unassigned —", disabled: false },
+                                                    ...selectedGroupMembers.map(m => ({ value: m.id.toString(), label: m.username }))
+                                                ]}
+                                            />
                                         </div>
                                     </div>
                                 )

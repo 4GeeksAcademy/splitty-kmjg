@@ -94,6 +94,13 @@ app.register_blueprint(api, url_prefix='/api')
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
+# Catch-all for unhandled 500 errors — ensures CORS headers are always present
+@app.errorhandler(500)
+def handle_500(error):
+    response = jsonify({"error": "Internal server error"})
+    response.status_code = 500
+    return response
+
 # generate sitemap with all your endpoints
 @app.route('/')
 def sitemap():

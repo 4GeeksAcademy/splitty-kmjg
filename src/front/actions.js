@@ -74,8 +74,11 @@ class Actions {
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
-      // Si el fetch falla (error de red/túnel caído), activamos el fallback local para el resto de la sesión
-      if (!Actions.useLocalFallback && backendUrl !== import.meta.env.VITE_BACKEND_URL_LOCAL) {
+      const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      
+      // Si el fetch falla (error de red/túnel caído), solo activamos el fallback si estamos en localhost
+      // (Porque llamar a 127.0.0.1 desde un dominio HTTPS externo como Cloudflare siempre será bloqueado)
+      if (isLocalHost && !Actions.useLocalFallback && backendUrl !== import.meta.env.VITE_BACKEND_URL_LOCAL) {
         console.warn("Tunnel unreachable, switching to local fallback...");
         Actions.useLocalFallback = true;
         // Reintentamos la petición una sola vez con la URL local

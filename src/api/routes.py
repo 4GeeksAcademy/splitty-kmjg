@@ -658,7 +658,7 @@ def analyze_receipt():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files['file']
-    isValid, msg = validate_file_type(file.filename)
+    isValid, msg = validate_file_type(file)
     if not isValid:
         return jsonify({"error": msg}), 400
 
@@ -708,7 +708,7 @@ def upload_receipt(expense_id):
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files['file']
-    isValid, msg = validate_file_type(file.filename)
+    isValid, msg = validate_file_type(file)
     if not isValid:
         return jsonify({"error": msg}), 400
 
