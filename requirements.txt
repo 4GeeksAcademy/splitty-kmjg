@@ -31,3 +31,4 @@ WTForms==3.2.1
 cloudinary>=1.41.0
 azure-ai-documentintelligence>=1.0.0
 azure-core>=1.30.0
+Flask-Limiter==3.7.0

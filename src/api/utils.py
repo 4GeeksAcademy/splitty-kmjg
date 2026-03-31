@@ -306,3 +306,49 @@ def distribute_proportional_costs(items, tax: Decimal, tip: Decimal) -> list:
         result["final_price"] = result["price"] + result["tax_share"] + result["tip_share"]
         
     return processed
+
+import re
+
+def validate_password(password):
+    """
+    Validate password strength:
+    - At least 8 characters
+    - At least one uppercase letter
+    - At least one lowercase letter
+    - At least one number
+    - At least one special character
+    """
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one uppercase letter"
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one lowercase letter"
+    if not re.search(r"\d", password):
+        return False, "Password must contain at least one number"
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False, "Password must contain at least one special character"
+    return True, "Password is valid"
+
+def validate_file_type(file, allowed_extensions=None, allowed_mimetypes=None):
+    """
+    Validate file type and MIME type.
+    """
+    if allowed_extensions is None:
+        allowed_extensions = {'png', 'jpg', 'jpeg', 'pdf'}
+    if allowed_mimetypes is None:
+        allowed_mimetypes = {'image/png', 'image/jpeg', 'application/pdf'}
+    
+    filename = file.filename
+    if '.' not in filename:
+        return False, "File has no extension"
+    
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext not in allowed_extensions:
+        return False, f"Extension .{ext} not allowed"
+    
+    if hasattr(file, 'content_type'):
+        if file.content_type not in allowed_mimetypes:
+            return False, f"MIME type {file.content_type} not allowed"
+        
+    return True, "File is valid"

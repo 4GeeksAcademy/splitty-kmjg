@@ -252,6 +252,7 @@ class Invitation(db.Model):
     group_id: Mapped[int] = mapped_column(
         ForeignKey("group.id"), nullable=False)
     is_used: Mapped[bool] = mapped_column(Boolean(), default=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     group: Mapped["Group"] = relationship(
         "Group", back_populates="invitations")
@@ -339,6 +340,7 @@ class FriendInvitation(db.Model):
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     # RELATIONS
     inviter: Mapped["User"] = relationship(
