@@ -370,10 +370,12 @@ def create_expense(group_id):
     if not current_membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
-    # Validate that the payer belongs to the group
+    # Ensure the payer belongs to the group, if not, add them (auto-invite)
     payer_membership = GroupMember.query.filter_by(group_id=group_id, user_id=paid_by).first()
     if not payer_membership:
-        return jsonify({"error": "The user who paid does not belong to the group"}), 400
+        new_member = GroupMember(group_id=group_id, user_id=paid_by)
+        db.session.add(new_member)
+        # We don't commit yet, we'll commit with the expense
 
     try:
         amount_decimal = Decimal(str(amount))
@@ -396,7 +398,7 @@ def create_expense(group_id):
         split_amount = float(amount_decimal) / len(participants)
         normalized_participants = [{"user_id": pid, "amount_owed": split_amount} for pid in participants]
 
-    # Validate all participants belong to the group
+    # Ensure all participants belong to the group (auto-invite them if they are friends)
     for p in normalized_participants:
         p_id = p["user_id"] if isinstance(p, dict) else p
         participant_membership = GroupMember.query.filter_by(
@@ -405,7 +407,9 @@ def create_expense(group_id):
         ).first()
 
         if not participant_membership:
-            return jsonify({"error": f"User {p_id} does not belong to the group"}), 400
+            # Auto-join them to the group
+            new_member = GroupMember(group_id=group_id, user_id=p_id)
+            db.session.add(new_member)
 
     try:
         new_expense = Expense(
@@ -585,7 +589,8 @@ def update_expense(expense_id):
     if paid_by:
         payer_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=paid_by).first()
         if not payer_membership:
-            return jsonify({"error": "The user who paid does not belong to the group"}), 400
+            new_member = GroupMember(group_id=expense.group_id, user_id=paid_by)
+            db.session.add(new_member)
         expense.paid_by = paid_by
 
     try:
@@ -598,10 +603,11 @@ def update_expense(expense_id):
                 p_user_id = p["user_id"]
                 p_amount = Decimal(str(p.get("amount_owed", 0)))
                 
-                # Validar que el participante pertenece al grupo
+                # Validar que el participante pertenece al grupo (auto-unir si falta)
                 p_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=p_user_id).first()
                 if not p_membership:
-                    continue
+                    new_member = GroupMember(group_id=expense.group_id, user_id=p_user_id)
+                    db.session.add(new_member)
 
                 new_participant = ExpenseParticipant(
                     expense_id=expense.id,
