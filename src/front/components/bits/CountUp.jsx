@@ -5,19 +5,21 @@ export default function CountUp({
   to,
   from = 0,
   direction = 'up',
-  delay = 1.5,
-  duration = 2,
+  delay = 0.2,
+  duration = 1,
   className = '',
   startWhen = true,
   separator = '',
+  decimals: decimalsProp,
   onStart,
   onEnd
 }) {
   const ref = useRef(null);
   const motionValue = useMotionValue(direction === 'down' ? to : from);
 
-  const damping = 20 + 40 * (1 / duration);
-  const stiffness = 100 * (1 / duration);
+  // "Soft" feel: Increasing damping and reducing stiffness for a smoother ease
+  const damping = 30 + 10 * (1 / duration);
+  const stiffness = 80 * (1 / duration);
 
   const springValue = useSpring(motionValue, {
     damping,
@@ -40,23 +42,32 @@ export default function CountUp({
     return 0;
   };
 
-  const maxDecimals = Math.max(getDecimalPlaces(from), getDecimalPlaces(to));
+  const maxDecimals = decimalsProp !== undefined ? decimalsProp : Math.max(getDecimalPlaces(from), getDecimalPlaces(to));
 
   const formatValue = useCallback(
     latest => {
-      const hasDecimals = maxDecimals > 0;
-
+      // User request: Only animate the integer part
+      const integerPart = Math.floor(latest);
+      
       const options = {
         useGrouping: !!separator,
-        minimumFractionDigits: hasDecimals ? maxDecimals : 0,
-        maximumFractionDigits: hasDecimals ? maxDecimals : 0
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
       };
 
-      const formattedNumber = Intl.NumberFormat('en-US', options).format(latest);
+      const formattedInteger = Intl.NumberFormat('en-US', options).format(integerPart);
+      const integerResult = separator ? formattedInteger.replace(/,/g, separator) : formattedInteger;
+      
+      if (maxDecimals > 0) {
+        // "Decimales carguen rápido" -> Use decimals from the target 'to' value
+        const targetStr = to.toFixed(maxDecimals);
+        const decimalPart = targetStr.split('.')[1];
+        return `${integerResult}.${decimalPart}`;
+      }
 
-      return separator ? formattedNumber.replace(/,/g, separator) : formattedNumber;
+      return integerResult;
     },
-    [maxDecimals, separator]
+    [maxDecimals, separator, to]
   );
 
   useEffect(() => {
