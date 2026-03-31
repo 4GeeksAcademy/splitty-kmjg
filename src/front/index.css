@@ -182,8 +182,10 @@ html {
 /* Inputs and Selects */
 .splitty-input {
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid var(--color-base-dark-orange) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 12px;
   padding: 14px 18px; 
   font-size: 1rem;
@@ -200,14 +202,46 @@ select.splitty-input {
 }
 
 .splitty-input:hover {
-  border-color: rgba(187, 77, 0, 0.5) !important;
-  background-color: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(187, 77, 0, 0.45) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .splitty-input:focus {
-  border-color: var(--color-base-dark-orange) !important;
-  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.25) !important;
-  background-color: rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(187, 77, 0, 0.7) !important;
+  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.18) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* === CustomSelect Glass Dropdown === */
+.splitty-custom-select-list {
+    background: rgba(20, 16, 14, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(187, 77, 0, 0.25);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04);
+    overflow: hidden;
+}
+
+.splitty-custom-select-option {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--color-base-light);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.splitty-custom-select-option:hover {
+    background: rgba(187, 77, 0, 0.18);
+    color: #fca834;
+}
+
+.splitty-custom-select-option.selected {
+    background: linear-gradient(90deg, rgba(187,77,0,0.3) 0%, rgba(255,193,7,0.12) 100%);
+    color: #fca834;
+    font-weight: 600;
 }
 
 /* Custom arrow for the container */
@@ -649,14 +683,40 @@ input:-webkit-autofill:active {
         #00BFFF 240deg,
         transparent 300deg
     );
-    animation: spin-glow 1.2s linear infinite;
+    animation: spin-glow-edge 1.2s linear infinite;
     
     /* Blur the conic gradient colors together smoothly */
     filter: blur(8px);
     z-index: -1;
 }
 
-@keyframes spin-glow {
+@keyframes spin-glow-edge {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+/* --- CTA PULSE GLOW --- */
+.splitty-pulse-glow {
+    animation: splitty-pulse-glow 2.5s infinite;
+    transition: all 0.3s ease;
+}
+
+.splitty-pulse-glow:hover {
+    box-shadow: 0 0 25px 5px rgba(187, 77, 0, 0.6);
+    transform: translateY(-2px) scale(1.05);
+    filter: brightness(1.2);
+}
+
+@keyframes splitty-pulse-glow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(187, 77, 0, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(187, 77, 0, 0);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(187, 77, 0, 0);
+        transform: scale(1);
+    }
 }

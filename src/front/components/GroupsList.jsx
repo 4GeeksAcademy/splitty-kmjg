@@ -65,15 +65,28 @@ export const GroupList = () => {
 
     if (!store.groups || store.groups.length === 0) {
         return (
-            <div className="text-center p-5" style={{ background: "rgba(255,255,255,0.03)", borderRadius: "20px", border: "1px dashed rgba(255,255,255,0.1)" }}>
+            <div className="text-center p-5 empty-state-container" style={{ 
+                background: "rgba(255,255,255,0.03)", 
+                borderRadius: "20px", 
+                border: "1px dashed rgba(255,255,255,0.1)",
+                opacity: 0,
+                transform: "translateY(20px)"
+            }}
+            ref={(el) => {
+                if (el) {
+                    gsap.to(el, { opacity: 1, y: 0, duration: 1, ease: "power3.out" });
+                }
+            }}>
+                <i className="fas fa-layer-group mb-3 d-block" style={{ fontSize: "2.5rem", color: "var(--color-base-dark-orange)", opacity: 0.4 }}></i>
                 <p style={{ color: "var(--color-base-light)", opacity: 0.6 }}>You don't have any active groups yet.</p>
-                <Link to="/create-group" className="btn btn-sm px-4 py-3" style={{
+                <Link to="/create-group" className="btn btn-sm px-4 py-3 splitty-pulse-glow" style={{
                     background: "linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%)",
                     color: "var(--color-base-light)",
                     border: "none",
                     borderRadius: "12px",
                     fontWeight: "600",
-                    textDecoration: "none"
+                    textDecoration: "none",
+                    display: "inline-block"
                 }}>
                     Create my first group
                 </Link>
