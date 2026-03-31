@@ -15,17 +15,27 @@ from api.models import (
 )
 from flask_mail import Message
 import cloudinary.uploader
-from api.utils import generate_sitemap, APIException
+from api.utils import generate_sitemap, APIException, validate_file_type
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from flask_bcrypt import Bcrypt
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import timedelta
 
 bcrypt = Bcrypt()
 api = Blueprint('api', __name__)
 
-# Permite peticiones CORS específicamente para el prefijo /api/
+# Configure Limiter
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
 
-CORS(api, resources={r"/api/*": {"origins": "*"}})
+# Permite peticiones CORS específicamente para el prefijo /api/
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+CORS(api, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:3000"]}})
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -38,6 +48,7 @@ def handle_hello():
 # --- ENDPOINTS DE USUARIO (Registro, Login, Logout) ---
 
 @api.route('/register', methods=['POST'])
+@limiter.limit("5 per minute")
 def reg_user():
     data = request.get_json()
     username = data.get('username')
@@ -46,6 +57,11 @@ def reg_user():
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
+
+    from api.utils import validate_password
+    is_valid, msg = validate_password(password)
+    if not is_valid:
+        return jsonify({"error": msg}), 400
 
     email_exist = User.query.filter_by(email=email).first()
     if email_exist:
@@ -69,10 +85,11 @@ def reg_user():
         return jsonify({"message": "Usuario creado con exito"}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+        current_app.logger.error(f"Error in registration: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
     
 @api.route('/login', methods=['POST'])
-
+@limiter.limit("5 per minute")
 def login_user():
     data = request.get_json()
     email = data.get('email')
@@ -86,7 +103,10 @@ def login_user():
     if not user or not bcrypt.check_password_hash(user.password, password):
         return jsonify({"error": "Incorrect email or password"}), 401
 
-    acces_token = create_access_token(identity=str(user.id))
+    acces_token = create_access_token(
+        identity=str(user.id),
+        expires_delta=timedelta(hours=24)
+    )
     return jsonify({
         "message": "Login correcto",
         "access_token": acces_token,
@@ -225,8 +245,8 @@ def send_invitation(group_id):
 
         nueva_invitacion = Invitation(
             email=email_destinatario if email_destinatario else "pending@link.com",
-            group_id=group_id
-
+            group_id=group_id,
+            expires_at=datetime.utcnow() + timedelta(days=7)
         )
 
         db.session.add(nueva_invitacion)
@@ -284,9 +304,8 @@ def send_invitation(group_id):
 
     except Exception as e:
         db.session.rollback()
-        import traceback
-        print(traceback.format_exc())
-        return jsonify({"msg": "Error processing invitation", "error": str(e)}), 500
+        current_app.logger.error(f"Error processing invitation: {str(e)}")
+        return jsonify({"msg": "Error processing invitation"}), 500
 
 # --- ACEPTAR INVITACIÓN ---
 
@@ -299,7 +318,10 @@ def accept_group_invitation():
     # --1- BUSCAR LA INVITACIÓN POR EL TOKEN ---
     invitation = Invitation.query.filter_by(token=token).first()
     if not invitation:
-        return jsonify({"error": "Invitación no válida o expirada"}), 404
+        return jsonify({"error": "Invitación no válida"}), 404
+    
+    if invitation.expires_at and invitation.expires_at < datetime.utcnow():
+        return jsonify({"error": "La invitación ha expirado"}), 410
     # --2- VERIFICAR SI EL USUARIO YA ES MIEMBRO PARA NO DUPLICAR
     existing_member = GroupMember.query.filter_by(
         group_id=invitation.group.id,
@@ -318,7 +340,8 @@ def accept_group_invitation():
         return jsonify({"message": "¡Te has unido al grupo con éxito!", "group_id": invitation.group_id}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error joining group: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 # --- GASTOS ---
 
@@ -382,17 +405,7 @@ def create_expense(group_id):
         ).first()
 
         if not participant_membership:
-            try:
-                # Auto-add user to the group if they are not already a member
-                new_membership = GroupMember(
-                    group_id=group_id,
-                    user_id=p_id
-                )
-                db.session.add(new_membership)
-                db.session.flush()
-            except Exception as e:
-                db.session.rollback()
-                return jsonify({"error": f"Error adding user {p_id} to group", "details": str(e)}), 500
+            return jsonify({"error": f"User {p_id} does not belong to the group"}), 400
 
     try:
         new_expense = Expense(
@@ -428,8 +441,8 @@ def create_expense(group_id):
 
     except Exception as e:
         db.session.rollback()
-        print(f"DEBUG: Error creating expense: {str(e)}")
-        return jsonify({"error": "Error creating expense", "details": str(e)}), 500
+        current_app.logger.error(f"Error creating expense: {str(e)}")
+        return jsonify({"error": "Error creating expense"}), 500
 
 @api.route('/groups/<int:group_id>/expenses', methods=['GET'])
 @jwt_required()
@@ -601,7 +614,8 @@ def update_expense(expense_id):
         return jsonify({"message": "Expense updated successfully", "expense": expense.serialize()}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error updating expense", "details": str(e)}), 500
+        current_app.logger.error(f"Error updating expense: {str(e)}")
+        return jsonify({"error": "Error updating expense"}), 500
 
 # Eliminar un gasto
 @api.route('/expenses/<int:expense_id>', methods=['DELETE'])
@@ -626,7 +640,8 @@ def delete_expense(expense_id):
         return jsonify({"message": "Expense deleted successfully"}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": "Error deleting expense", "details": str(e)}), 500
+        current_app.logger.error(f"Error deleting expense: {str(e)}")
+        return jsonify({"error": "Error deleting expense"}), 500
 
 # ===============================
 # RECEIPTS (OCR ANALYZE)
@@ -643,6 +658,9 @@ def analyze_receipt():
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files['file']
+    isValid, msg = validate_file_type(file.filename)
+    if not isValid:
+        return jsonify({"error": msg}), 400
 
     try:
         # 1. Subir a Cloudinary
@@ -661,9 +679,8 @@ def analyze_receipt():
         }), 200
 
     except Exception as e:
-        import traceback
-        print(f"Error Analyzing Receipt: {traceback.format_exc()}")
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error Analyzing Receipt: {str(e)}")
+        return jsonify({"error": "Error analyzing receipt"}), 500
 
 
 # ===============================
@@ -691,6 +708,9 @@ def upload_receipt(expense_id):
         return jsonify({"error": "No file provided"}), 400
 
     file = request.files['file']
+    isValid, msg = validate_file_type(file.filename)
+    if not isValid:
+        return jsonify({"error": msg}), 400
 
     try:
         upload_result = cloudinary.uploader.upload(file)
@@ -705,7 +725,8 @@ def upload_receipt(expense_id):
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error uploading receipt: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @api.route('/expense/<int:expense_id>/receipt', methods=['DELETE'])
@@ -826,7 +847,8 @@ def send_friend_request():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error sending friend request: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @api.route('/friends/accept/<int:friendship_id>', methods=['POST'])
@@ -986,7 +1008,8 @@ def generate_friend_invite():
     try:
         nueva_invitacion = FriendInvitation(
             inviter_id=user_id,
-            email=email_destinatario if email_destinatario else "pending@link.com"
+            email=email_destinatario if email_destinatario else "pending@link.com",
+            expires_at=datetime.utcnow() + timedelta(days=7)
         )
         db.session.add(nueva_invitacion)
         db.session.commit()
@@ -1042,7 +1065,8 @@ def generate_friend_invite():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error in friends operation: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 @api.route('/friends/accept-invite', methods=['POST'])
@@ -1058,7 +1082,10 @@ def accept_friend_invite():
     
     invitation = FriendInvitation.query.filter_by(token=token).first()
     if not invitation:
-        return jsonify({"error": "Invalid or expired invitation"}), 404
+        return jsonify({"error": "Invalid invitation"}), 404
+    
+    if invitation.expires_at and invitation.expires_at < datetime.utcnow():
+        return jsonify({"error": "Invitation has expired"}), 410
     
     if invitation.is_used:
         return jsonify({"error": "This invitation has already been used"}), 400
@@ -1103,7 +1130,8 @@ def accept_friend_invite():
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        current_app.logger.error(f"Error in friends operation: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 # --- USER SEARCH ---
@@ -1115,8 +1143,8 @@ def search_users():
     user_id = int(get_jwt_identity())
     query = request.args.get("q", "").strip()
     
-    if not query or len(query) < 1:
-        return jsonify({"error": "Search query is required"}), 400
+    if not query or len(query) < 2 or len(query) > 100:
+        return jsonify({"error": "Search query must be between 2 and 100 characters"}), 400
     
     from sqlalchemy import or_
     results = User.query.filter(
