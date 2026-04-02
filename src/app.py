@@ -57,15 +57,26 @@ mail = Mail(app)
 
 # database configuration
 db_url = os.getenv("DATABASE_URL")
-if db_url is not None and db_url.startswith("http"):
-    db_url = None
-    
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
-        "postgres://", "postgresql://")
-else:
-    # Use relative SQLite path for Windows/Unix compatibility
+
+# Supabase connection string format: postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+if db_url and db_url.startswith("postgresql://"):
+    # Direct PostgreSQL connection (Supabase or self-hosted)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+elif db_url and db_url.startswith("postgres://"):
+    # Legacy postgres:// prefix - convert to postgresql://
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
+elif db_url and db_url.startswith("http"):
+    # HTTP URL means SQLite was mistakenly set - fallback
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
+else:
+    # Default: local SQLite for development
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
+
+# Log database type for debugging
+if "supabase" in (db_url or "").lower():
+    print("✓ Connected to Supabase PostgreSQL")
+elif db_url:
+    print(f"✓ Connected to: {db_url.split('@')[1] if '@' in db_url else 'custom database'}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "any-secret-key")

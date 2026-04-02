@@ -55,6 +55,7 @@
 	},
 	"dependencies": {
 		"@gsap/react": "^2.1.2",
+		"@supabase/supabase-js": "^2.101.1",
 		"gsap": "^3.14.2",
 		"motion": "^12.35.1",
 		"prop-types": "^15.8.1",
