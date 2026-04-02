@@ -669,14 +669,14 @@ def analyze_receipt():
         return jsonify({"error": msg}), 400
 
     try:
-        # 1. Subir a Cloudinary
-        upload_result = cloudinary.uploader.upload(file)
+        # 1. Subir a Cloudinary con resource_type="auto" para soportar PDFs
+        upload_result = cloudinary.uploader.upload(file, resource_type="auto")
         secure_url = upload_result['secure_url']
 
-        # 2. Procesar con Azure (pipeline OCR + Proporcionalidad)
-        from api.ocr_service import process_receipt_with_azure
+        # 2. Procesar con IA (priorizando Gemini, luego Azure)
+        from api.ocr_service import analyze_receipt_with_ai
         
-        analysis = process_receipt_with_azure(secure_url)
+        analysis = analyze_receipt_with_ai(secure_url)
         analysis['receipt_url'] = secure_url
         
         return jsonify({
@@ -719,7 +719,8 @@ def upload_receipt(expense_id):
         return jsonify({"error": msg}), 400
 
     try:
-        upload_result = cloudinary.uploader.upload(file)
+        # Subir a Cloudinary con resource_type="auto" para soportar PDFs
+        upload_result = cloudinary.uploader.upload(file, resource_type="auto")
 
         expense.receipt_url = upload_result['secure_url']
         db.session.commit()

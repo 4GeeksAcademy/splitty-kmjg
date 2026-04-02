@@ -29,10 +29,10 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     const [receiptFile, setReceiptFile] = useState(null);
     const [lightboxData, setLightboxData] = useState({ isOpen: false, url: null, type: null });
 
-    // AI Receipt Scanning State
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [ocrData, setOcrData] = useState(null);
     const [itemAssignments, setItemAssignments] = useState({});
+    const [aiAnalysisStatus, setAiAnalysisStatus] = useState("idle"); // idle, analyzing, success, failed
 
     // Pre-populate participants and splits if editing
     useEffect(() => {
@@ -96,6 +96,7 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                 setIsAnalyzing(false);
                 if (resp.success && resp.data) {
                     setOcrData(resp.data);
+                    setAiAnalysisStatus("success");
                     if (resp.data.total && !totalAmount) {
                         setTotalAmount(resp.data.total.toString());
                     }
@@ -103,7 +104,9 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         setDescription(resp.data.merchant_name + " Receipt");
                     }
                 } else {
-                    setError("Failed to analyze receipt: " + (resp.error || "Unknown error"));
+                    console.warn("AI Analysis failed:", resp.error);
+                    setAiAnalysisStatus("failed");
+                    // We don't set a global error here because we want the user to proceed manually
                 }
             }
         };
@@ -160,7 +163,11 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
             if (Math.abs(currentSum - amountVal) < 0.05) {
                 isValid = true;
             } else {
-                diffMsg = `Assigned: ${currency}${currentSum.toFixed(2)} / Left: ${currency}${(amountVal - currentSum).toFixed(2)}`;
+                if (ocrData?.items?.length > 0 && currentSum === 0) {
+                    diffMsg = "✨ Tap the items below to assign them to participants!";
+                } else {
+                    diffMsg = `Assigned: ${currency}${currentSum.toFixed(2)} / Left: ${currency}${(amountVal - currentSum).toFixed(2)}`;
+                }
             }
         } else if (splitMode === "percentage") {
             currentSum = Object.values(splits).reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
@@ -271,11 +278,31 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                     50% { background-color: rgba(252, 164, 52, 0.25); }
                     100% { background-color: rgba(252, 164, 52, 0.1); }
                 }
+                @keyframes scan-line {
+                    0% { top: 0%; opacity: 0; }
+                    10% { opacity: 1; }
+                    90% { opacity: 1; }
+                    100% { top: 100%; opacity: 0; }
+                }
                 .skel-block {
                     animation: pulse-dark 1.5s infinite ease-in-out;
                 }
                 .skel-orange {
                     animation: pulse-orange 1.5s infinite ease-in-out;
+                }
+                .ai-scan-line {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    height: 2px;
+                    background: linear-gradient(90deg, transparent, var(--color-base-orange), transparent);
+                    box-shadow: 0 0 15px var(--color-base-orange);
+                    animation: scan-line 2s infinite linear;
+                    z-index: 5;
+                }
+                .ai-glow-pulse {
+                    box-shadow: 0 0 30px rgba(252, 164, 52, 0.2);
+                    animation: pulse-orange 2s infinite ease-in-out;
                 }
                 `}
             </style>
@@ -415,7 +442,14 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
 
             <form onSubmit={handleSubmit}>
                 <div className="mb-2">
-                    <label className="splitty-label splitty-gradient-text" style={{ fontWeight: 700 }}>Description</label>
+                    <div className="d-flex justify-content-between align-items-center">
+                        <label className="splitty-label splitty-gradient-text" style={{ fontWeight: 700 }}>Description</label>
+                        {!receiptFile && !description && (
+                            <span style={{ fontSize: "0.7rem", color: "var(--color-base-orange)", fontWeight: "600", opacity: 0.8 }}>
+                                <i className="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-fill with receipt
+                            </span>
+                        )}
+                    </div>
                     <input
                         type="text"
                         className="splitty-input"
@@ -586,9 +620,12 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         ))}
                         
                         {!isValid && amountVal > 0 && splitMode !== 'equal' && (
-                            <div className="mt-3 p-3 text-center rounded splitty-alert-danger" style={{ fontSize: "0.85rem", fontWeight: "600" }}>
-                                <i className="fa-solid fa-triangle-exclamation me-2"></i>
-                                {diffMsg}
+                            <div 
+                                className={`mt-3 p-3 text-center rounded ${ocrData?.items?.length > 0 && currentSum === 0 ? 'splitty-alert-info' : 'splitty-alert-danger'}`} 
+                                style={{ fontSize: "0.85rem", fontWeight: "600" }}
+                            >
+                                <i className={`fa-solid ${ocrData?.items?.length > 0 && currentSum === 0 ? 'fa-circle-info' : 'fa-triangle-exclamation'} me-2`}></i>
+                                {diffMsg || "Please select participants and assign amounts."}
                             </div>
                         )}
                         {isValid && splitMode !== 'equal' && (
@@ -606,17 +643,86 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                             <div className="ai-edge-glow-fullscreen"></div>,
                             document.body
                         )}
-                        <div className="mb-4 text-center ai-glow-container" style={{ minHeight: "130px", width: "100%" }}>
-                            <div className="d-flex flex-column align-items-center justify-content-center w-100 h-100" style={{ position: "relative", zIndex: 10 }}>
+                        <div className="mb-4 text-center ai-glow-container ai-glow-pulse" 
+                            style={{ 
+                                minHeight: "130px", 
+                                width: "100%", 
+                                position: "relative",
+                                overflow: "hidden",
+                                background: "rgba(0,0,0,0.3)",
+                                borderRadius: "20px",
+                                border: "1px solid rgba(252, 164, 52, 0.2)"
+                            }}>
+                            <div className="ai-scan-line"></div>
+                            <div className="d-flex flex-column align-items-center justify-content-center w-100 h-100 py-4" style={{ position: "relative", zIndex: 10 }}>
                                 <div className="spinner-border mb-3" style={{ color: "var(--color-base-dark-orange)", width: "2.5rem", height: "2.5rem", borderWidth: "0.2em" }} role="status"></div>
                                 <span className="splitty-gradient-text fw-bold" style={{ letterSpacing: "1px", fontSize: "1.05rem", zIndex: 10 }}>
-                                    ANALYZING RECEIPT WITH AI...
+                                    MAGICAL AI ANALYSIS...
+                                </span>
+                                <span className="text-secondary small mt-1" style={{ fontSize: "0.75rem" }}>
+                                    Reading description and amounts
                                 </span>
                             </div>
                         </div>
                     </>
                 ) : ocrData?.items?.length > 0 ? (
                     <div className="mb-4 p-3" style={{ background: "rgba(0,0,0,0.2)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.03)" }}>
+                        {ocrData?.merchant_name && (
+                            <div className="mb-3">
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                    <h5 className="mb-0 text-white" style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                                        {ocrData.merchant_name}
+                                    </h5>
+                                    {ocrData.merchant_name.includes("MOCK") && (
+                                        <span 
+                                            className="badge px-2 py-1" 
+                                            style={{ fontSize: '0.65rem', borderRadius: '6px', fontWeight: 800, background: "rgba(252, 164, 52, 0.2)", color: "var(--color-base-orange)", border: "1px solid rgba(252, 164, 52, 0.3)" }}
+                                        >
+                                            ASSISTANT MODE
+                                        </span>
+                                    )}
+                                </div>
+                                {ocrData.merchant_name.includes("MOCK") && (
+                                    <div 
+                                        className="p-3 mb-3 rounded-4" 
+                                        style={{ 
+                                            background: "rgba(255, 255, 255, 0.03)", 
+                                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                                            fontSize: "0.85rem",
+                                            color: "#a19b95",
+                                            lineHeight: "1.5"
+                                        }}
+                                    >
+                                        <div className="d-flex align-items-center gap-2 mb-2" style={{ color: "var(--color-base-orange)", fontWeight: "600" }}>
+                                            <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                            <span>Assistant Suggestion</span>
+                                        </div>
+                                        We're showing a sample format to save you time. You can tap the items to assign them, or clear them to fill the form manually. Your file is attached!
+                                        <div className="mt-3 d-flex gap-3">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setLightboxData({ isOpen: true, url: receiptFile.url, type: receiptFile.file?.type || (receiptFile.url.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg') })}
+                                                className="btn btn-sm px-3 py-1 text-white border-0"
+                                                style={{ fontSize: "0.75rem", background: "rgba(255,255,255,0.1)", borderRadius: "8px", fontWeight: "600" }}
+                                            >
+                                                <i className="fa-solid fa-eye me-1"></i> View Receipt
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    setOcrData(null);
+                                                    setAiAnalysisStatus("idle");
+                                                }}
+                                                className="btn btn-sm px-3 py-1 text-white border-0"
+                                                style={{ fontSize: "0.75rem", background: "rgba(187, 77, 0, 0.15)", borderRadius: "8px", fontWeight: "600", color: "var(--color-base-orange)" }}
+                                            >
+                                                <i className="fa-solid fa-trash-can me-1"></i> Clear & Manual
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <label className="splitty-gradient-text mb-0" style={{ fontWeight: 700, fontSize: "1.1rem" }}>
                                 <i className="fa-solid fa-wand-magic-sparkles me-2"></i>Items Details
@@ -675,10 +781,30 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         </div>
                     </div>
                 ) : (
-                    <ReceiptUploader 
-                        onChange={(file, url) => setReceiptFile({ file, url })}
-                        onPreviewClick={(url, type) => setLightboxData({ isOpen: true, url, type })}
-                    />
+                    <>
+                        {aiAnalysisStatus === "failed" && (
+                            <div className="mb-4 p-3 rounded-4 d-flex align-items-center gap-3" 
+                                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                                <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                                    style={{ width: "40px", height: "40px", background: "rgba(252, 164, 52, 0.1)" }}>
+                                    <i className="fa-solid fa-eye-slash" style={{ color: "#a19b95", fontSize: "1rem" }}></i>
+                                </div>
+                                <div style={{ fontSize: "0.85rem", color: "#a19b95" }}>
+                                    <span className="fw-bold d-block mb-1" style={{ color: "var(--color-base-cream)" }}>Cloudy scan, manual save ready!</span>
+                                    We couldn't read the text automatically, but your file is safe. You can see it below and fill the items manually.
+                                </div>
+                            </div>
+                        )}
+
+                        <ReceiptUploader 
+                            onChange={(file, url) => {
+                                setAiAnalysisStatus("idle"); // reset status on new file
+                                setOcrData(null);
+                                setReceiptFile({ file, url });
+                            }}
+                            onPreviewClick={(url, type) => setLightboxData({ isOpen: true, url, type })}
+                        />
+                    </>
                 )}
 
                 {/* Fix #4: Contextual submit button label */}
