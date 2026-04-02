@@ -13,9 +13,11 @@ class Actions {
     isPrivate = true,
   ) => {
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
+    const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     
-    // Si ya detectamos que el túnel no funciona esta sesión, usamos la URL local
-    if (Actions.useLocalFallback) {
+    // SMART FALLBACK: Si estamos en localhost y el túnel está configurado, 
+    // preferimos el local por defecto para evitar timeouts en un túnel caído.
+    if (isLocalHost) {
       backendUrl = import.meta.env.VITE_BACKEND_URL_LOCAL || backendUrl;
     }
 
