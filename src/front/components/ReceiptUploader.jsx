@@ -94,10 +94,37 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
                 
                 {previewUrl ? (
                     fileType === "application/pdf" ? (
-                        <div className="d-flex flex-column align-items-center justify-content-center w-100 py-3" style={{ background: "rgba(0,0,0,0.4)", borderRadius: "12px" }}>
-                            <i className="fa-solid fa-file-pdf mb-2" style={{ fontSize: "2.5rem", color: "var(--color-base-orange)" }}></i>
-                            <span style={{ fontSize: "0.85rem", color: "var(--color-base-cream)", fontWeight: "600" }}>PDF Attached</span>
-                        </div>
+                        <div style={{ width: "100%", height: "160px", borderRadius: "12px", overflow: "hidden", position: "relative", background: "white" }}>
+                            {/* Real PDF preview using iframe */}
+                            <iframe 
+                                src={previewUrl} 
+                                style={{ width: "100%", height: "100%", border: "none", pointerEvents: "none" }} 
+                                title="Receipt Preview"
+                            />
+                             <div 
+                                style={{ position: "absolute", top: "10px", right: "10px", background: "rgba(0,0,0,0.6)", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onPreviewClick) onPreviewClick(previewUrl, fileType);
+                                }}
+                             >
+                                 <i className="fa-solid fa-expand text-white"></i>
+                             </div>
+                             <div 
+                                style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%)", display: "flex", alignItems: "flex-end", padding: "10px", pointerEvents: "none" }}
+                             >
+                                 <button 
+                                    className="btn p-0 border-0 text-white" 
+                                    style={{ fontSize: "0.8rem", fontWeight: "600", pointerEvents: "auto" }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleContainerClick();
+                                    }}
+                                 >
+                                    <i className="fa-solid fa-file-pdf me-1"></i> PDF Attached (Tap to change)
+                                 </button>
+                             </div>
+                         </div>
                     ) : (
                          <div style={{ width: "100%", height: "160px", borderRadius: "12px", overflow: "hidden", position: "relative" }}>
                              <img 
@@ -136,19 +163,48 @@ export const ReceiptUploader = ({ onChange, onPreviewClick }) => {
                     )
                 ) : (
                     <>
-                        <div style={{
-                            width: "48px", height: "48px", borderRadius: "50%",
-                            background: "rgba(252, 164, 52, 0.15)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            marginBottom: "12px"
-                        }}>
-                            <i className="fa-solid fa-camera" style={{ fontSize: "1.2rem", color: "var(--color-base-orange)" }}></i>
+                        <div className="mb-3" style={{ position: "relative" }}>
+                             {/* AI Magic Badge */}
+                             <div 
+                                style={{
+                                    position: "absolute",
+                                    top: "-35px",
+                                    left: "50%",
+                                    transform: "translateX(-50%)",
+                                    background: "var(--splitty-gradient)",
+                                    color: "white",
+                                    padding: "4px 12px",
+                                    borderRadius: "12px",
+                                    fontSize: "0.7rem",
+                                    fontWeight: "800",
+                                    letterSpacing: "1px",
+                                    textTransform: "uppercase",
+                                    boxShadow: "0 4px 12px rgba(252, 164, 52, 0.4)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    zIndex: 10,
+                                    whiteSpace: "nowrap"
+                                }}
+                             >
+                                 <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                 AI Magic Enabled
+                             </div>
+
+                             <div style={{
+                                width: "48px", height: "48px", borderRadius: "50%",
+                                background: "rgba(252, 164, 52, 0.15)",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                margin: "0 auto 12px"
+                            }}>
+                                <i className="fa-solid fa-receipt" style={{ fontSize: "1.2rem", color: "var(--color-base-orange)" }}></i>
+                            </div>
                         </div>
                         <span style={{ fontSize: "0.95rem", color: "var(--color-base-cream)", fontWeight: "600", margin: "0" }}>
-                            Tap to upload or take a photo
+                            Upload Receipt to Auto-Fill
                         </span>
-                        <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)", marginTop: "4px" }}>
-                            .jpg, .png, .pdf supported
+                        <span style={{ fontSize: "0.8rem", color: "var(--color-base-orange)", marginTop: "4px", fontWeight: "500" }}>
+                            Splitty AI will read description, total and items for you! ✨
                         </span>
                     </>
                 )}

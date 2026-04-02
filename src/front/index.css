@@ -437,6 +437,12 @@ body::-webkit-scrollbar-thumb:hover {
   border-color: rgba(248, 113, 113, 0.2);
 }
 
+.splitty-alert-info {
+  background-color: rgba(252, 164, 52, 0.1);
+  color: var(--color-base-orange);
+  border-color: rgba(252, 164, 52, 0.2);
+}
+
 .splitty-alert-loading {
   background-color: rgba(199, 106, 42, 0.1);
   color: var(--color-base-orange);

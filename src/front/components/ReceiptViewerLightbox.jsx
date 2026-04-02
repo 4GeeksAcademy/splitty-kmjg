@@ -100,19 +100,26 @@ export const ReceiptViewerLightbox = ({ isOpen, onClose, fileUrl, fileType }) =>
                     }}
                 >
                     {isPdf ? (
-                        <div className="text-center splitty-card p-5" style={{ background: "rgba(0,0,0,0.3)", backdropFilter: "blur(10px)", maxWidth: "400px" }}>
-                            <i className="fa-solid fa-file-pdf mb-3" style={{ fontSize: "5rem", color: "var(--color-base-orange)" }}></i>
-                            <h4 className="text-white mb-4">PDF Document</h4>
-                            <a 
-                                href={fileUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="splitty-btn px-4 text-decoration-none"
-                                onClick={(e) => e.stopPropagation()}
-                                style={{ display: "inline-block" }}
-                            >
-                                <i className="fa-solid fa-arrow-up-right-from-square me-2"></i> Open PDF
-                            </a>
+                        <div style={{ width: "95vw", height: "80vh", display: "flex", flexDirection: "column", gap: "10px" }}>
+                             <div style={{ flex: 1, background: "white", borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
+                                <iframe 
+                                     src={fileUrl} 
+                                     style={{ width: "100%", height: "100%", border: "none" }} 
+                                     title="PDF Receipt Content"
+                                />
+                             </div>
+                             <div className="text-center">
+                                 <a 
+                                    href={fileUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="splitty-btn px-4 text-decoration-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{ display: "inline-block" }}
+                                 >
+                                    <i className="fa-solid fa-arrow-up-right-from-square me-2"></i> Open in New Tab
+                                 </a>
+                             </div>
                         </div>
                     ) : (
                         <div 
