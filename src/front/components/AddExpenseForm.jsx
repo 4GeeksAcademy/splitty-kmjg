@@ -155,7 +155,15 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
     let currentSum = 0;
     let diffMsg = "";
 
-    if (amountVal > 0 && description.trim() !== "" && selectedGroupMembers.length > 0) {
+    // Granular validation messages
+    if (description.trim() === "") {
+        diffMsg = "Please enter a description.";
+    } else if (amountVal <= 0) {
+        diffMsg = "Please enter a total amount.";
+    } else if (selectedGroupMembers.length === 0) {
+        diffMsg = "Please select at least one participant.";
+    } else {
+        // Basic fields are OK, now check split distribution
         if (splitMode === "equal") {
             isValid = true;
         } else if (splitMode === "exact") {
@@ -563,7 +571,27 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                                     key={tab.id}
                                     type="button" 
                                     className="btn flex-fill border-0 rounded-pill"
-                                    onClick={() => setSplitMode(tab.id)}
+                                    onClick={() => {
+                                        if (splitMode !== tab.id) {
+                                            setSplitMode(tab.id);
+                                            setSplits({}); // Reset splits on mode change
+                                            
+                                            // Recalculate if returning to exact with OCR items
+                                            if (tab.id === "exact" && ocrData?.items?.length > 0) {
+                                                const newSplits = {};
+                                                ocrData.items.forEach(item => {
+                                                    const uid = itemAssignments[item.id];
+                                                    if (uid) {
+                                                        newSplits[uid] = (newSplits[uid] || 0) + item.final_price;
+                                                    }
+                                                });
+                                                Object.keys(newSplits).forEach(k => {
+                                                    newSplits[k] = newSplits[k].toFixed(2);
+                                                });
+                                                setSplits(newSplits);
+                                            }
+                                        }
+                                    }}
                                     style={{ 
                                         background: active ? "var(--splitty-gradient)" : "transparent",
                                         color: active ? "var(--color-base-light)" : "#a19b95",
@@ -592,34 +620,41 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         <p className="mb-3 splitty-gradient-text" style={{ fontSize: "0.85rem", fontWeight: "700", textTransform: "uppercase" }}>
                             Assign amounts:
                         </p>
-                        {selectedGroupMembers.map(m => (
-                            <div key={m.id} className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom" style={{ borderColor: "rgba(255,255,255,0.03) !important" }}>
-                                <div className="d-flex align-items-center gap-2">
-                                    <div className="rounded-circle text-center d-flex justify-content-center align-items-center fw-bold" 
-                                        style={{ width: "32px", height: "32px", background: "rgba(187, 77, 0, 0.2)", color: "var(--color-base-dark-orange)", fontSize: "0.8rem" }}>
-                                        {m.username.charAt(0).toUpperCase()}
-                                    </div>
-                                    <span style={{ fontSize: "0.95rem", color: "var(--color-base-cream)" }}>{m.username}</span>
-                                </div>
-                                
-                                <div className="d-flex align-items-center gap-2" style={{ width: "130px" }}>
-                                    {splitMode === 'exact' && <span className="splitty-gradient-text fw-bold">{currency}</span>}
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        step={splitMode === 'exact' ? "0.01" : "1"}
-                                        className="form-control text-end border-0 no-spinners"
-                                        style={{ background: "rgba(255,255,255,0.05)", color: "var(--color-base-cream)", fontWeight: "bold", borderRadius: "8px", padding: "8px 12px" }}
-                                        value={splits[m.id] || ""}
-                                        onChange={(e) => handleSplitChange(m.id, e.target.value)}
-                                        placeholder="0"
-                                    />
-                                    {splitMode === 'percentage' && <span className="splitty-gradient-text fw-bold">%</span>}
-                                </div>
+                        {selectedGroupMembers.length === 0 ? (
+                            <div className="text-center py-4 px-3" style={{ background: "rgba(0,0,0,0.1)", borderRadius: "12px", border: "1px dashed rgba(255,255,255,0.05)" }}>
+                                <i className="fa-solid fa-users-slash mb-2 d-block fs-4" style={{ color: "var(--color-base-orange)", opacity: 0.6 }}></i>
+                                <span className="text-secondary small">Select participants above to split the cost</span>
                             </div>
-                        ))}
+                        ) : (
+                            selectedGroupMembers.map(m => (
+                                <div key={m.id} className="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom" style={{ borderColor: "rgba(255,255,255,0.03) !important" }}>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div className="rounded-circle text-center d-flex justify-content-center align-items-center fw-bold" 
+                                            style={{ width: "32px", height: "32px", background: "rgba(187, 77, 0, 0.2)", color: "var(--color-base-dark-orange)", fontSize: "0.8rem" }}>
+                                            {m.username.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span style={{ fontSize: "0.95rem", color: "var(--color-base-cream)" }}>{m.username}</span>
+                                    </div>
+                                    
+                                    <div className="d-flex align-items-center gap-2" style={{ width: "130px" }}>
+                                        {splitMode === 'exact' && <span className="splitty-gradient-text fw-bold">{currency}</span>}
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step={splitMode === 'exact' ? "0.01" : "1"}
+                                            className="form-control text-end border-0 no-spinners"
+                                            style={{ background: "rgba(255,255,255,0.05)", color: "var(--color-base-cream)", fontWeight: "bold", borderRadius: "8px", padding: "8px 12px" }}
+                                            value={splits[m.id] || ""}
+                                            onChange={(e) => handleSplitChange(m.id, e.target.value)}
+                                            placeholder="0"
+                                        />
+                                        {splitMode === 'percentage' && <span className="splitty-gradient-text fw-bold">%</span>}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                         
-                        {!isValid && amountVal > 0 && splitMode !== 'equal' && (
+                        {!isValid && amountVal > 0 && (
                             <div 
                                 className={`mt-3 p-3 text-center rounded ${ocrData?.items?.length > 0 && currentSum === 0 ? 'splitty-alert-info' : 'splitty-alert-danger'}`} 
                                 style={{ fontSize: "0.85rem", fontWeight: "600" }}
@@ -731,54 +766,65 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                                 Tax: {currency}{ocrData.tax.toFixed(2)} | Tip: {currency}{ocrData.tip.toFixed(2)}
                             </span>
                         </div>
-                        <p className="text-secondary small mb-3">Tap an item to assign it. Tax and tip are distributed proportionally automatically.</p>
-                        
-                        <div className="d-flex flex-column gap-3">
-                            {ocrData.items.map((item, idx) => {
-                                const assignedUserId = itemAssignments[item.id];
-                                const assignedUser = assignedUserId ? selectedGroupMembers.find(m => m.id.toString() === assignedUserId.toString()) : null;
+                        {splitMode === 'exact' ? (
+                            <>
+                                <p className="text-secondary small mb-3">Tap an item to assign it. Tax and tip are distributed proportionally automatically.</p>
                                 
-                                return (
-                                    <div key={item.id} className="p-3 rounded-4" style={{
-                                    position: "relative",
-                                    zIndex: ocrData.items.length - idx,
-                                    background: assignedUserId
-                                        ? "rgba(187, 77, 0, 0.08)"
-                                        : "rgba(255,255,255,0.03)",
-                                    border: assignedUserId
-                                        ? "1px solid rgba(187, 77, 0, 0.35)"
-                                        : "1px solid rgba(255,255,255,0.05)",
-                                    backdropFilter: "blur(8px)",
-                                    WebkitBackdropFilter: "blur(8px)",
-                                    transition: "all 0.2s"
-                                }}>
-                                        <div className="d-flex justify-content-between align-items-start mb-2">
-                                            <div>
-                                                <div className="fw-bold text-white mb-1" style={{ fontSize: "0.95rem" }}>{item.name}</div>
-                                                <div style={{ fontSize: "0.75rem", color: "#a19b95" }}>
-                                                    Base: {currency}{item.price.toFixed(2)} + Extras: {currency}{(item.tax_share + item.tip_share).toFixed(2)}
+                                <div className="d-flex flex-column gap-3">
+                                    {ocrData.items.map((item, idx) => {
+                                        const assignedUserId = itemAssignments[item.id];
+                                        
+                                        return (
+                                            <div key={item.id} className="p-3 rounded-4" style={{
+                                            position: "relative",
+                                            zIndex: ocrData.items.length - idx,
+                                            background: assignedUserId
+                                                ? "rgba(187, 77, 0, 0.08)"
+                                                : "rgba(255,255,255,0.03)",
+                                            border: assignedUserId
+                                                ? "1px solid rgba(187, 77, 0, 0.35)"
+                                                : "1px solid rgba(255,255,255,0.05)",
+                                            backdropFilter: "blur(8px)",
+                                            WebkitBackdropFilter: "blur(8px)",
+                                            transition: "all 0.2s"
+                                        }}>
+                                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                                    <div>
+                                                        <div className="fw-bold text-white mb-1" style={{ fontSize: "0.95rem" }}>{item.name}</div>
+                                                        <div style={{ fontSize: "0.75rem", color: "#a19b95" }}>
+                                                            Base: {currency}{item.price.toFixed(2)} + Extras: {currency}{(item.tax_share + item.tip_share).toFixed(2)}
+                                                        </div>
+                                                    </div>
+                                                    <div className="fw-bold" style={{ color: "var(--color-base-dark-orange)", fontSize: "1.05rem" }}>
+                                                        {currency}{item.final_price.toFixed(2)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                                    <CustomSelect
+                                                        placeholder="Assign to a member..."
+                                                        value={assignedUserId || ""}
+                                                        onChange={(val) => handleItemAssignment(item.id, val)}
+                                                        options={[
+                                                            { value: "", label: "— Unassigned —", disabled: false },
+                                                            ...selectedGroupMembers.map(m => ({ value: m.id.toString(), label: m.username }))
+                                                        ]}
+                                                    />
                                                 </div>
                                             </div>
-                                            <div className="fw-bold" style={{ color: "var(--color-base-dark-orange)", fontSize: "1.05rem" }}>
-                                                {currency}{item.final_price.toFixed(2)}
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-3 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                                            <CustomSelect
-                                                placeholder="Assign to a member..."
-                                                value={assignedUserId || ""}
-                                                onChange={(val) => handleItemAssignment(item.id, val)}
-                                                options={[
-                                                    { value: "", label: "— Unassigned —", disabled: false },
-                                                    ...selectedGroupMembers.map(m => ({ value: m.id.toString(), label: m.username }))
-                                                ]}
-                                            />
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
+                                        )
+                                    })}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-3 text-center rounded-4 mt-3" style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)" }}>
+                                <i className="fa-solid fa-layer-group mb-2" style={{ fontSize: "1.5rem", color: "var(--color-base-orange)", opacity: 0.7 }}></i>
+                                <p className="text-secondary small mb-0">
+                                    You have chosen to split this expense <strong>{splitMode === 'equal' ? 'Equally' : 'by Percentage'}</strong>.<br/>
+                                    Switch back to <strong>Exact Amounts</strong> to assign specific items individually.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <>

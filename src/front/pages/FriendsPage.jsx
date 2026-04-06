@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { gsap } from "gsap";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import FadeContent from "../components/bits/FadeContent.jsx";
-import CountUp from "../components/bits/CountUp.jsx";
 
 const FriendsPage = () => {
     const { store, actions } = useGlobalReducer();
@@ -18,6 +17,10 @@ const FriendsPage = () => {
     const [inviteSuccess, setInviteSuccess] = useState("");
     const [requestFeedback, setRequestFeedback] = useState("");
     const [sentRequests, setSentRequests] = useState(new Set());
+    const [removingFriendId, setRemovingFriendId] = useState(null);
+    const [acceptingRequestId, setAcceptingRequestId] = useState(null);
+    const [decliningRequestId, setDecliningRequestId] = useState(null);
+    const [sendingRequestId, setSendingRequestId] = useState(null);
     const searchTimeout = useRef(null);
     const listRef = useRef(null);
 
@@ -59,6 +62,7 @@ const FriendsPage = () => {
 
     const handleSendRequest = async (userId) => {
         setRequestFeedback("");
+        setSendingRequestId(userId);
         const resp = await actions.sendFriendRequest(userId);
         if (resp.ok) {
             setRequestFeedback("Friend request sent! ✓");
@@ -67,19 +71,26 @@ const FriendsPage = () => {
         } else {
             setRequestFeedback(resp.data?.error || "Failed to send request");
         }
+        setSendingRequestId(null);
         setTimeout(() => setRequestFeedback(""), 3000);
     };
 
     const handleAccept = async (friendshipId) => {
+        setAcceptingRequestId(friendshipId);
         await actions.acceptFriendRequest(friendshipId);
+        setAcceptingRequestId(null);
     };
 
     const handleDecline = async (friendshipId) => {
+        setDecliningRequestId(friendshipId);
         await actions.declineFriendRequest(friendshipId);
+        setDecliningRequestId(null);
     };
 
     const handleRemoveFriend = async (friendshipId) => {
+        setRemovingFriendId(friendshipId);
         await actions.removeFriend(friendshipId);
+        setRemovingFriendId(null);
     };
 
     const handleGenerateLink = async () => {
@@ -260,16 +271,22 @@ const FriendsPage = () => {
                                             <button
                                                 className="btn btn-sm"
                                                 onClick={() => handleRemoveFriend(f.friendship_id)}
+                                                disabled={removingFriendId === f.friendship_id}
                                                 style={{
                                                     color: "#f87171",
                                                     background: "rgba(248,113,113,0.1)",
                                                     border: "none",
                                                     borderRadius: "10px",
                                                     padding: "8px 12px",
-                                                    minHeight: "44px"
+                                                    minHeight: "44px",
+                                                    minWidth: "44px"
                                                 }}
                                             >
-                                                <i className="fas fa-user-minus"></i>
+                                                {removingFriendId === f.friendship_id ? (
+                                                    <span className="spinner-border spinner-border-sm"></span>
+                                                ) : (
+                                                    <i className="fas fa-user-minus"></i>
+                                                )}
                                             </button>
                                         </div>
                                     ))}
@@ -307,6 +324,7 @@ const FriendsPage = () => {
                                                     <button
                                                         className="btn btn-sm"
                                                         onClick={() => handleAccept(req.id)}
+                                                        disabled={acceptingRequestId === req.id || decliningRequestId === req.id}
                                                         style={{
                                                             background: "rgba(74,222,128,0.15)",
                                                             color: "#4ade80",
@@ -314,24 +332,35 @@ const FriendsPage = () => {
                                                             borderRadius: "10px",
                                                             padding: "8px 14px",
                                                             minHeight: "44px",
+                                                            minWidth: "85px",
                                                             fontWeight: "600"
                                                         }}
                                                     >
-                                                        <i className="fas fa-check me-1"></i> Accept
+                                                        {acceptingRequestId === req.id ? (
+                                                            <span className="spinner-border spinner-border-sm"></span>
+                                                        ) : (
+                                                            <><i className="fas fa-check me-1"></i> Accept</>
+                                                        )}
                                                     </button>
                                                     <button
                                                         className="btn btn-sm"
                                                         onClick={() => handleDecline(req.id)}
+                                                        disabled={acceptingRequestId === req.id || decliningRequestId === req.id}
                                                         style={{
                                                             background: "rgba(248,113,113,0.1)",
                                                             color: "#f87171",
                                                             border: "none",
                                                             borderRadius: "10px",
                                                             padding: "8px 14px",
-                                                            minHeight: "44px"
+                                                            minHeight: "44px",
+                                                            minWidth: "44px"
                                                         }}
                                                     >
-                                                        <i className="fas fa-times"></i>
+                                                        {decliningRequestId === req.id ? (
+                                                            <span className="spinner-border spinner-border-sm"></span>
+                                                        ) : (
+                                                            <i className="fas fa-times"></i>
+                                                        )}
                                                     </button>
                                                 </div>
                                             </div>
@@ -448,7 +477,7 @@ const FriendsPage = () => {
                                                 <button
                                                     className="btn btn-sm"
                                                     onClick={() => handleSendRequest(user.id)}
-                                                    disabled={sentRequests.has(user.id)}
+                                                    disabled={sentRequests.has(user.id) || sendingRequestId === user.id}
                                                     style={{
                                                         background: sentRequests.has(user.id) 
                                                             ? "rgba(255,255,255,0.1)" 
@@ -459,10 +488,13 @@ const FriendsPage = () => {
                                                         padding: "8px 16px",
                                                         fontWeight: "600",
                                                         minHeight: "44px",
+                                                        minWidth: "80px",
                                                         transition: "all 0.3s ease"
                                                     }}
                                                 >
-                                                    {sentRequests.has(user.id) ? (
+                                                    {sendingRequestId === user.id ? (
+                                                        <span className="spinner-border spinner-border-sm"></span>
+                                                    ) : sentRequests.has(user.id) ? (
                                                         <><i className="fas fa-check me-1"></i> Sent</>
                                                     ) : (
                                                         <><i className="fas fa-user-plus me-1"></i> Add</>

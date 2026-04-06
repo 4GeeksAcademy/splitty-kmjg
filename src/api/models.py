@@ -67,6 +67,16 @@ class User(db.Model):
         "FriendInvitation", back_populates="inviter"
     )
 
+    # relación con pagos realizados (como pagador)
+    payments_made: Mapped[list["Payment"]] = relationship(
+        "Payment", foreign_keys="[Payment.payer_id]", back_populates="payer"
+    )
+
+    # relación con pagos recibidos (como receptor)
+    payments_received: Mapped[list["Payment"]] = relationship(
+        "Payment", foreign_keys="[Payment.receiver_id]", back_populates="receiver"
+    )
+
     def serialize(self):
         return {
             "id": self.id,
@@ -111,6 +121,8 @@ class Group(db.Model):
         "Invitation", back_populates="group", cascade="all, delete-orphan")
     expenses: Mapped[list["Expense"]] = relationship(
         "Expense", back_populates="group", cascade="all, delete-orphan")
+    payments: Mapped[list["Payment"]] = relationship(
+        "Payment", back_populates="group", cascade="all, delete-orphan")
 
     def serialize(self):
         return {
@@ -182,6 +194,9 @@ class Expense(db.Model):
     # url del recibo/comprobante
     receipt_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
+    # estado del gasto (si ya fue liquidado/pagado completamente)
+    is_settled: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+
     # RELATIONS
     group: Mapped["Group"] = relationship("Group", back_populates="expenses")
 
@@ -201,7 +216,8 @@ class Expense(db.Model):
             "date": self.date.isoformat(),
             "group_id": self.group_id,
             "paid_by": self.paid_by,
-            "receipt_url": self.receipt_url
+            "receipt_url": self.receipt_url,
+            "is_settled": self.is_settled
         }
 
 
@@ -355,4 +371,54 @@ class FriendInvitation(db.Model):
             "is_used": self.is_used,
             "created_at": self.created_at.isoformat(),
             "inviter": self.inviter.serialize() if self.inviter else None
+        }
+
+
+class Payment(db.Model):
+    """
+    Modelo para registrar pagos entre usuarios dentro de un grupo.
+    Representa una transferencia de dinero de un usuario a otro para saldar deudas.
+    """
+    __tablename__ = "payment"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Usuario que realiza el pago (deudor)
+    payer_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+
+    # Usuario que recibe el pago (acreedor)
+    receiver_id: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+
+    # Grupo al que pertenece el pago
+    group_id: Mapped[int] = mapped_column(ForeignKey("group.id"), nullable=False)
+
+    # Monto del pago
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+
+    # Estado del pago: 'pending' (esperando confirmación), 'confirmed' (confirmado)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    receipt_url: Mapped[str] = mapped_column(String(255), nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    confirmed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+    # Relaciones
+    payer: Mapped["User"] = relationship("User", foreign_keys=[payer_id], back_populates="payments_made")
+    receiver: Mapped["User"] = relationship("User", foreign_keys=[receiver_id], back_populates="payments_received")
+    group: Mapped["Group"] = relationship("Group", back_populates="payments")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "payer_id": self.payer_id,
+            "receiver_id": self.receiver_id,
+            "group_id": self.group_id,
+            "amount": float(self.amount),
+            "status": self.status,
+            "receipt_url": self.receipt_url,
+            "created_at": self.created_at.isoformat(),
+            "confirmed_at": self.confirmed_at.isoformat() if self.confirmed_at else None,
+            "payer": self.payer.serialize() if self.payer else None,
+            "receiver": self.receiver.serialize() if self.receiver else None
         }

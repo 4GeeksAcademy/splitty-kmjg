@@ -11,7 +11,8 @@ from api.models import (
     ExpenseParticipant,
     Invitation,
     Friendship,
-    FriendInvitation
+    FriendInvitation,
+    Payment
 )
 from flask_mail import Message
 import cloudinary.uploader
@@ -21,7 +22,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 bcrypt = Bcrypt()
 api = Blueprint('api', __name__)
@@ -535,6 +536,17 @@ def get_group_balances(group_id):
                     payer_id, Decimal("0")
                 ) + amount_owed
 
+    # Subtract confirmed payments from balances
+    payments = Payment.query.filter_by(group_id=group_id, status='confirmed').all()
+    for p in payments:
+        amount = Decimal(str(p.amount))
+        # Debtor (payer) paid, so their negative balance improves
+        if p.payer_id in net_balances:
+            net_balances[p.payer_id] += amount
+        # Creditor (receiver) received, so their positive balance reduces
+        if p.receiver_id in net_balances:
+            net_balances[p.receiver_id] -= amount
+
     # Run the simplification algorithm
     from api.utils import simplify_debts
     transactions = simplify_debts(net_balances)
@@ -648,6 +660,35 @@ def delete_expense(expense_id):
         db.session.rollback()
         current_app.logger.error(f"Error deleting expense: {str(e)}")
         return jsonify({"error": "Error deleting expense"}), 500
+
+@api.route('/expenses/<int:expense_id>/settle', methods=['POST'])
+@jwt_required()
+def toggle_expense_settlement(expense_id):
+    user_id = int(get_jwt_identity())
+    expense = Expense.query.get(expense_id)
+    if not expense:
+        return jsonify({"error": "Expense not found"}), 404
+    
+    # Permission: Only group creator or payer can settle
+    group = Group.query.get(expense.group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+        
+    if user_id != group.created_by and user_id != expense.paid_by:
+        return jsonify({"error": "Only the group creator or the payer can change the settlement status."}), 403
+    
+    expense.is_settled = not expense.is_settled
+    
+    try:
+        db.session.commit()
+        return jsonify({
+            "message": f"Expense mark as {'settled' if expense.is_settled else 'unsettled'}",
+            "is_settled": expense.is_settled,
+            "expense": expense.serialize()
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
 
 # ===============================
 # RECEIPTS (OCR ANALYZE)
@@ -979,14 +1020,18 @@ def get_friend_debts():
         friend_user = f.addressee if f.requester_id == user_id else f.requester
         
         debt_data = calculate_friend_debts(user_id, friend_id)
+        net_bal = debt_data["net_balance"]
         
-        total_owed_to_you += debt_data["total_owed_to_user"]
-        total_you_owe += debt_data["total_user_owes"]
+        # Standard logic: if net > 0, they owe you. If net < 0, you owe them.
+        if net_bal > 0:
+            total_owed_to_you += net_bal
+        elif net_bal < 0:
+            total_you_owe += abs(net_bal)
         
         debts_by_friend.append({
             "friend": friend_user.serialize(),
             "friendship_id": f.id,
-            "net_balance": debt_data["net_balance"],
+            "net_balance": net_bal,
             "groups": debt_data["groups"],
             "total_owed_to_you": debt_data["total_owed_to_user"],
             "total_you_owe": debt_data["total_user_owes"]
@@ -1165,3 +1210,318 @@ def search_users():
     return jsonify({
         "users": [u.serialize() for u in results]
     }), 200
+
+
+# ===============================
+# PAYMENTS SYSTEM (Mark Debt as Paid)
+# ===============================
+
+def send_payment_email_notification(payment, notification_type):
+    """
+    Envía notificación por email sobre pagos.
+    notification_type: 'payment_created' | 'payment_confirmed'
+    """
+    try:
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
+        if notification_type == 'payment_created':
+            # Notificar al receptor que alguien marcó un pago
+            msg = Message(
+                subject=f"¡{payment.payer.username} te ha enviado un pago en Splitty!",
+                recipients=[payment.receiver.email],
+                sender=current_app.config.get('MAIL_USERNAME')
+            )
+
+            msg.html = f"""
+            <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
+                <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
+                    <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
+                    <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
+                        ¡Hola <strong style="color: #ffffff;">{payment.receiver.username}</strong>!
+                    </p>
+                    <p style="font-size: 16px; line-height: 1.6; color: #a19b95; margin-bottom: 20px;">
+                        <strong style="color: #4ade80;">{payment.payer.username}</strong> ha registrado un pago de <strong style="color: #4ade80;">${float(payment.amount):.2f}</strong> en el grupo <strong style="color: #ffffff;">{payment.group.name}</strong>.
+                    </p>
+                    <p style="font-size: 14px; color: #888; margin-bottom: 30px;">
+                        El pago está pendiente de tu confirmación. Ingresa a Splitty para confirmarlo.
+                    </p>
+                    <div style="margin: 30px 0;">
+                        <a href="{frontend_url}/debts" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                            Ver Pagos Pendientes
+                        </a>
+                    </div>
+                    <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
+                        © 2026 Splitty App. Todos los derechos reservados.
+                    </div>
+                </div>
+            </div>
+            """
+            current_app.extensions['mail'].send(msg)
+
+        elif notification_type == 'payment_confirmed':
+            # Notificar al pagador que su pago fue confirmado
+            msg = Message(
+                subject=f"¡Tu pago en Splitty ha sido confirmado!",
+                recipients=[payment.payer.email],
+                sender=current_app.config.get('MAIL_USERNAME')
+            )
+
+            msg.html = f"""
+            <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
+                <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                    <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
+                    <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
+                    <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
+                        ¡Hola <strong style="color: #ffffff;">{payment.payer.username}</strong>!
+                    </p>
+                    <p style="font-size: 16px; line-height: 1.6; color: #a19b95; margin-bottom: 20px;">
+                        Tu pago de <strong style="color: #4ade80;">${float(payment.amount):.2f}</strong> a <strong style="color: #ffffff;">{payment.receiver.username}</strong> ha sido confirmado.
+                    </p>
+                    <p style="font-size: 14px; color: #888; margin-bottom: 30px;">
+                        ¡Tu deuda ha sido actualizada!
+                    </p>
+                    <div style="margin: 30px 0;">
+                        <a href="{frontend_url}/debts" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                            Ver Mis Deudas
+                        </a>
+                    </div>
+                    <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
+                        © 2026 Splitty App. Todos los derechos reservados.
+                    </div>
+                </div>
+            </div>
+            """
+            current_app.extensions['mail'].send(msg)
+
+    except Exception as e:
+        current_app.logger.error(f"Error sending payment email: {str(e)}")
+
+
+@api.route('/groups/<int:group_id>/payments', methods=['POST'])
+@jwt_required()
+def create_payment(group_id):
+    """
+    Crea un nuevo pago (transferencia) en el grupo.
+    El pago se crea con estado 'pending' y debe ser confirmado por el receptor.
+    """
+    user_id = int(get_jwt_identity())
+    
+    # Soporte para JSON o multipart/form-data
+    if request.is_json:
+        data = request.get_json()
+        receiver_id = data.get('receiver_id')
+        amount = data.get('amount')
+    else:
+        receiver_id = request.form.get('receiver_id')
+        amount = request.form.get('amount')
+
+    if not receiver_id or amount is None:
+        return jsonify({"error": "receiver_id and amount are required"}), 400
+
+    # Validar que el monto sea positivo
+    try:
+        amount_decimal = Decimal(str(amount))
+        if amount_decimal <= 0:
+            return jsonify({"error": "Amount must be greater than 0"}), 400
+    except (InvalidOperation, ValueError):
+        return jsonify({"error": "Invalid amount"}), 400
+
+    # Validar que el grupo existe
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Validar que el usuario pertenece al grupo
+    user_membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
+    if not user_membership:
+        return jsonify({"error": "You do not have access to this group"}), 403
+
+    # Validar que el receptor existe y pertenece al grupo
+    receiver_membership = GroupMember.query.filter_by(group_id=group_id, user_id=receiver_id).first()
+    if not receiver_membership:
+        return jsonify({"error": "Receiver is not a member of this group"}), 400
+
+    # No puedes pagarte a ti mismo
+    if int(receiver_id) == user_id:
+        return jsonify({"error": "You cannot pay yourself"}), 400
+
+    try:
+        new_payment = Payment(
+            payer_id=user_id,
+            receiver_id=receiver_id,
+            group_id=group_id,
+            amount=amount_decimal,
+            status='pending'
+        )
+        
+        # Manejo de comprobante (receipt)
+        file = request.files.get('receipt')
+        if file and file.filename != '':
+            try:
+                import cloudinary.uploader
+                upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+                new_payment.receipt_url = upload_result.get('secure_url')
+            except Exception as e:
+                current_app.logger.error(f"Error uploading payment receipt: {str(e)}")
+                # Opcional: retornar error o continuar sin recibo
+                return jsonify({"error": "Failed to upload receipt image"}), 500
+
+        db.session.add(new_payment)
+        db.session.flush()  # Para obtener el ID
+
+        # Cargar relaciones para el email
+        new_payment.payer = User.query.get(user_id)
+        new_payment.receiver = User.query.get(receiver_id)
+        new_payment.group = group
+
+        db.session.commit()
+
+        # Enviar notificación por email al receptor
+        send_payment_email_notification(new_payment, 'payment_created')
+
+        return jsonify({
+            "message": "Payment created successfully",
+            "payment": new_payment.serialize()
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error creating payment: {str(e)}")
+        return jsonify({"error": "Error creating payment"}), 500
+
+
+@api.route('/groups/<int:group_id>/payments', methods=['GET'])
+@jwt_required()
+def get_group_payments(group_id):
+    """
+    Obtiene todos los pagos de un grupo.
+    """
+    user_id = int(get_jwt_identity())
+
+    # Validar membresía
+    membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
+    if not membership:
+        return jsonify({"error": "You do not have access to this group"}), 403
+
+    group = Group.query.get(group_id)
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    # Obtener todos los pagos del grupo
+    payments = Payment.query.filter_by(group_id=group_id).order_by(Payment.created_at.desc()).all()
+
+    return jsonify({
+        "group_id": group_id,
+        "payments": [p.serialize() for p in payments]
+    }), 200
+
+
+@api.route('/payments/<int:payment_id>/confirm', methods=['PUT'])
+@jwt_required()
+def confirm_payment(payment_id):
+    """
+    Confirma un pago pendiente.
+    Solo el receptor puede confirmar el pago.
+    """
+    user_id = int(get_jwt_identity())
+
+    payment = Payment.query.get(payment_id)
+    if not payment:
+        return jsonify({"error": "Payment not found"}), 404
+
+    # Solo el receptor puede confirmar
+    if payment.receiver_id != user_id:
+        return jsonify({"error": "Only the receiver can confirm this payment"}), 403
+
+    if payment.status != 'pending':
+        return jsonify({"error": f"Payment is already {payment.status}"}), 400
+
+    try:
+        payment.status = 'confirmed'
+        payment.confirmed_at = datetime.utcnow()
+
+        # Cargar relaciones para el email
+        payment.payer = User.query.get(payment.payer_id)
+        payment.receiver = User.query.get(payment.receiver_id)
+        payment.group = Group.query.get(payment.group_id)
+
+        db.session.commit()
+
+        # Enviar notificación al pagador
+        send_payment_email_notification(payment, 'payment_confirmed')
+
+        return jsonify({
+            "message": "Payment confirmed successfully",
+            "payment": payment.serialize()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error confirming payment: {str(e)}")
+        return jsonify({"error": "Error confirming payment"}), 500
+
+
+@api.route('/users/<int:user_id>/pending-payments', methods=['GET'])
+@jwt_required()
+def get_pending_payments(user_id):
+    """
+    Obtiene los pagos pendientes de confirmación para un usuario.
+    Incluye:
+    - Pagos donde el usuario es receptor (debe confirmar)
+    - Pagos donde el usuario es pagador (esperando confirmación)
+    """
+    current_user_id = int(get_jwt_identity())
+
+    # Solo el mismo usuario puede ver sus pagos pendientes
+    if current_user_id != user_id:
+        return jsonify({"error": "You can only view your own pending payments"}), 403
+
+    # Pagos pendientes donde el usuario es receptor (debe confirmar)
+    received_pending = Payment.query.filter_by(
+        receiver_id=user_id,
+        status='pending'
+    ).order_by(Payment.created_at.desc()).all()
+
+    # Pagos pendientes donde el usuario es pagador (esperando confirmación)
+    sent_pending = Payment.query.filter_by(
+        payer_id=user_id,
+        status='pending'
+    ).order_by(Payment.created_at.desc()).all()
+
+    return jsonify({
+        "received": [p.serialize() for p in received_pending],
+        "sent": [p.serialize() for p in sent_pending]
+    }), 200
+
+
+@api.route('/payments/<int:payment_id>', methods=['DELETE'])
+@jwt_required()
+def cancel_payment(payment_id):
+    """
+    Cancela un pago pendiente.
+    Solo el pagador puede cancelar su propio pago pendiente.
+    """
+    user_id = int(get_jwt_identity())
+
+    payment = Payment.query.get(payment_id)
+    if not payment:
+        return jsonify({"error": "Payment not found"}), 404
+
+    # Solo el pagador o el receptor pueden cancelar/rechazar
+    if payment.payer_id != user_id and payment.receiver_id != user_id:
+        return jsonify({"error": "Only the payer or receiver can cancel this payment"}), 403
+
+    if payment.status != 'pending':
+        return jsonify({"error": f"Cannot cancel a payment that is {payment.status}"}), 400
+
+    try:
+        db.session.delete(payment)
+        db.session.commit()
+
+        return jsonify({"message": "Payment cancelled successfully"}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error cancelling payment: {str(e)}")
+        return jsonify({"error": "Error cancelling payment"}), 500

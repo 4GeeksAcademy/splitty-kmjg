@@ -4,7 +4,6 @@ import { gsap } from 'gsap';
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import FadeContent from '../components/bits/FadeContent.jsx';
 import SplitText from '../components/bits/SplitText.jsx';
-import CountUp from '../components/bits/CountUp.jsx';
 import SplittyLogo from "../logos/SplittyLogo.jsx";
 import { Loading } from "../components/Loading.jsx";
 import Welcome from "../components/Welcome.jsx";

@@ -74,9 +74,9 @@ else:
 
 # Log database type for debugging
 if "supabase" in (db_url or "").lower():
-    print("✓ Connected to Supabase PostgreSQL")
+    print("[OK] Connected to Supabase PostgreSQL")
 elif db_url:
-    print(f"✓ Connected to: {db_url.split('@')[1] if '@' in db_url else 'custom database'}")
+    print(f"[OK] Connected to: {db_url.split('@')[1] if '@' in db_url else 'custom database'}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "any-secret-key")
