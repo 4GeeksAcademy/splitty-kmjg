@@ -122,12 +122,6 @@ export const Navbar = memo(() => {
 
             {/* BOTTOM NAVIGATION DOCK (Mobile Only, Logged In Only) */}
             {isLoggedIn && !isAuthPage && (
-                <>
-                <style>{`
-                    @media (max-width: 767.98px) {
-                        body { padding-bottom: 110px !important; }
-                    }
-                `}</style>
                 <div className="d-md-none position-fixed w-100" style={{ bottom: "2rem", zIndex: 1000, pointerEvents: "none" }}>
                     <div className="d-flex justify-content-center">
                         <div 
@@ -213,7 +207,6 @@ export const Navbar = memo(() => {
                         </div>
                     </div>
                 </div>
-                </>
             )}
         </>
     );

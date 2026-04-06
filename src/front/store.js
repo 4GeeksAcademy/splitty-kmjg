@@ -50,6 +50,8 @@ export const initialStore = () => {
     friendRequests: { received: [], sent: [] },
     friendDebts: null,
     friendsLoading: false,
+    groupPayments: {},  // { groupId: [payments] }
+    pendingPayments: { received: [], sent: [] },
   };
 };
 
@@ -113,6 +115,44 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         friendsLoading: action.payload,
+      };
+
+    case "SET_GROUP_PAYMENTS":
+      return {
+        ...store,
+        groupPayments: {
+          ...store.groupPayments,
+          [action.payload.groupId]: action.payload.payments
+        }
+      };
+
+    case "ADD_PAYMENT":
+      const existingPayments = store.groupPayments[action.payload.groupId] || [];
+      return {
+        ...store,
+        groupPayments: {
+          ...store.groupPayments,
+          [action.payload.groupId]: [action.payload.payment, ...existingPayments]
+        }
+      };
+
+    case "UPDATE_PAYMENT":
+      const groupId = action.payload.groupId;
+      const updatedPayments = (store.groupPayments[groupId] || []).map(payment =>
+        payment.id === action.payload.payment.id ? action.payload.payment : payment
+      );
+      return {
+        ...store,
+        groupPayments: {
+          ...store.groupPayments,
+          [groupId]: updatedPayments
+        }
+      };
+
+    case "SET_PENDING_PAYMENTS":
+      return {
+        ...store,
+        pendingPayments: action.payload
       };
 
     default:

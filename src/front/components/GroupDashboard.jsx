@@ -49,6 +49,16 @@ export const GroupDashboard = () => {
         setExpenseToDelete(expenseId);
     }, []);
 
+    const handleToggleSettle = async (e, expenseId) => {
+        e.stopPropagation();
+        const resp = await actions.settleExpense(expenseId);
+        if (resp.success) {
+            loadDashboardData();
+        } else {
+            setError(resp.error || "Failed to update expense status");
+        }
+    };
+
     useEffect(() => {
         if (!loading && data && !initialAnimation.current) {
             gsap.fromTo(".dashboard-element", 
@@ -332,15 +342,20 @@ export const GroupDashboard = () => {
                                                     setShowAddForm(true);
                                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                                 }}
-                                                className="expense-card-item mb-3"
+                                                className={`expense-card-item mb-3 ${exp.is_settled ? 'is-settled' : ''}`}
                                                 style={{
-                                                    background: "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
-                                                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                                                    background: exp.is_settled 
+                                                        ? "linear-gradient(145deg, rgba(74, 222, 128, 0.15) 0%, rgba(74, 222, 128, 0.05) 100%)"
+                                                        : "linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)",
+                                                    border: exp.is_settled
+                                                        ? "1px solid rgba(74, 222, 128, 0.3)"
+                                                        : "1px solid rgba(255, 255, 255, 0.08)",
                                                     borderRadius: "18px",
                                                     padding: "1rem",
                                                     backdropFilter: "blur(12px)",
-                                                    cursor: isCreator ? "pointer" : "default",
-                                                    transition: "all 0.3s ease"
+                                                    cursor: (isCreator && !exp.is_settled) ? "pointer" : "default",
+                                                    transition: "all 0.3s ease",
+                                                    boxShadow: exp.is_settled ? "0 4px 15px rgba(74, 222, 128, 0.1)" : "none"
                                                 }}
                                             >
                                                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
@@ -349,11 +364,16 @@ export const GroupDashboard = () => {
                                                         <div className="flex-shrink-0" style={{
                                                             width: "44px", height: "44px",
                                                             borderRadius: "12px",
-                                                            background: "rgba(252, 164, 52, 0.12)",
-                                                            border: "1px solid rgba(252, 164, 52, 0.2)",
+                                                            background: exp.is_settled 
+                                                                ? "rgba(74, 222, 128, 0.15)" 
+                                                                : "rgba(252, 164, 52, 0.12)",
+                                                            border: exp.is_settled
+                                                                ? "1px solid rgba(74, 222, 128, 0.3)"
+                                                                : "1px solid rgba(252, 164, 52, 0.2)",
                                                             display: "flex", alignItems: "center", justifyContent: "center"
                                                         }}>
-                                                            <i className="fa-solid fa-coins" style={{ color: "var(--color-base-orange)", fontSize: "1.1rem" }}></i>
+                                                            <i className={`fa-solid ${exp.is_settled ? 'fa-check' : 'fa-coins'}`} 
+                                                               style={{ color: exp.is_settled ? "#4ade80" : "var(--color-base-orange)", fontSize: "1.1rem" }}></i>
                                                         </div>
                                                         
                                                         <div className="flex-grow-1" style={{ minWidth: 0 }}>
@@ -361,7 +381,11 @@ export const GroupDashboard = () => {
                                                                 <h6 className="mb-0 fw-bold text-truncate" style={{ color: "var(--color-base-cream)", fontSize: "1rem" }}>
                                                                     {exp.description || exp.title || "Expense"}
                                                                 </h6>
-                                                                <span className="badge d-md-none" style={{ background: "rgba(252, 164, 52, 0.15)", color: "var(--color-base-orange)", fontSize: "0.85rem" }}>
+                                                                <span className="badge d-md-none" style={{ 
+                                                                    background: exp.is_settled ? "rgba(74, 222, 128, 0.15)" : "rgba(252, 164, 52, 0.15)", 
+                                                                    color: exp.is_settled ? "#4ade80" : "var(--color-base-orange)", 
+                                                                    fontSize: "0.85rem" 
+                                                                }}>
                                                                     ${parseFloat(exp.amount || 0).toFixed(2)}
                                                                 </span>
                                                             </div>
@@ -379,48 +403,75 @@ export const GroupDashboard = () => {
                                                                 <span className="ms-1">
                                                                     <i className="fa-solid fa-users me-1"></i>{splitCount}
                                                                 </span>
+                                                                {exp.is_settled && (
+                                                                    <span className="ms-2 badge rounded-pill" style={{ background: "rgba(74, 222, 128, 0.1)", color: "#4ade80", border: "1px solid rgba(74, 222, 128, 0.3)", fontSize: "0.7rem", padding: "2px 8px" }}>
+                                                                        Settled
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     {/* Right: desktop amount + actions */}
                                                     <div className="d-flex flex-row flex-md-column align-items-center align-items-md-end justify-content-between w-100 w-md-auto gap-2 pt-2 pt-md-0 mt-md-0">
-                                                        <span className="badge d-none d-md-block" style={{ background: "rgba(252, 164, 52, 0.15)", color: "var(--color-base-orange)", fontSize: "0.95rem", padding: "8px 14px", borderRadius: "10px" }}>
+                                                        <span className="badge d-none d-md-block" style={{ 
+                                                            background: exp.is_settled ? "rgba(74, 222, 128, 0.15)" : "rgba(252, 164, 52, 0.15)", 
+                                                            color: exp.is_settled ? "#4ade80" : "var(--color-base-orange)", 
+                                                            fontSize: "0.95rem", padding: "8px 14px", borderRadius: "10px" 
+                                                        }}>
                                                             ${parseFloat(exp.amount || 0).toFixed(2)}
                                                         </span>
                                                         
-                                                        <div className="d-flex gap-3 align-items-center flex-wrap">
-                                                            {exp.receipt_url && (
-                                                                <button 
-                                                                    className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        setLightboxData({ 
-                                                                            isOpen: true, 
-                                                                            url: exp.receipt_url, 
-                                                                            type: exp.receipt_url.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image' 
-                                                                        });
-                                                                    }}
-                                                                    style={{ color: "var(--color-base-orange)", fontSize: "0.8rem", fontWeight: "600" }}
-                                                                >
-                                                                    <i className="fa-solid fa-file-invoice"></i>Receipt
-                                                                </button>
-                                                            )}
-                                                            {isCreator && (
-                                                                <>
+                                                            <div className="d-flex gap-3 align-items-center flex-wrap">
+                                                                {exp.receipt_url && (
                                                                     <button 
-                                                                        className="btn btn-link p-0 text-decoration-none text-danger d-flex align-items-center gap-1"
-                                                                        onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
-                                                                        style={{ fontSize: "0.8rem", fontWeight: "600" }}
+                                                                        className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setLightboxData({ 
+                                                                                isOpen: true, 
+                                                                                url: exp.receipt_url, 
+                                                                                type: exp.receipt_url.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image' 
+                                                                            });
+                                                                        }}
+                                                                        style={{ color: exp.is_settled ? "#4ade80" : "var(--color-base-orange)", fontSize: "0.8rem", fontWeight: "600" }}
                                                                     >
-                                                                        <i className="fa-solid fa-trash-can"></i>Delete
+                                                                        <i className="fa-solid fa-file-invoice"></i>Receipt
                                                                     </button>
-                                                                    <button className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1" style={{ color: "var(--color-base-light)", opacity: 0.6, fontSize: "0.8rem" }}>
-                                                                        <i className="fa-solid fa-pen-to-square"></i>Edit
+                                                                )}
+                                                                
+                                                                {(isCreator || store.user?.id === exp.paid_by) && (
+                                                                    <button 
+                                                                        className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1"
+                                                                        onClick={(e) => handleToggleSettle(e, exp.id)}
+                                                                        style={{ 
+                                                                            color: exp.is_settled ? "var(--color-base-orange)" : "#4ade80", 
+                                                                            fontSize: "0.8rem", 
+                                                                            fontWeight: "600" 
+                                                                        }}
+                                                                    >
+                                                                        <i className={`fa-solid ${exp.is_settled ? 'fa-rotate-left' : 'fa-check-circle'}`}></i>
+                                                                        {exp.is_settled ? 'Unsettle' : 'Mark Settled'}
                                                                     </button>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                                )}
+
+                                                                {isCreator && (
+                                                                    <>
+                                                                        <button 
+                                                                            className="btn btn-link p-0 text-decoration-none text-danger d-flex align-items-center gap-1"
+                                                                            onClick={(e) => handleDeleteExpenseClick(e, exp.id)}
+                                                                            style={{ fontSize: "0.8rem", fontWeight: "600" }}
+                                                                        >
+                                                                            <i className="fa-solid fa-trash-can"></i>Delete
+                                                                        </button>
+                                                                        {!exp.is_settled && (
+                                                                            <button className="btn btn-link p-0 text-decoration-none d-flex align-items-center gap-1" style={{ color: "var(--color-base-light)", opacity: 0.6, fontSize: "0.8rem" }}>
+                                                                                <i className="fa-solid fa-pen-to-square"></i>Edit
+                                                                            </button>
+                                                                        )}
+                                                                    </>
+                                                                )}
+                                                            </div>
                                                     </div>
                                                 </div>
                                             </li>

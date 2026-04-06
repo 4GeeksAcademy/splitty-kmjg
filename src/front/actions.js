@@ -13,18 +13,13 @@ class Actions {
     isPrivate = true,
   ) => {
     let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-    const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     
-    // SMART FALLBACK: Si estamos en localhost y el túnel está configurado, 
-    // preferimos el local por defecto para evitar timeouts en un túnel caído.
-    if (isLocalHost) {
-      backendUrl = import.meta.env.VITE_BACKEND_URL_LOCAL || backendUrl;
-    }
-
     backendUrl = backendUrl.replace(/\/+$/, "");
 
     if (backendUrl && !backendUrl.endsWith("/api")) {
       backendUrl += "/api";
+    } else if (!backendUrl && !endpoint.startsWith("/api")) {
+      backendUrl = "/api" + (endpoint.startsWith("/") ? "" : "/");
     }
 
     const token = this.store.jwt;
@@ -76,16 +71,6 @@ class Actions {
       let data = await resp.json();
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
-      const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-      
-      // Si el fetch falla (error de red/túnel caído), solo activamos el fallback si estamos en localhost
-      // (Porque llamar a 127.0.0.1 desde un dominio HTTPS externo como Cloudflare siempre será bloqueado)
-      if (isLocalHost && !Actions.useLocalFallback && backendUrl !== import.meta.env.VITE_BACKEND_URL_LOCAL) {
-        console.warn("Tunnel unreachable, switching to local fallback...");
-        Actions.useLocalFallback = true;
-        // Reintentamos la petición una sola vez con la URL local
-        return this.apiFetch(endpoint, method, body, isPrivate);
-      }
       return { code: 0, ok: false, error: error.message, data: null };
     }
   };
@@ -278,84 +263,52 @@ class Actions {
   };
 
   fetchGroupBalances = async (groupId) => {
-    // Fetch real group data (members) from backend
+    // 1. Fetch group details (members)
     const groupResp = await this.apiFetch(`/groups/${groupId}`, "GET", null, true);
     if (!groupResp.ok) {
         return { success: false, error: groupResp.data?.error || "Could not load group." };
     }
 
-    // Fetch real expenses from backend
+    // 2. Fetch expenses (to show in the list)
     const expensesResp = await this.apiFetch(`/groups/${groupId}/expenses`, "GET", null, true);
     
-    // Build users map from real members (backend now returns {id, username, email})
+    // 3. Fetch balances & settlements from the backend (NEW: includes payments)
+    const balancesResp = await this.apiFetch(`/groups/${groupId}/balances`, "GET", null, true);
+    
+    if (!balancesResp.ok) {
+        return { success: false, error: balancesResp.data?.error || "Could not load balances." };
+    }
+
+    // Build users map from members
     const members = groupResp.data.members || [];
     const usersMap = {};
     members.forEach(m => {
         usersMap[m.id] = { id: m.id, username: m.username };
     });
 
-    // Compute balances from expenses
-    const balances = {}; // net balance per user (positive = owed money, negative = owes money)
-    members.forEach(m => { balances[m.id] = 0; });
-
-    if (expensesResp.ok) {
-        const expenses = expensesResp.data.expenses || [];
-        for (const entry of expenses) {
-            const expense = entry.expense;
-            const participants = entry.participants || [];
-            
-            // The payer is owed money by participants
-            for (const p of participants) {
-                const amountOwed = p.amount_owed || 0;
-                if (p.user_id !== expense.paid_by) {
-                    balances[expense.paid_by] = (balances[expense.paid_by] || 0) + amountOwed;
-                    balances[p.user_id] = (balances[p.user_id] || 0) - amountOwed;
-                }
-            }
-        }
-    }
-
-    // Compute simplified settlements (greedy algorithm)
-    const settlements = [];
-    const debtors = []; // people who owe (negative balance)
-    const creditors = []; // people who are owed (positive balance)
-
-    for (const [userId, balance] of Object.entries(balances)) {
-        if (balance > 0.01) creditors.push({ id: parseInt(userId), amount: balance });
-        else if (balance < -0.01) debtors.push({ id: parseInt(userId), amount: -balance });
-    }
-
-    // Sort for greedy matching
-    debtors.sort((a, b) => b.amount - a.amount);
-    creditors.sort((a, b) => b.amount - a.amount);
-
-    let i = 0, j = 0;
-    while (i < debtors.length && j < creditors.length) {
-        const transfer = Math.min(debtors[i].amount, creditors[j].amount);
-        if (transfer > 0.01) {
-            settlements.push({
-                from: debtors[i].id,
-                to: creditors[j].id,
-                amount: Math.round(transfer * 100) / 100
-            });
-        }
-        debtors[i].amount -= transfer;
-        creditors[j].amount -= transfer;
-        if (debtors[i].amount < 0.01) i++;
-        if (creditors[j].amount < 0.01) j++;
-    }
-
     const rawExpenses = expensesResp.ok ? (expensesResp.data.expenses || []) : [];
+    const balancesData = balancesResp.data;
 
     return {
         success: true,
         data: {
-            personal_balances: balances,
-            settlements,
+            personal_balances: balancesData.balances, // { "userId": amount }
+            settlements: balancesData.transactions,   // [ { from, to, amount } ]
             users: usersMap,
             expenses: rawExpenses
         }
     };
+  };
+
+  settleExpense = async (expenseId) => {
+    const resp = await this.apiFetch(`/expenses/${expenseId}/settle`, "POST", null, true);
+    if (!resp.ok) {
+        console.error("Error settling expense:", resp.error || resp.data?.error);
+        return { success: false, error: resp.error || resp.data?.error || "Error settling expense" };
+    }
+    
+    // Optional: reload groups or specific data if needed
+    return { success: true, data: resp.data };
   };
 
   loadUserGroups = async () => {
@@ -476,6 +429,80 @@ class Actions {
     if (!query || query.length < 1) return { ok: false, data: { users: [] } };
     const resp = await this.apiFetch(`/users/search?q=${encodeURIComponent(query)}`);
     return resp;
+  };
+
+  // ===============================
+  // PAYMENTS SYSTEM
+  // ===============================
+
+  fetchGroupPayments = async (groupId) => {
+    const resp = await this.apiFetch(`/groups/${groupId}/payments`, "GET", null, true);
+    if (resp.ok) {
+      this.dispatch({
+        type: "SET_GROUP_PAYMENTS",
+        payload: { groupId, payments: resp.data.payments || [] }
+      });
+      return { success: true, data: resp.data.payments };
+    }
+    return { success: false, error: resp.data?.error || "Failed to fetch payments" };
+  };
+
+  createPayment = async (groupId, paymentData) => {
+    const resp = await this.apiFetch(`/groups/${groupId}/payments`, "POST", paymentData, true);
+    if (resp.ok) {
+      this.dispatch({
+        type: "ADD_PAYMENT",
+        payload: { groupId, payment: resp.data.payment }
+      });
+      // Actualizar deudas y pendientes después de crear un pago
+      await this.loadFriendDebts();
+      await this.fetchPendingPayments();
+      return { success: true, data: resp.data.payment };
+    }
+    return { success: false, error: resp.data?.error || "Failed to create payment" };
+  };
+
+  confirmPayment = async (paymentId) => {
+    const resp = await this.apiFetch(`/payments/${paymentId}/confirm`, "PUT", null, true);
+    if (resp.ok) {
+      const payment = resp.data.payment;
+      this.dispatch({
+        type: "UPDATE_PAYMENT",
+        payload: { groupId: payment.group_id, payment }
+      });
+      // Actualizar deudas y pendientes después de confirmar un pago
+      await this.loadFriendDebts();
+      await this.fetchPendingPayments();
+      return { success: true, data: payment };
+    }
+    return { success: false, error: resp.data?.error || "Failed to confirm payment" };
+  };
+
+  cancelPayment = async (paymentId) => {
+    const resp = await this.apiFetch(`/payments/${paymentId}`, "DELETE", null, true);
+    if (resp.ok) {
+      // Recargar los pagos del grupo
+      // Nota: La respuesta no incluye group_id, asi que usamos loadFriendDebts
+      await this.loadFriendDebts();
+      await this.fetchPendingPayments();
+      return { success: true };
+    }
+    return { success: false, error: resp.data?.error || "Failed to cancel payment" };
+  };
+
+  fetchPendingPayments = async () => {
+    const userId = this.store.user?.id;
+    if (!userId) return { success: false, error: "User not logged in" };
+
+    const resp = await this.apiFetch(`/users/${userId}/pending-payments`, "GET", null, true);
+    if (resp.ok) {
+      this.dispatch({
+        type: "SET_PENDING_PAYMENTS",
+        payload: { received: resp.data.received || [], sent: resp.data.sent || [] }
+      });
+      return { success: true, data: resp.data };
+    }
+    return { success: false, error: resp.data?.error || "Failed to fetch pending payments" };
   };
 }
 

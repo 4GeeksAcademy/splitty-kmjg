@@ -56,7 +56,7 @@ export const Layout = () => {
             {showLoader ? (
                 <Loading fade={fadeOut} />
             ) : (
-                <div className="d-flex flex-column min-vh-100">
+                <div className="d-flex flex-column" style={{ minHeight: "100dvh" }}>
                     <Navbar />
                     <main className="flex-grow-1">
                         <Outlet />

@@ -1,5 +1,5 @@
 {
-	"name": "react-hello-webapp",
+	"name": "splitty-kmjg",
 	"engines": {
 		"node": ">=20.0.0"
 	},
@@ -7,7 +7,10 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"dev": "vite",
+		"start:frontend": "vite",
+		"start:backend": "cmd /c \"set FLASK_APP=src/app.py && set FLASK_DEBUG=1 && .venv\\Scripts\\python.exe -m flask run -p 3001\"",
+		"start:tunnel": "cloudflared tunnel --url http://localhost:3000",
+		"dev": "concurrently -c \"cyan,magenta,yellow\" -n \"vite,backend,cloudflare\" \"npm run start:frontend\" \"npm run start:backend\" \"npm run start:tunnel\"",
 		"start": "vite",
 		"build": "vite build",
 		"lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
@@ -32,6 +35,7 @@
 		"@types/react": "^18.2.18",
 		"@types/react-dom": "^18.2.7",
 		"@vitejs/plugin-react": "^4.0.4",
+		"concurrently": "^9.2.1",
 		"eslint": "^8.46.0",
 		"eslint-plugin-react": "^7.33.1",
 		"eslint-plugin-react-hooks": "^4.6.0",
@@ -55,6 +59,7 @@
 	},
 	"dependencies": {
 		"@gsap/react": "^2.1.2",
+		"@supabase/supabase-js": "^2.101.1",
 		"gsap": "^3.14.2",
 		"motion": "^12.35.1",
 		"prop-types": "^15.8.1",

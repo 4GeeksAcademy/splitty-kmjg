@@ -162,7 +162,8 @@ def calculate_friend_debts(user_id, friend_id):
     
     Uses Decimal for financial precision (TDD Skill).
     """
-    from api.models import GroupMember, Group, Expense, ExpenseParticipant
+    from api.models import GroupMember, Group, Expense, ExpenseParticipant, Payment
+    from sqlalchemy import and_, or_
     
     # Find all groups where both users are members
     user_groups = set(
@@ -209,6 +210,27 @@ def calculate_friend_debts(user_id, friend_id):
                     amount = Decimal(str(p.amount_owed))
                     total_user_owes += amount
                     group_balance -= amount
+                    
+        # Consider ONLY confirmed payments between these two in this group
+        payments = Payment.query.filter(
+            Payment.group_id == gid,
+            Payment.status == 'confirmed',
+            or_(
+                and_(Payment.payer_id == user_id, Payment.receiver_id == friend_id),
+                and_(Payment.payer_id == friend_id, Payment.receiver_id == user_id)
+            )
+        ).all()
+        
+        for pmt in payments:
+            amount = Decimal(str(pmt.amount))
+            if pmt.payer_id == user_id:
+                # user paid friend. Reduces what user owes.
+                total_user_owes -= amount
+                group_balance += amount # shifts balance in user's favor
+            else:
+                # friend paid user. Reduces what friend owes.
+                total_owed_to_user -= amount
+                group_balance -= amount
         
         if group_balance != 0:
             group_breakdowns.append({

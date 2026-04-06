@@ -4,7 +4,6 @@ import { gsap } from "gsap";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { GroupList } from "./GroupsList.jsx";
 import FadeContent from "./bits/FadeContent.jsx";
-import CountUp from "./bits/CountUp.jsx";
 import SplittyLogo from "../logos/SplittyLogo.jsx";
 
 export const UserDashboard = () => {
@@ -77,7 +76,7 @@ export const UserDashboard = () => {
                             <div className="p-3 p-md-4 flex-fill stat-card" style={statCardStyle}>
                                 <small style={statLabelStyle}>Active Groups</small>
                                 <h2 className="fw-bold mb-0 text-white mt-2">
-                                    <CountUp from={0} to={totalGroups} duration={0.5} />
+                                    {totalGroups}
                                 </h2>
                             </div>
 
@@ -94,7 +93,7 @@ export const UserDashboard = () => {
                                     }}></i>
                                 </div>
                                 <h2 className="fw-bold mb-0 mt-2" style={{ color: netBalance >= 0 ? "#4ade80" : "#f87171" }}>
-                                    {netBalance >= 0 ? "+" : "-"}$<CountUp from={0} to={Math.abs(netBalance)} duration={0.8} decimals={2} />
+                                    {netBalance >= 0 ? "+" : "-"}${Math.abs(netBalance).toFixed(2)}
                                 </h2>
                                 {store.friendDebts && (
                                     <div className="mt-2 d-flex align-items-center gap-2">
@@ -130,7 +129,7 @@ export const UserDashboard = () => {
                                     }}></i>
                                 </div>
                                 <h2 className="fw-bold mb-0 text-white mt-2">
-                                    <CountUp from={0} to={totalFriends} duration={0.5} />
+                                    {totalFriends}
                                 </h2>
                                 {store.friendRequests?.received?.length > 0 ? (
                                     <small style={{ color: "var(--color-base-dark-orange)", fontSize: "0.8rem", fontWeight: "600" }}>
