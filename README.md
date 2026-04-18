@@ -1,3 +1,16 @@
+### Nombre de proyecto : 
+
+Nombre de proyecto : Splitty
+
+### Concepto general : 
+
+
+
+### Funcionalidades : 
+
+
+- Recordatorios: "Faltan 2 días para pagar el alquiler". 
+
 # Project Name: Splitty
 ## General Concept:
 The application allows groups of people (friends, roommates, travelers) to track shared expenses. The system automatically calculates "who owes whom" and how much, always seeking the "minimum payment path" to settle debts efficiently.

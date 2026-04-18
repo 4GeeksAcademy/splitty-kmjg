@@ -3,6 +3,7 @@
 ## Concepto general : 
 
 La aplicación permite que un grupo de personas (amigos, roomies, viajeros) registre gastos comunes y que el sistema calcule automáticamente quién le debe a quién y cuánto, buscando siempre la "ruta mínima" de pagos para saldar las deudas. 
+buenas noches
 
 ## ¿Cómo se vería el flujo? 
 

@@ -1,30 +1,92 @@
-// Import necessary components and functions from react-router-dom.
-
 import {
     createBrowserRouter,
     createRoutesFromElements,
     Route,
+    useRouteError
 } from "react-router-dom";
+
+import { PayPalScriptProvider } from "@paypal/react-paypal-js"; // MODIFICACIÓN 1: Importar PayPal
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { Single } from "./pages/Single";
-import { Demo } from "./pages/Demo";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import CreateGroupForm from "./components/CreateGroupForm";
+import GroupDashboard from "./components/GroupDashboard";
+import { AcceptInvite } from "./components/AcceptInvite";
+import { PrivateRoute } from "./components/PrivateRoute";
+import FriendsPage from "./pages/FriendsPage";
+import DebtsPage from "./pages/DebtsPage";
+import AcceptFriendInvite from "./pages/AcceptFriendInvite";
+import ResetPassword from "./pages/ResetPassword";
+
+const RootErrorBoundary = () => {
+    const error = useRouteError();
+    console.error("¡La aplicación crasheó!", error);
+    
+    return (
+        <div style={{ padding: "2rem", textAlign: "center", color: "white" }}>
+            <h2>¡Oops! Algo falló en el código.</h2>
+            <p style={{ color: "#ff4d4d" }}>{error.message || error.statusText}</p>
+        </div>
+    );
+};
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
+        // MODIFICACIÓN 2: Envolver el Layout con el Provider
+        <Route 
+            path="/" 
+            element={
+                <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID }}>
+                    <Layout />
+                </PayPalScriptProvider>
+            } 
+            errorElement={<RootErrorBoundary />}
+        >
 
-      // Root Route: All navigation will start from here.
-      <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
+            {/* Home */}
+            <Route index element={<Home />} />
 
-        {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-        <Route path= "/" element={<Home />} />
-        <Route path="/single/:theId" element={ <Single />} />  {/* Dynamic route for single items */}
-        <Route path="/demo" element={<Demo />} />
-      </Route>
-    )
+            {/* Auth */}
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="/create-group" element={
+                <PrivateRoute>
+                    <CreateGroupForm />
+                </PrivateRoute>
+            } />
+            
+            {/* Group Dashboard */}
+            <Route path="/group/:id" element={
+                <PrivateRoute>
+                    <GroupDashboard />
+                </PrivateRoute>
+            } />
+
+            {/* Friends & Debts */}
+            <Route path="/friends" element={
+                <PrivateRoute>
+                    <FriendsPage />
+                </PrivateRoute>
+            } />
+            <Route path="/debts" element={
+                <PrivateRoute>
+                    <DebtsPage />
+                </PrivateRoute>
+            } />
+
+            {/* Invitation Support */}
+            <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="/accept-friend" element={<AcceptFriendInvite />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
+        </Route>
+    ),
+    {
+        future: {
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+        },
+    }
 );

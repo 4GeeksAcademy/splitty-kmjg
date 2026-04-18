@@ -1,0 +1,799 @@
+/* apply a default gradient to the whole page so transparent navbars can reveal it */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+:root {
+  --color-base-light: #F7F5FB;
+  --color-base-dark: #1a1a1a;
+  --color-base-cream: #FFE7CD;
+  --color-base-orange: #FCAA54;
+  --color-base-dark-orange: #BB4D00;
+  --splitty-gradient: linear-gradient(90deg, #c76a2a 0%, var(--color-base-dark-orange) 100%);
+  color-scheme: dark;
+}
+
+/* --- BUTTON LOADING STATES --- */
+.splitty-btn-loading {
+  position: relative;
+  pointer-events: none !important;
+  color: transparent !important;
+  transition: all 0.3s ease;
+}
+
+.splitty-btn-loading::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 50%;
+  left: 50%;
+  margin-top: -9px;
+  margin-left: -9px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: splitty-spin-button 0.6s linear infinite;
+  z-index: 2;
+}
+
+@keyframes splitty-spin-button {
+  to { transform: rotate(360deg); }
+}
+
+/* Specific red button loading state */
+.splitty-btn-loading[style*="color: #f87171"]::after,
+.splitty-btn-loading[style*="color: rgb(248, 113, 113)"]::after {
+  border-top-color: #f87171;
+}
+
+::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+::-webkit-input-placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+::-moz-placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+.splitty-input-search::placeholder {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+  font-weight: 500;
+}
+
+.splitty-input-search:hover {
+  border-color: var(--color-base-dark-orange) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.splitty-input-search:focus {
+  border-color: var(--color-base-dark-orange) !important;
+  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.25) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  outline: none !important;
+}
+
+html {
+    scrollbar-gutter: stable;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #2c1308 100%);
+  background-attachment: fixed;
+  font-family: 'Outfit', sans-serif;
+  color: var(--color-base-light);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent; 
+  scrollbar-width: thin;
+  display: block; /* Normal block flow for root */
+  width: 100%;
+}
+
+/* --- CUT TEXT ANIMATION (HOME) --- */
+@property --gap-x {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0.04em;
+}
+
+@property --gap-y {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 0.03em;
+}
+
+.cut-text {
+  position: relative;
+  display: inline-block;
+  color: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  --gap-x: 0.04em;
+  --gap-y: 0.03em;
+  --extra-float: 0.02em;
+}
+
+.cut-text::before,
+.cut-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--color-base-light);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.cut-text::before {
+  clip-path: polygon(0 0, 100% 0, 100% 30%, 0 90%);
+  animation: floating-top 5s ease-in-out infinite;
+}
+
+.cut-text::after {
+  clip-path: polygon(0 90%, 100% 30%, 100% 100%, 0 100%);
+  animation: floating-bottom 5s ease-in-out infinite;
+}
+
+@keyframes floating-top {
+  0%, 100% { transform: translate(calc(var(--gap-x) * -1), calc(var(--gap-y) * -1)) rotate(0deg); }
+  50% { transform: translate(calc((var(--gap-x) + var(--extra-float)) * -1.1), calc((var(--gap-y) + var(--extra-float)) * -1.2)) rotate(-1deg); }
+}
+
+@keyframes floating-bottom {
+  0%, 100% { transform: translate(var(--gap-x), var(--gap-y)) rotate(0deg); }
+  50% { transform: translate(calc(var(--gap-x) + var(--extra-float) * 1.1), calc(var(--gap-y) + var(--extra-float) * 1.2)) rotate(1deg); }
+}
+
+/* --- FORM STYLES (CREATE GROUP / LOGIN) --- */
+.form-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%; 
+  min-height: calc(100vh - 120px); 
+  padding: 2rem 1rem 4rem 1rem;
+}
+
+.splitty-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-base-dark-orange);
+  border-radius: 28px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  color: var(--color-base-light);
+}
+
+.splitty-card-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
+}
+
+.splitty-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 0; /* Managed by header */
+  background: var(--splitty-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.splitty-label {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.3px;
+}
+
+/* Inputs and Selects */
+.splitty-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px;
+  padding: 14px 18px; 
+  font-size: 1rem;
+  color: var(--color-base-light);
+  cursor: text;
+  transition: all 0.3s ease;
+  outline: none;
+  background-image: none !important; /* Remove Bootstrap's default arrow */
+}
+
+select.splitty-input {
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+.splitty-input:hover {
+  border-color: rgba(187, 77, 0, 0.45) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+.splitty-input:focus {
+  border-color: rgba(187, 77, 0, 0.7) !important;
+  box-shadow: 0 0 0 4px rgba(187, 77, 0, 0.18) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* === CustomSelect Glass Dropdown === */
+.splitty-custom-select-list {
+    background: rgba(20, 16, 14, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(187, 77, 0, 0.25);
+    border-radius: 14px;
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.04);
+    overflow: hidden;
+}
+
+.splitty-custom-select-option {
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: var(--color-base-light);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.splitty-custom-select-option:hover {
+    background: rgba(187, 77, 0, 0.18);
+    color: #fca834;
+}
+
+.splitty-custom-select-option.selected {
+    background: linear-gradient(90deg, rgba(187,77,0,0.3) 0%, rgba(255,193,7,0.12) 100%);
+    color: #fca834;
+    font-weight: 600;
+}
+
+/* Custom arrow for the container */
+.splitty-select-icon {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--color-base-dark-orange);
+    opacity: 0.8;
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+}
+
+li{
+  list-style: none;
+  color: var(--color-base-dark-orange);
+}
+
+/* --- CUSTOM SELECT COMPONENT --- */
+.splitty-custom-select-list {
+    background: rgba(20, 20, 20, 0.95); /* Slightly darker for better contrast */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--color-base-dark-orange); 
+    border-radius: 18px;
+    padding: 10px; /* Added padding to the container so scrollbar doesn't feel cramped */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    z-index: 1050;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.splitty-custom-select-option {
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--color-base-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 4px;
+}
+
+.splitty-custom-select-option:hover:not(.disabled),
+.splitty-custom-select-option.selected {
+    background-color: rgba(187, 77, 0, 0.3); /* Using dark orange with transparency */
+    color: var(--color-base-orange);
+    transform: scale(1.02);
+    font-weight: 600;
+}
+
+.splitty-custom-select-option.disabled {
+    cursor: not-allowed;
+}
+
+/* --- CUSTOM SCROLLBAR (Minimalist Glassmorphism) --- */
+::-webkit-scrollbar, 
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+    width: 20px; 
+    height: 20px;
+}
+
+::-webkit-scrollbar-track, 
+html::-webkit-scrollbar-track, 
+body::-webkit-scrollbar-track {
+    background: transparent; 
+}
+
+::-webkit-scrollbar-thumb, 
+html::-webkit-scrollbar-thumb, 
+body::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    border: 7px solid rgba(0, 0, 0, 0); 
+    background-clip: padding-box; 
+    transition: background-color 0.1s;
+}
+
+::-webkit-scrollbar-thumb:hover, 
+html::-webkit-scrollbar-thumb:hover, 
+body::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+
+.splitty-select option:hover,
+.splitty-select option:checked {
+    background-color: rgba(187, 109, 45, 0.2); /* Rust Brown with opacity */
+    color: #FCA434; /* Vibrant Orange from skill */
+    transform: scale(1.02);
+}
+
+/* Buttons */
+.splitty-btn {
+  width: 100%;
+  background: var(--splitty-gradient);
+  color: var(--color-base-light);
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: transform 0.2s, filter 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(187, 77, 0, 0.3);
+}
+
+.splitty-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(187, 77, 0, 0.4);
+}
+
+.splitty-btn:active {
+  transform: translateY(0);
+}
+
+.splitty-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Back Button */
+.splitty-back-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--color-base-cream);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.splitty-back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-base-light);
+  border-color: var(--color-base-dark-orange);
+  transform: translateY(-50%) translateX(-3px);
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.splitty-back-btn:active {
+  transform: translateY(-50%) translateX(-1px) scale(0.95);
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+  .splitty-back-btn {
+    left: -0.5rem; /* Optical adjustment on mobile */
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* Alerts */
+.splitty-alert {
+  padding: 12px;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.splitty-alert-success {
+  background-color: rgba(74, 222, 128, 0.1);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.2);
+}
+
+.splitty-alert-danger {
+  background-color: rgba(248, 113, 113, 0.1);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
+.splitty-alert-info {
+  background-color: rgba(252, 164, 52, 0.1);
+  color: var(--color-base-orange);
+  border-color: rgba(252, 164, 52, 0.2);
+}
+
+.splitty-alert-loading {
+  background-color: rgba(199, 106, 42, 0.1);
+  color: var(--color-base-orange);
+  border-color: rgba(199, 106, 42, 0.2);
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* --- CARDS & UTILITIES --- */
+.group-card, .stat-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.group-card:hover, .stat-card:hover {
+  transform: translateY(-8px) scale(1.02) !important;
+  border-color: var(--color-base-dark-orange) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%) !important;
+  box-shadow: 0 12px 24px -10px rgba(252, 164, 52, 0.4) !important;
+}
+
+.expense-edit-hint {
+  opacity: 0.6 !important;
+}
+
+li:hover .expense-edit-hint {
+  opacity: 1 !important;
+  color: var(--color-base-orange) !important;
+}
+
+.dashboard-element {
+  will-change: transform, opacity;
+}
+
+.splitty-btn-sm {
+  background: var(--splitty-gradient);
+  color: white;
+  font-size: 0.8rem;
+  padding: 6px 18px;
+  border-radius: 10px;
+  margin-top: 10px;
+  border: none;
+  font-weight: 600;
+}
+
+.splitty-gradient-text {
+  background: var(--splitty-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+}
+
+.poopet-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  filter: drop-shadow(0 8px 16px rgba(187, 77, 0, 0.4));
+  transition: transform 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.poopet-icon:hover {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* --- MOBILE OPTIMIZATIONS --- */
+@media (max-width: 768px) {
+  .form-wrapper {
+    padding: 6rem 1rem 2rem 1rem; /* More top padding to clear navbar */
+    align-items: flex-start; /* Start from top on mobile */
+  }
+
+  /* Remove default blue tap highlight on iOS/Android */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .container {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+  
+  .splitty-card {
+    padding: 2.2rem 1.5rem 1.8rem 1.5rem;
+    border-radius: 24px;
+  }
+
+  .splitty-card-header {
+    margin-bottom: 1.2rem;
+  }
+
+  .splitty-title {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  /* Prevent iOS zoom on focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  .splitty-btn {
+    padding: 16px; /* Larger touch target */
+  }
+
+  /* Handle notched phones and Bottom Dock overlap */
+  body {
+    padding-bottom: calc(100px + env(safe-area-inset-bottom, 20px));
+    overscroll-behavior-y: none; /* Fix scroll glitch jumping to top (Mobile only) */
+  }
+}
+
+/* Hide Spinners in Number Inputs */
+.no-spinners::-webkit-outer-spin-button,
+.no-spinners::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spinners[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Custom Autocomplete Styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 50px #FFE7CD inset !important;
+    -webkit-text-fill-color: var(--color-base-dark) !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* --- SKELETON LOADING --- */
+.skeleton-box {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+/* --- AI GLOW EFFECT (Apple Intelligence Style) --- */
+@keyframes spin-glow {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.ai-glow-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.ai-glow-container::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 200%;
+    height: 300%;
+    background: conic-gradient(from 0deg, transparent 0%, #FF5722 25%, #9C27B0 50%, #00BFFF 75%, transparent 100%);
+    animation: spin-glow 4s linear infinite;
+    filter: blur(20px);
+    z-index: -2;
+    opacity: 0.85;
+}
+
+.ai-glow-container::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: rgb(24, 24, 24); /* Splitty dark base color approximation */
+    border-radius: 14px;
+    z-index: -1;
+}
+
+/* --- APP-WIDE EDGE GLOW (Apple Intelligence Style / Frameless) --- */
+.ai-edge-glow-fullscreen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0; /* Pegado absolutamente al extremo de la pantalla */
+    z-index: 99999;
+    pointer-events: none;
+    
+    /* 4-way inward fading mask (simulates a gradient inset shadow) */
+    -webkit-mask-image: 
+        linear-gradient(to right, black 0%, transparent 30px),
+        linear-gradient(to left, black 0%, transparent 30px),
+        linear-gradient(to bottom, black 0%, transparent 30px),
+        linear-gradient(to top, black 0%, transparent 30px);
+    mask-image: 
+        linear-gradient(to right, black 0%, transparent 30px),
+        linear-gradient(to left, black 0%, transparent 30px),
+        linear-gradient(to bottom, black 0%, transparent 30px),
+        linear-gradient(to top, black 0%, transparent 30px);
+    
+    /* Default compositing mixes the alphas together nicely at the corners */
+    -webkit-mask-composite: source-over;
+    mask-composite: add;
+    
+    opacity: 0.95;
+    overflow: hidden;
+}
+
+.ai-edge-glow-fullscreen::before {
+    content: "";
+    position: absolute;
+    /* Center it perfectly using top/left 50% instead of 0 for easier infinite rotation */
+    top: 50%;
+    left: 50%;
+    
+    /* Box must be larger than screen diagonal for 360-degree rotation without clipping */
+    width: 250vmax;
+    height: 250vmax;
+    
+    /* Center the oversized box using margins to keep transforms strictly for rotation */
+    margin-top: -125vmax;
+    margin-left: -125vmax;
+    
+    /* The Apple Intelligence sweeping light */
+    background: conic-gradient(
+        from 0deg,
+        transparent 60deg,
+        #BB4D00 120deg,
+        #FFC107 180deg,
+        #00BFFF 240deg,
+        transparent 300deg
+    );
+    animation: spin-glow-edge 1.2s linear infinite;
+    
+    /* Blur the conic gradient colors together smoothly */
+    filter: blur(8px);
+    z-index: -1;
+}
+
+@keyframes spin-glow-edge {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+/* --- CTA PULSE GLOW --- */
+.splitty-pulse-glow {
+    animation: splitty-pulse-glow 2.5s infinite;
+    transition: all 0.3s ease;
+}
+
+.splitty-pulse-glow:hover {
+    box-shadow: 0 0 25px 5px rgba(187, 77, 0, 0.6);
+    transform: translateY(-2px) scale(1.05);
+    filter: brightness(1.2);
+}
+
+@keyframes splitty-pulse-glow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(187, 77, 0, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 15px rgba(187, 77, 0, 0);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(187, 77, 0, 0);
+        transform: scale(1);
+    }
+}
+
+/* --- LOADING BUTTONS (Fixes Glitches) --- */
+.splitty-btn-loading {
+    position: relative !important;
+    color: transparent !important; /* Hide text but keep dimensions */
+    pointer-events: none !important;
+}
+
+.splitty-btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    top: 50%;
+    left: 50%;
+    margin-top: -9px;
+    margin-left: -9px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: splitty-spinner 0.6s linear infinite;
+    z-index: 2;
+}
+
+@keyframes splitty-spinner {
+    to { transform: rotate(360deg); }
+}
+
+/* Ensure buttons have stable min-height for smooth transitions */
+.btn-stable-layout {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
