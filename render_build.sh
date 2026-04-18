@@ -6,7 +6,12 @@ set -o errexit
 pip install -r requirements.txt
 
 # Run database migrations
-python -m flask db upgrade
+if [ -d "migrations" ]; then
+    echo "Running database migrations..."
+    python -m flask db upgrade
+else
+    echo "WARNING: migrations folder not found. Skipping database upgrade."
+fi
 
 # Install Node dependencies and build frontend
 npm install
