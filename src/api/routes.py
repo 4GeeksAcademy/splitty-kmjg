@@ -146,16 +146,8 @@ def forgot_password():
     reset_token = create_access_token(
         identity=str(user.id), expires_delta=expires)
 
-    # Enlace dinámico basado en el host de la petición
-    # Detectamos si viene de un tunel (https) o localhost (http)
-    host = request.headers.get("X-Forwarded-Host") or request.host
-    
-    # Si estamos en localhost:3001 (backend), cambiamos a localhost:3000 (frontend)
-    if ":3001" in host:
-        host = host.replace(":3001", ":3000")
-        
-    protocol = "https" if "trycloudflare.com" in host else "http"
-    link = f"{protocol}://{host}/reset-password?token={reset_token}"
+    # Usar la url del frontend global definida al inicio de routes.py
+    link = f"{frontend_url}/reset-password?token={reset_token}"
 
     msg = Message("Password Recovery - Splitty",
                   sender=current_app.config.get('MAIL_USERNAME'),
