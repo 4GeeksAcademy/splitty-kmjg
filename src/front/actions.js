@@ -65,7 +65,18 @@ class Actions {
         };
       }
 
-      let data = await resp.json();
+      let data;
+      try {
+        data = await resp.json();
+      } catch (e) {
+        console.error(`Failed to parse JSON response from ${endpoint}`);
+        return { 
+          code: resp.status, 
+          ok: false, 
+          error: "Invalid server response", 
+          data: null 
+        };
+      }
 
       if (!resp.ok) {
         console.error(`Error de API [${resp.status}] en ${endpoint}:`, data);
@@ -74,7 +85,7 @@ class Actions {
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
       console.error(`Error de conexión (Fetch) en ${endpoint}:`, error);
-      return { code: 0, ok: false, error: error.message, data: null };
+      return { code: 0, ok: false, error: "Connection error", data: null };
     }
   };
 
@@ -506,6 +517,37 @@ class Actions {
       return { success: true, data: resp.data };
     }
     return { success: false, error: resp.data?.error || "Failed to fetch pending payments" };
+  };
+
+  forgotPassword = async (email) => {
+    const resp = await this.apiFetch("/forgot-password", "POST", { email }, false);
+    if (!resp.ok) {
+      return { success: false, error: resp.data?.msg || resp.data?.error || "Error requesting recovery." };
+    }
+    return { success: true, data: resp.data };
+  };
+
+  resetPassword = async (token, password) => {
+    const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+    const apiPath = baseUrl.includes("/api") ? "" : "/api";
+    const fullUrl = `${baseUrl}${apiPath}/reset-password`;
+
+    const fetchParams = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ password })
+    };
+
+    try {
+      const resp = await fetch(fullUrl, fetchParams);
+      const data = await resp.json();
+      return { ok: resp.ok, data };
+    } catch (error) {
+      return { ok: false, error: "Connection error" };
+    }
   };
 }
 

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import PropTypes from "prop-types";
 import FadeContent from "./bits/FadeContent.jsx";
 
@@ -10,6 +11,7 @@ const PaymentForm = ({ groupId, groupMembers, onPaymentCreated, currentUserId, s
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState("manual"); // manual | paypal
 
     // Filter available members (exclude current user)
     const availableMembers = groupMembers.filter(member => member.id !== currentUserId);
@@ -164,7 +166,73 @@ const PaymentForm = ({ groupId, groupMembers, onPaymentCreated, currentUserId, s
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit}>
+                {/* Payment Method Tabs */}
+                <div style={{
+                    display: "flex",
+                    gap: "4px",
+                    marginBottom: "28px",
+                    background: "rgba(255, 255, 255, 0.03)",
+                    padding: "6px",
+                    borderRadius: "14px",
+                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                    boxShadow: "inset 0 2px 4px rgba(0,0,0,0.2)"
+                }}>
+                    <button
+                        onClick={() => setPaymentMethod("manual")}
+                        style={{
+                            flex: 1,
+                            padding: "12px",
+                            borderRadius: "10px",
+                            border: "none",
+                            background: paymentMethod === "manual" ? "rgba(255, 140, 0, 0.15)" : "transparent",
+                            color: paymentMethod === "manual" ? "#fff" : "rgba(255,255,255,0.4)",
+                            fontSize: "0.85rem",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px",
+                            boxShadow: paymentMethod === "manual" ? "0 4px 12px rgba(255, 140, 0, 0.1)" : "none"
+                        }}
+                    >
+                        <i className="fas fa-hand-holding-dollar" style={{ 
+                            color: paymentMethod === "manual" ? "var(--color-base-dark-orange)" : "inherit",
+                            fontSize: "1rem"
+                        }}></i>
+                        Manual
+                    </button>
+                    <button
+                        onClick={() => setPaymentMethod("paypal")}
+                        style={{
+                            flex: 1,
+                            padding: "12px",
+                            borderRadius: "10px",
+                            border: "none",
+                            background: paymentMethod === "paypal" ? "rgba(0, 112, 186, 0.15)" : "transparent",
+                            color: paymentMethod === "paypal" ? "#fff" : "rgba(255,255,255,0.4)",
+                            fontSize: "0.85rem",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "8px",
+                            boxShadow: paymentMethod === "paypal" ? "0 4px 12px rgba(0, 112, 186, 0.1)" : "none"
+                        }}
+                    >
+                        <i className="fab fa-paypal" style={{ 
+                            color: paymentMethod === "paypal" ? "#0070ba" : "inherit",
+                            fontSize: "1rem"
+                        }}></i>
+                        PayPal
+                    </button>
+                </div>
+
+                {paymentMethod === "manual" ? (
+                    <form onSubmit={handleSubmit}>
                     {/* Receiver Select */}
                     <div style={{ marginBottom: "16px" }}>
                         <label style={{
@@ -396,6 +464,123 @@ const PaymentForm = ({ groupId, groupMembers, onPaymentCreated, currentUserId, s
                         )}
                     </button>
                 </form>
+                ) : (
+                    <>
+                        <div style={{
+                            marginBottom: "24px",
+                            padding: "20px",
+                            borderRadius: "16px",
+                            background: "linear-gradient(135deg, rgba(255, 140, 0, 0.05) 0%, rgba(255, 127, 80, 0.05) 100%)",
+                            border: "1px solid rgba(255, 140, 0, 0.15)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "12px",
+                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)"
+                        }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                <div style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    borderRadius: "10px",
+                                    background: "rgba(255, 140, 0, 0.1)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "var(--color-base-dark-orange)"
+                                }}>
+                                    <i className="fas fa-receipt" style={{ fontSize: "1.2rem" }}></i>
+                                </div>
+                                <div>
+                                    <p style={{ margin: 0, fontSize: "0.75rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                                        Total Amount
+                                    </p>
+                                    <p style={{ margin: 0, fontSize: "1.25rem", fontWeight: "700", color: "#fff" }}>
+                                        ${amount || suggestedAmount || "0.00"}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style={{ 
+                                display: "flex", 
+                                alignItems: "center", 
+                                gap: "8px", 
+                                fontSize: "0.85rem", 
+                                color: "rgba(255,255,255,0.7)",
+                                padding: "8px 12px",
+                                background: "rgba(255,255,255,0.03)",
+                                borderRadius: "8px"
+                            }}>
+                                <i className="fas fa-user-circle" style={{ color: "rgba(255,255,255,0.3)" }}></i>
+                                Paying to <strong style={{ color: "#fff" }}>{availableMembers.find(m => m.id == receiverId)?.username || "selected friend"}</strong>
+                            </div>
+                        </div>
+                        
+                        <div style={{ position: "relative", colorScheme: "light" }}>
+                            <PayPalButtons
+                                style={{ 
+                                    layout: "vertical", 
+                                    shape: "rect", 
+                                    label: "pay",
+                                    color: "gold",
+                                    height: 48 
+                                }}
+                                disabled={!receiverId || !amount}
+                                createOrder={(data, actions) => {
+                                    return actions.order.create({
+                                        purchase_units: [
+                                            {
+                                                amount: {
+                                                    currency_code: "USD",
+                                                    value: amount,
+                                                },
+                                                description: `Payment to ${availableMembers.find(m => m.id == receiverId)?.username || "User"} via Splitty`,
+                                            },
+                                        ],
+                                    });
+                                }}
+                                onApprove={async (data, actions) => {
+                                    const order = await actions.order.capture();
+                                    console.log("PayPal Order Approved:", order);
+                                    
+                                    const submitData = {
+                                        receiver_id: parseInt(receiverId),
+                                        amount: parseFloat(amount),
+                                        payment_method: "paypal",
+                                        paypal_order_id: order.id
+                                    };
+                                    
+                                    const result = await onPaymentCreated(groupId, submitData);
+                                    if (result.success) {
+                                        setSuccess(true);
+                                        // Limpiar despues de éxito
+                                        setTimeout(() => setSuccess(false), 3000);
+                                    } else {
+                                        setError(result.error || "Failed to sync PayPal payment to server");
+                                    }
+                                }}
+                                onError={(err) => {
+                                    console.error("PayPal Error:", err);
+                                    setError("PayPal transaction failed. Please try again.");
+                                }}
+                            />
+                            
+                            <div style={{ 
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "8px",
+                                marginTop: "20px",
+                                padding: "10px",
+                                borderTop: "1px solid rgba(255,255,255,0.05)"
+                            }}>
+                                <i className="fas fa-shield-halved" style={{ color: "#4ade80", fontSize: "0.8rem" }}></i>
+                                <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)" }}>
+                                    Secure SSL Encrypted Payment
+                                </span>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </FadeContent>
     );

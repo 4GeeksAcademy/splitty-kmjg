@@ -17,6 +17,7 @@ import { PrivateRoute } from "./components/PrivateRoute";
 import FriendsPage from "./pages/FriendsPage";
 import DebtsPage from "./pages/DebtsPage";
 import AcceptFriendInvite from "./pages/AcceptFriendInvite";
+import ResetPassword from "./pages/ResetPassword";
 
 const RootErrorBoundary = () => {
     const error = useRouteError();
@@ -77,6 +78,7 @@ export const router = createBrowserRouter(
             {/* Invitation Support */}
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/accept-friend" element={<AcceptFriendInvite />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
         </Route>

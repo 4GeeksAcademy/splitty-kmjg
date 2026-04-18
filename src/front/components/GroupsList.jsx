@@ -8,13 +8,23 @@ export const GroupList = () => {
     const containerRef = useRef(null);
     const [loading, setLoading] = useState(true);
 
-    // Fetch groups once on mount
+    // Fetch groups only if not already loaded (dashboard handles initial fetch)
     useEffect(() => {
+        let isMounted = true;
         const fetchGroups = async () => {
-            await actions.loadUserGroups();
-            setLoading(false);
+            if (!store.groups || store.groups.length === 0) {
+                // If it's a direct entry here without dashboard (e.g. standalone route in future)
+                // we fetch, but typically Dashboard handles it. Wait a tick to merge.
+                await new Promise(resolve => setTimeout(resolve, 100)); // longer delay than dashboard so dashboard claims it first
+                if (isMounted) {
+                    await actions.loadUserGroups();
+                }
+            }
+            if (isMounted) setLoading(false);
         };
         fetchGroups();
+
+        return () => { isMounted = false; };
     }, []);
 
     // Animation for cards when groups are loaded

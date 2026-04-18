@@ -14,6 +14,13 @@ export const Login = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotData, setForgotData] = useState({
+    showModal: false,
+    email: "",
+    error: "",
+    success: "",
+    loading: false
+  });
   const [shakeKey, setShakeKey] = useState(0);
 
   const handleChange = ({ target }) => {
@@ -41,9 +48,24 @@ export const Login = () => {
     if (result.ok) {
       navigate("/");
     } else {
-      setError(result.error || "Login failed. Please check your credentials and try again.");
+      setError("Login failed. Check your credentials or try again later.");
       setShakeKey(k => k + 1);
       setLoading(false);
+    }
+  };
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setForgotData(prev => ({ ...prev, loading: true, error: "", success: "" }));
+    const result = await actions.forgotPassword(forgotData.email);
+
+    if (result.success) {
+      setForgotData(prev => ({ ...prev, success: "Check your email for the reset link!", loading: false }));
+      setTimeout(() => {
+        setForgotData(prev => ({ ...prev, showModal: false }));
+      }, 3000);
+    } else {
+      setForgotData(prev => ({ ...prev, error: result.error, loading: false }));
     }
   };
 
@@ -104,6 +126,7 @@ export const Login = () => {
                 <button
                   type="button"
                   className="btn btn-link p-0 text-decoration-none"
+                  onClick={() => setForgotData(prev => ({ ...prev, showModal: true, email: formData.email }))}
                   style={{
                     color: "var(--color-base-dark-orange)",
                     fontWeight: "500",
@@ -183,6 +206,97 @@ export const Login = () => {
               </Link>
             </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {forgotData.showModal && (
+        <div 
+          className="modal-overlay d-flex align-items-center justify-content-center"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            backdropFilter: "blur(8px)",
+            zIndex: 1050,
+            padding: "20px"
+          }}
+          onClick={() => setForgotData(prev => ({ ...prev, showModal: false }))}
+        >
+          <div 
+            className="splitty-card" 
+            style={{ maxWidth: "400px", width: "100%" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="text-center mb-4">
+               <h4 style={{ color: "var(--color-base-light)", fontWeight: "600" }}>Reset Password</h4>
+               <p style={{ color: "rgba(247, 245, 251, 0.6)", fontSize: "0.9rem" }}>
+                 Enter your email to receive a recovery link.
+               </p>
+            </div>
+
+            {forgotData.success ? (
+              <div className="text-center p-3" style={{ backgroundColor: "rgba(34, 197, 94, 0.1)", borderRadius: "12px", border: "1px solid rgba(34, 197, 94, 0.2)", color: "#22c55e" }}>
+                <i className="bi bi-check-circle-fill me-2"></i>
+                {forgotData.success}
+              </div>
+            ) : (
+              <form onSubmit={handleForgotSubmit}>
+                <div className="mb-4">
+                  <label className="splitty-label">Email Address</label>
+                  <input
+                    type="email"
+                    className="splitty-input"
+                    value={forgotData.email}
+                    onChange={e => setForgotData(prev => ({ ...prev, email: e.target.value, error: "" }))}
+                    placeholder="name@example.com"
+                    required
+                  />
+                </div>
+
+                {forgotData.error && (
+                  <div className="mb-4" style={{ backgroundColor: "rgba(248, 113, 113, 0.1)", borderRadius: "12px", border: "1px solid rgba(248, 113, 113, 0.2)", color: "#f87171", padding: "12px", fontSize: "0.85rem" }}>
+                    <i className="bi bi-exclamation-circle me-2"></i>
+                    {forgotData.error}
+                  </div>
+                )}
+
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn w-100"
+                    onClick={() => setForgotData(prev => ({ ...prev, showModal: false }))}
+                    style={{
+                      height: "50px",
+                      borderRadius: "14px",
+                      background: "rgba(255, 255, 255, 0.05)",
+                      color: "#fff",
+                      border: "1px solid rgba(255,255,255,0.1)"
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn w-100 fw-semibold"
+                    disabled={forgotData.loading}
+                    style={{
+                      height: "50px",
+                      borderRadius: "14px",
+                      background: "var(--splitty-gradient)",
+                      color: "#fff",
+                      border: "none"
+                    }}
+                  >
+                    {forgotData.loading ? "Sending..." : "Send Link"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

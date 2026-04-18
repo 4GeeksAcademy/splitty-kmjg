@@ -23,6 +23,7 @@ from flask_bcrypt import Bcrypt
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
+import datetime as dt_module # Use an alias to avoid conflict with the name 'datetime' imported from 'datetime'
 
 bcrypt = Bcrypt()
 api = Blueprint('api', __name__)
@@ -30,7 +31,8 @@ api = Blueprint('api', __name__)
 # Configure Limiter
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    # Increased dramatically because the dashboard makes 4-5 API requests on every mount.
+    default_limits=["5000 per day", "1000 per hour", "50 per minute"],
     storage_uri="memory://",
 )
 
@@ -129,6 +131,89 @@ def logout():
     db.session.add(blocked_token)
     db.session.commit()
     return jsonify({"msg": "Usuario desconectado correctamente"}), 200
+
+
+@api.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    email = request.json.get('email')
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"msg": "Email not found"}), 404
+
+    # Generar un token que expire en 15 minutos
+    expires = dt_module.timedelta(minutes=15)
+    reset_token = create_access_token(
+        identity=str(user.id), expires_delta=expires)
+
+    # Enlace dinámico basado en el host de la petición
+    # Detectamos si viene de un tunel (https) o localhost (http)
+    host = request.headers.get("X-Forwarded-Host") or request.host
+    
+    # Si estamos en localhost:3001 (backend), cambiamos a localhost:3000 (frontend)
+    if ":3001" in host:
+        host = host.replace(":3001", ":3000")
+        
+    protocol = "https" if "trycloudflare.com" in host else "http"
+    link = f"{protocol}://{host}/reset-password?token={reset_token}"
+
+    msg = Message("Password Recovery - Splitty",
+                  sender=current_app.config.get('MAIL_USERNAME'),
+                  recipients=[email])
+    
+    msg.html = f"""
+    <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
+        <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
+            <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
+            <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 30px;">
+                Hi {user.username}, do you need to reset your password?
+            </p>
+            <div style="margin: 40px 0;">
+                <a href="{link}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                    Reset Password
+                </a>
+            </div>
+            <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
+                This link will expire in 15 minutes. <br>
+                If you didn't request this change, you can safely ignore this email.
+            </p>
+            <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
+                © 2026 Splitty App. All rights reserved.
+            </div>
+        </div>
+    </div>
+    """
+    
+    # Use secure extension access to avoid 500 errors if mail is not configured
+    mail_ext = current_app.extensions.get('mail')
+    if mail_ext:
+        try:
+            mail_ext.send(msg)
+            return jsonify({"msg": "Email sent successfully"}), 200
+        except Exception as e:
+            current_app.logger.error(f"Error sending password reset mail: {str(e)}")
+            return jsonify({"msg": "Error sending email"}), 500
+            
+    return jsonify({"msg": "Email service not configured"}), 503
+
+
+@api.route('/reset-password', methods=['POST'])
+@jwt_required()
+def reset_password():
+    new_password = request.json.get('password')
+    if not new_password:
+        return jsonify({"msg": "Password is required"}), 400
+        
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"msg": "User not found"}), 404
+
+    hashed_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    user.password = hashed_password
+    db.session.commit()
+    return jsonify({"msg": "Password updated successfully"}), 200
 
 # --- ENDPOINTS DE GRUPOS ---
 
@@ -1316,9 +1401,11 @@ def create_payment(group_id):
         data = request.get_json()
         receiver_id = data.get('receiver_id')
         amount = data.get('amount')
+        payment_method = data.get('payment_method', 'manual')
     else:
         receiver_id = request.form.get('receiver_id')
         amount = request.form.get('amount')
+        payment_method = request.form.get('payment_method', 'manual')
 
     if not receiver_id or amount is None:
         return jsonify({"error": "receiver_id and amount are required"}), 400
@@ -1358,7 +1445,8 @@ def create_payment(group_id):
             receiver_id=receiver_id,
             group_id=group_id,
             amount=amount_decimal,
-            status='pending'
+            status='pending',
+            payment_method=payment_method
         )
 
         # Manejo de comprobante (receipt)
