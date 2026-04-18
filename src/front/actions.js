@@ -12,15 +12,12 @@ class Actions {
     body = null,
     isPrivate = true,
   ) => {
-    let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-    
-    backendUrl = backendUrl.replace(/\/+$/, "");
-
-    if (backendUrl && !backendUrl.endsWith("/api")) {
-      backendUrl += "/api";
-    } else if (!backendUrl && !endpoint.startsWith("/api")) {
-      backendUrl = "/api" + (endpoint.startsWith("/") ? "" : "/");
-    }
+    const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+    // Aseguramos que el path sea /api si no viene en la URL base
+    const apiPath = baseUrl.includes("/api") ? "" : "/api";
+    // Normalizamos el endpoint para que siempre empiece con /
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const fullUrl = `${baseUrl}${apiPath}${cleanEndpoint}`;
 
     const token = this.store.jwt;
 
@@ -45,7 +42,7 @@ class Actions {
     }
 
     try {
-      const resp = await fetch(backendUrl + endpoint, fetchParams);
+      const resp = await fetch(fullUrl, fetchParams);
 
       if (isPrivate && (resp.status === 401 || resp.status === 422)) {
         console.error("Token expired or invalid. Clearing session...");
@@ -68,10 +65,27 @@ class Actions {
         };
       }
 
-      let data = await resp.json();
+      let data;
+      try {
+        data = await resp.json();
+      } catch (e) {
+        console.error(`Failed to parse JSON response from ${endpoint}`);
+        return { 
+          code: resp.status, 
+          ok: false, 
+          error: "Invalid server response", 
+          data: null 
+        };
+      }
+
+      if (!resp.ok) {
+        console.error(`Error de API [${resp.status}] en ${endpoint}:`, data);
+      }
+
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
-      return { code: 0, ok: false, error: error.message, data: null };
+      console.error(`Error de conexión (Fetch) en ${endpoint}:`, error);
+      return { code: 0, ok: false, error: "Connection error", data: null };
     }
   };
 
@@ -504,8 +518,39 @@ class Actions {
     }
     return { success: false, error: resp.data?.error || "Failed to fetch pending payments" };
   };
+
+  forgotPassword = async (email) => {
+    const resp = await this.apiFetch("/forgot-password", "POST", { email }, false);
+    if (!resp.ok) {
+      return { success: false, error: resp.data?.msg || resp.data?.error || "Error requesting recovery." };
+    }
+    return { success: true, data: resp.data };
+  };
+
+  resetPassword = async (token, password) => {
+    const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+    const apiPath = baseUrl.includes("/api") ? "" : "/api";
+    const fullUrl = `${baseUrl}${apiPath}/reset-password`;
+
+    const fetchParams = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ password })
+    };
+
+    try {
+      const resp = await fetch(fullUrl, fetchParams);
+      const data = await resp.json();
+      return { ok: resp.ok, data };
+    } catch (error) {
+      return { ok: false, error: "Connection error" };
+    }
+  };
 }
 
 
 
-export default Actions;
+export default Actions;

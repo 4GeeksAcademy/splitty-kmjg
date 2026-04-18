@@ -50,7 +50,8 @@ export const InviteModal = ({ groupId, groupName, onClose }) => {
         const token = store.jwt; 
 
         try {
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/${groupId}/invite-link`, {
+            const baseUrl = import.meta.env.VITE_BACKEND_URL || "";
+            const response = await fetch(`${baseUrl}/api/groups/${groupId}/invite-link`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

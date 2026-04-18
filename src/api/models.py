@@ -108,7 +108,7 @@ class Group(db.Model):
     created_at: Mapped[datetime] = mapped_column(
         DateTime, nullable=False, default=datetime.utcnow)
     created_by: Mapped[int] = mapped_column(
-        ForeignKey("user.id"), nullable=False)
+        ForeignKey("user.id"), nullable=False, index=True)
 
     creator: Mapped["User"] = relationship(
         "User", back_populates="groups_created")
@@ -266,7 +266,7 @@ class Invitation(db.Model):
     token: Mapped[str] = mapped_column(
         String(255), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     group_id: Mapped[int] = mapped_column(
-        ForeignKey("group.id"), nullable=False)
+        ForeignKey("group.id"), nullable=False, index=True)
     is_used: Mapped[bool] = mapped_column(Boolean(), default=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
@@ -345,7 +345,7 @@ class FriendInvitation(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     inviter_id: Mapped[int] = mapped_column(
-        ForeignKey("user.id"), nullable=False)
+        ForeignKey("user.id"), nullable=False, index=True)
 
     email: Mapped[str] = mapped_column(String(120), nullable=False)
 
@@ -395,8 +395,8 @@ class Payment(db.Model):
     # Monto del pago
     amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
 
-    # Estado del pago: 'pending' (esperando confirmación), 'confirmed' (confirmado)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    payment_method: Mapped[str] = mapped_column(String(20), nullable=False, default="manual")
     receipt_url: Mapped[str] = mapped_column(String(255), nullable=True)
 
     # Timestamps
@@ -416,6 +416,7 @@ class Payment(db.Model):
             "group_id": self.group_id,
             "amount": float(self.amount),
             "status": self.status,
+            "payment_method": self.payment_method,
             "receipt_url": self.receipt_url,
             "created_at": self.created_at.isoformat(),
             "confirmed_at": self.confirmed_at.isoformat() if self.confirmed_at else None,

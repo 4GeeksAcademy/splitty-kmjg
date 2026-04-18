@@ -11,18 +11,42 @@ export const UserDashboard = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Load groups on mount
-        actions.loadUserGroups();
-        // Load friends data
-        actions.loadFriends();
-        actions.loadPendingRequests();
-        actions.loadFriendDebts();
+        let isMounted = true;
+
+        const initDashboard = async () => {
+            // Tiny delay to let React Strict Mode's cleanup run before we fetch.
+            // This prevents 2 simultaneous sequences from blasting the server.
+            await new Promise(r => setTimeout(r, 50));
+            if (!isMounted) return;
+
+            // Execute sequentially with delays to avoid Cloudflare 429 (TryCloudflare tunnel limits)
+            await actions.loadUserGroups();
+            if (!isMounted) return;
+            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+
+            await actions.loadFriends();
+            if (!isMounted) return;
+            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+
+            await actions.loadPendingRequests();
+            if (!isMounted) return;
+            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+
+            await actions.loadFriendDebts();
+        };
+
+        if (!store.jwt) return; // safety
+        initDashboard();
 
         // Check for pending friend invitation token (from accept-friend flow)
         const pendingToken = sessionStorage.getItem("pending_friend_token");
         if (pendingToken) {
             navigate(`/accept-friend?token=${pendingToken}`);
         }
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const totalGroups = store.groups?.length || 0;
