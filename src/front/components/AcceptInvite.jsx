@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 // Verifica que esta ruta sea exacta en tu explorador de archivos
-import splittyLogo from "../assets/img/Splitty.ico"; 
+import splittyLogo from "../assets/img/Splitty.ico";
 
 export const AcceptInvite = () => {
     const { store } = useGlobalReducer();
@@ -26,7 +26,12 @@ export const AcceptInvite = () => {
             }
 
             try {
-                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/accept-invite`, {
+                const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+                const apiPath = baseUrl.includes("/api") ? "" : "/api";
+                const endpoint = "/groups/accept-invite";
+                const fullUrl = `${baseUrl}${apiPath}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+
+                const response = await fetch(fullUrl, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -75,12 +80,12 @@ export const AcceptInvite = () => {
                 }
                 `}
             </style>
-            
+
             <div className="mb-4">
                 {/* Usar el SVG como máscara o imagen con filtro si no es inline */}
                 <img src={splittyLogo} className="drawing-logo" alt="Cargando..." />
             </div>
-            
+
             <h3 className="text-secondary" style={{ fontWeight: '300' }}>
                 {status}
             </h3>

@@ -2,9 +2,10 @@ import {
     createBrowserRouter,
     createRoutesFromElements,
     Route,
-    useRouteError // Importamos este hook para ver el error real
+    useRouteError
 } from "react-router-dom";
 
+import { PayPalScriptProvider } from "@paypal/react-paypal-js"; // MODIFICACIÓN 1: Importar PayPal
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
@@ -17,7 +18,6 @@ import FriendsPage from "./pages/FriendsPage";
 import DebtsPage from "./pages/DebtsPage";
 import AcceptFriendInvite from "./pages/AcceptFriendInvite";
 
-// 1. Creamos un componente para atrapar los fallos de código (crashes)
 const RootErrorBoundary = () => {
     const error = useRouteError();
     console.error("¡La aplicación crasheó!", error);
@@ -25,7 +25,6 @@ const RootErrorBoundary = () => {
     return (
         <div style={{ padding: "2rem", textAlign: "center", color: "white" }}>
             <h2>¡Oops! Algo falló en el código.</h2>
-            {/* Esto te mostrará en pantalla exactamente qué línea de código falló */}
             <p style={{ color: "#ff4d4d" }}>{error.message || error.statusText}</p>
         </div>
     );
@@ -33,8 +32,16 @@ const RootErrorBoundary = () => {
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
-        // 2. Usamos el Boundary real en el errorElement
-        <Route path="/" element={<Layout />} errorElement={<RootErrorBoundary />}>
+        // MODIFICACIÓN 2: Envolver el Layout con el Provider
+        <Route 
+            path="/" 
+            element={
+                <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID }}>
+                    <Layout />
+                </PayPalScriptProvider>
+            } 
+            errorElement={<RootErrorBoundary />}
+        >
 
             {/* Home */}
             <Route index element={<Home />} />
@@ -71,7 +78,6 @@ export const router = createBrowserRouter(
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/accept-friend" element={<AcceptFriendInvite />} />
 
-            {/* 3. ESTA es la forma correcta de manejar un "Page not found" (404) */}
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
         </Route>
     ),

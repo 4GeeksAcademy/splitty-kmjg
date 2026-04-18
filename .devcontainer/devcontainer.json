@@ -30,7 +30,8 @@
 		"vscode": {
 			"extensions": [
 				"esbenp.prettier-vscode",
-				"ms-python.autopep8"
+				"ms-python.autopep8",
+				"google.geminicodeassist"
 			]
 		}
 	},

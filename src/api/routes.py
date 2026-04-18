@@ -36,7 +36,10 @@ limiter = Limiter(
 
 # Permite peticiones CORS específicamente para el prefijo /api/
 frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
-CORS(api, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:3000"]}})
+# Sugerencia: En desarrollo, permitir el puerto 3001 que es común en Vite
+allowed_origins = [frontend_url, "http://localhost:3000",
+                   "http://localhost:3001", "http://localhost:5173"]
+CORS(api, resources={r"/api/*": {"origins": allowed_origins}})
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -47,6 +50,7 @@ def handle_hello():
     return jsonify(response_body), 200
 
 # --- ENDPOINTS DE USUARIO (Registro, Login, Logout) ---
+
 
 @api.route('/register', methods=['POST'])
 @limiter.limit("5 per minute")
@@ -77,8 +81,6 @@ def reg_user():
         is_active=True,
     )
 
-
-
     try:
 
         db.session.add(new_user)
@@ -88,7 +90,8 @@ def reg_user():
         db.session.rollback()
         current_app.logger.error(f"Error in registration: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
-    
+
+
 @api.route('/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login_user():
@@ -102,18 +105,21 @@ def login_user():
     user = User.query.filter_by(email=email).first()
 
     if not user or not bcrypt.check_password_hash(user.password, password):
+        current_app.logger.warning(
+            f"Intento de login fallido para el email: {email}")
         return jsonify({"error": "Incorrect email or password"}), 401
 
-    acces_token = create_access_token(
+    access_token = create_access_token(
         identity=str(user.id),
         expires_delta=timedelta(hours=24)
     )
     return jsonify({
         "message": "Login correcto",
-        "access_token": acces_token,
+        "access_token": access_token,
         "username": user.username,
         "id": user.id
     }), 200
+
 
 @api.route('/logout', methods=['POST'])
 @jwt_required()
@@ -125,6 +131,7 @@ def logout():
     return jsonify({"msg": "Usuario desconectado correctamente"}), 200
 
 # --- ENDPOINTS DE GRUPOS ---
+
 
 @api.route('/groups', methods=['POST'])
 @jwt_required()
@@ -164,6 +171,7 @@ def create_group():
         db.session.rollback()
         return jsonify({"error": "Error creating group", "details": str(e)}), 500
 
+
 @api.route('/groups', methods=['GET'])
 @jwt_required()
 def get_groups():
@@ -172,10 +180,11 @@ def get_groups():
     group_ids = [membership.group_id for membership in memberships]
     groups = Group.query.filter(Group.id.in_(
         group_ids)).all() if group_ids else []
-    
+
     return jsonify({
         "groups": [group.serialize() for group in groups]
     }), 200
+
 
 @api.route('/groups/<int:group_id>', methods=['GET'])
 @jwt_required()
@@ -208,11 +217,12 @@ def get_group_by_id(group_id):
         "members": members_with_user_info
     }), 200
 
+
 @api.route('/groups/<int:group_id>', methods=['DELETE'])
 @jwt_required()
 def delete_group(group_id):
     user_id = int(get_jwt_identity())
-    
+
     group = Group.query.get(group_id)
     if not group:
         return jsonify({"error": "Group not found"}), 404
@@ -231,19 +241,19 @@ def delete_group(group_id):
 
 # --- INVITACIONES (CORREGIDO) ---
 
+
 @api.route('/groups/<int:group_id>/invite-link', methods=['POST'])
 @jwt_required()
 def send_invitation(group_id):
     body = request.get_json()
-    # Si body es None o no tiene "email", email_destinatario será None
     email_destinatario = body.get("email") if body else None
+
     group = Group.query.get(group_id)
     if not group:
         return jsonify({"msg": "Group not found"}), 404
+
     try:
-
-        # 1. Siempre creamos la invitación en la base de datos para tener un token
-
+        # 1. Database record creation
         nueva_invitacion = Invitation(
             email=email_destinatario if email_destinatario else "pending@link.com",
             group_id=group_id,
@@ -253,98 +263,68 @@ def send_invitation(group_id):
         db.session.add(nueva_invitacion)
         db.session.commit()
 
-
-
         token = nueva_invitacion.token
-
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         url_aceptacion = f"{frontend_url}/accept-invite?token={token}"
 
-        # 2. SOLO si el usuario escribió un email, intentamos enviar el correo
-
+        # 2. Secure Email Sending logic
+        email_status = "not_sent"
         if email_destinatario:
-            msg = Message(
-                subject=f"¡Te han invitado al grupo {group.name} en Splitty!",
-                recipients=[email_destinatario],
-                sender=current_app.config.get('MAIL_USERNAME')
-            )
+            try:
+                msg = Message(
+                    subject=f"You've been invited to join {group.name} on Splitty!",
+                    recipients=[email_destinatario],
+                    sender=current_app.config.get('MAIL_USERNAME')
+                )
 
-            msg.html = f"""
-            <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
-                <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                    <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
-                <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
-                    <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
-                        ¡Hola! Has sido invitado a unirte al grupo:
-                    </p>
-                    <p style="color: #ffffff; font-size: 24px; font-weight: 600; margin-bottom: 40px;">{group.name}
-                    </p>
-                <div style="margin: 40px 0;">
-                    <a href="{url_aceptacion}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
-                        Aceptar Invitación
-                    </a>
+                msg.html = f"""
+                <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
+                    <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
+                        <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
+                        <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
+                            Hello! You have been invited to join the group:
+                        </p>
+                        <p style="color: #ffffff; font-size: 24px; font-weight: 600; margin-bottom: 40px;">{group.name}</p>
+                        <div style="margin: 40px 0;">
+                            <a href="{url_aceptacion}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                                Accept Invitation
+                            </a>
+                        </div>
+                        <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
+                            This is a private invitation link. <br>
+                            If you weren't expecting this email, you can safely ignore it.
+                        </p>
+                        <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
+                            © 2026 Splitty App. All rights reserved.
+                        </div>
+                    </div>
                 </div>
-                    <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
-                        Este es un enlace de invitación privado. <br>
-                        Si no esperabas este correo, puedes ignorarlo con seguridad.
-                    </p>
-                <div style="margin-top: 20px; border-top: 1px solid #333; pt-20px; font-size: 11px; color: #444;">
-                    © 2026 Splitty App. Todos los derechos reservados.
-                </div>
-                </div>
-            </div>
-            """
-            current_app.extensions['mail'].send(msg)
-        # 3. Siempre respondemos con éxito (201) y el link,
-        # así el modal puede mostrar el link naranja aunque no se haya enviado email aún.
+                """
+                # Use secure extension access to avoid 500 errors if mail is not configured
+                mail_ext = current_app.extensions.get('mail')
+                if mail_ext:
+                    mail_ext.send(msg)
+                    email_status = "sent"
+            except Exception as mail_err:
+                current_app.logger.error(f"Mail failed: {str(mail_err)}")
+                email_status = "failed"
+
+        # 3. Success response with the link (even if email failed)
         return jsonify({
-            "msg": "Invitación procesada con éxito",
+            "msg": "Invitation processed successfully",
             "link": url_aceptacion,
-            "token": token
+            "token": token,
+            "email_status": email_status
         }), 201
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error processing invitation: {str(e)}")
-        return jsonify({"msg": "Error processing invitation"}), 500
-
-# --- ACEPTAR INVITACIÓN ---
-
-@api.route('/groups/accept-invite', methods=['POST'])
-@jwt_required()
-def accept_group_invitation():
-    body = request.get_json()
-    token = body.get("token")
-    user_id = get_jwt_identity()
-    # --1- BUSCAR LA INVITACIÓN POR EL TOKEN ---
-    invitation = Invitation.query.filter_by(token=token).first()
-    if not invitation:
-        return jsonify({"error": "Invitación no válida"}), 404
-    
-    if invitation.expires_at and invitation.expires_at < datetime.utcnow():
-        return jsonify({"error": "La invitación ha expirado"}), 410
-    # --2- VERIFICAR SI EL USUARIO YA ES MIEMBRO PARA NO DUPLICAR
-    existing_member = GroupMember.query.filter_by(
-        group_id=invitation.group.id,
-        user_id=user_id
-    ).first()
-    if existing_member:
-        return jsonify({"message": "Ya eres miembro de este grupo"}), 200
-    try:
-        # --3- AÑADIR EL USUARIO AL GRUPO
-        new_member = GroupMember(
-            group_id=invitation.group_id,
-            user_id=user_id
-        )
-        db.session.add(new_member)
-        db.session.commit()
-        return jsonify({"message": "¡Te has unido al grupo con éxito!", "group_id": invitation.group_id}), 200
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error joining group: {str(e)}")
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"msg": "Internal server error"}), 500
 
 # --- GASTOS ---
+
 
 @api.route('/groups/<int:group_id>/expenses', methods=['POST'])
 @jwt_required()
@@ -367,12 +347,14 @@ def create_expense(group_id):
         return jsonify({"error": "Group not found"}), 404
 
     # Validate that the logged-in user belongs to the group
-    current_membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
+    current_membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=user_id).first()
     if not current_membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
     # Ensure the payer belongs to the group, if not, add them (auto-invite)
-    payer_membership = GroupMember.query.filter_by(group_id=group_id, user_id=paid_by).first()
+    payer_membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=paid_by).first()
     if not payer_membership:
         new_member = GroupMember(group_id=group_id, user_id=paid_by)
         db.session.add(new_member)
@@ -390,14 +372,16 @@ def create_expense(group_id):
     normalized_participants = []
     if not participants:
         # Default: assign evenly to the payer only
-        normalized_participants = [{"user_id": paid_by, "amount_owed": float(amount_decimal)}]
+        normalized_participants = [
+            {"user_id": paid_by, "amount_owed": float(amount_decimal)}]
     elif isinstance(participants[0], dict):
         # Frontend sends [{user_id, amount_owed}]
         normalized_participants = participants
     else:
         # Legacy: plain list of user IDs — split evenly
         split_amount = float(amount_decimal) / len(participants)
-        normalized_participants = [{"user_id": pid, "amount_owed": split_amount} for pid in participants]
+        normalized_participants = [
+            {"user_id": pid, "amount_owed": split_amount} for pid in participants]
 
     # Ensure all participants belong to the group (auto-invite them if they are friends)
     for p in normalized_participants:
@@ -449,6 +433,7 @@ def create_expense(group_id):
         current_app.logger.error(f"Error creating expense: {str(e)}")
         return jsonify({"error": "Error creating expense"}), 500
 
+
 @api.route('/groups/<int:group_id>/expenses', methods=['GET'])
 @jwt_required()
 def get_group_expenses(group_id):
@@ -456,7 +441,8 @@ def get_group_expenses(group_id):
 
     response = []
     for expense in expenses:
-        participants = ExpenseParticipant.query.filter_by(expense_id=expense.id).all()
+        participants = ExpenseParticipant.query.filter_by(
+            expense_id=expense.id).all()
 
         response.append({
             "expense": expense.serialize(),
@@ -537,7 +523,8 @@ def get_group_balances(group_id):
                 ) + amount_owed
 
     # Subtract confirmed payments from balances
-    payments = Payment.query.filter_by(group_id=group_id, status='confirmed').all()
+    payments = Payment.query.filter_by(
+        group_id=group_id, status='confirmed').all()
     for p in payments:
         amount = Decimal(str(p.amount))
         # Debtor (payer) paid, so their negative balance improves
@@ -570,6 +557,8 @@ def get_group_balances(group_id):
     }), 200
 
 # Actualizar un gasto
+
+
 @api.route('/expenses/<int:expense_id>', methods=['PUT'])
 @jwt_required()
 def update_expense(expense_id):
@@ -591,17 +580,21 @@ def update_expense(expense_id):
     paid_by = data.get('paid_by')
     participants = data.get('participants', [])
 
-    if description: expense.description = description
-    if amount is not None: 
+    if description:
+        expense.description = description
+    if amount is not None:
         try:
             expense.amount = Decimal(str(amount))
         except:
             return jsonify({"error": "Invalid amount"}), 400
-    if currency: expense.currency = currency
+    if currency:
+        expense.currency = currency
     if paid_by:
-        payer_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=paid_by).first()
+        payer_membership = GroupMember.query.filter_by(
+            group_id=expense.group_id, user_id=paid_by).first()
         if not payer_membership:
-            new_member = GroupMember(group_id=expense.group_id, user_id=paid_by)
+            new_member = GroupMember(
+                group_id=expense.group_id, user_id=paid_by)
             db.session.add(new_member)
         expense.paid_by = paid_by
 
@@ -609,16 +602,18 @@ def update_expense(expense_id):
         if participants:
             # Eliminar participantes anteriores
             ExpenseParticipant.query.filter_by(expense_id=expense.id).delete()
-            
+
             # Crear nuevos participantes
             for p in participants:
                 p_user_id = p["user_id"]
                 p_amount = Decimal(str(p.get("amount_owed", 0)))
-                
+
                 # Validar que el participante pertenece al grupo (auto-unir si falta)
-                p_membership = GroupMember.query.filter_by(group_id=expense.group_id, user_id=p_user_id).first()
+                p_membership = GroupMember.query.filter_by(
+                    group_id=expense.group_id, user_id=p_user_id).first()
                 if not p_membership:
-                    new_member = GroupMember(group_id=expense.group_id, user_id=p_user_id)
+                    new_member = GroupMember(
+                        group_id=expense.group_id, user_id=p_user_id)
                     db.session.add(new_member)
 
                 new_participant = ExpenseParticipant(
@@ -636,11 +631,13 @@ def update_expense(expense_id):
         return jsonify({"error": "Error updating expense"}), 500
 
 # Eliminar un gasto
+
+
 @api.route('/expenses/<int:expense_id>', methods=['DELETE'])
 @jwt_required()
 def delete_expense(expense_id):
     user_id = int(get_jwt_identity())
-    
+
     expense = Expense.query.get(expense_id)
     if not expense:
         return jsonify({"error": "Expense not found"}), 404
@@ -661,6 +658,7 @@ def delete_expense(expense_id):
         current_app.logger.error(f"Error deleting expense: {str(e)}")
         return jsonify({"error": "Error deleting expense"}), 500
 
+
 @api.route('/expenses/<int:expense_id>/settle', methods=['POST'])
 @jwt_required()
 def toggle_expense_settlement(expense_id):
@@ -668,17 +666,17 @@ def toggle_expense_settlement(expense_id):
     expense = Expense.query.get(expense_id)
     if not expense:
         return jsonify({"error": "Expense not found"}), 404
-    
+
     # Permission: Only group creator or payer can settle
     group = Group.query.get(expense.group_id)
     if not group:
         return jsonify({"error": "Group not found"}), 404
-        
+
     if user_id != group.created_by and user_id != expense.paid_by:
         return jsonify({"error": "Only the group creator or the payer can change the settlement status."}), 403
-    
+
     expense.is_settled = not expense.is_settled
-    
+
     try:
         db.session.commit()
         return jsonify({
@@ -693,6 +691,7 @@ def toggle_expense_settlement(expense_id):
 # ===============================
 # RECEIPTS (OCR ANALYZE)
 # ===============================
+
 
 @api.route('/receipt/analyze', methods=['POST'])
 @jwt_required()
@@ -716,10 +715,10 @@ def analyze_receipt():
 
         # 2. Procesar con IA (priorizando Gemini, luego Azure)
         from api.ocr_service import analyze_receipt_with_ai
-        
+
         analysis = analyze_receipt_with_ai(secure_url)
         analysis['receipt_url'] = secure_url
-        
+
         return jsonify({
             "message": "Receipt analyzed successfully",
             "data": analysis
@@ -812,10 +811,10 @@ def delete_receipt(expense_id):
 def get_friends():
     """List all accepted friends for the current user."""
     user_id = int(get_jwt_identity())
-    
+
     from api.utils import get_accepted_friends
     friendships = get_accepted_friends(user_id)
-    
+
     friends = []
     for f in friendships:
         friend_user = f.addressee if f.requester_id == user_id else f.requester
@@ -824,7 +823,7 @@ def get_friends():
             "friend": friend_user.serialize(),
             "since": f.updated_at.isoformat()
         })
-    
+
     return jsonify({"friends": friends}), 200
 
 
@@ -834,35 +833,37 @@ def send_friend_request():
     """Send a friend request by user_id or email."""
     user_id = int(get_jwt_identity())
     data = request.get_json()
-    
+
     target_user_id = data.get("user_id")
     target_email = data.get("email")
-    
+
     if not target_user_id and not target_email:
         return jsonify({"error": "user_id or email is required"}), 400
-    
+
     # Resolve target user
     target_user = None
     if target_user_id:
         target_user = User.query.get(target_user_id)
     elif target_email:
         target_user = User.query.filter_by(email=target_email).first()
-    
+
     if not target_user:
         return jsonify({"error": "User not found"}), 404
-    
+
     if target_user.id == user_id:
         return jsonify({"error": "You cannot send a friend request to yourself"}), 400
-    
+
     # Check for existing friendship in either direction
     from sqlalchemy import or_, and_
     existing = Friendship.query.filter(
         or_(
-            and_(Friendship.requester_id == user_id, Friendship.addressee_id == target_user.id),
-            and_(Friendship.requester_id == target_user.id, Friendship.addressee_id == user_id)
+            and_(Friendship.requester_id == user_id,
+                 Friendship.addressee_id == target_user.id),
+            and_(Friendship.requester_id == target_user.id,
+                 Friendship.addressee_id == user_id)
         )
     ).first()
-    
+
     if existing:
         if existing.status == "accepted":
             return jsonify({"error": "You are already friends"}), 409
@@ -878,7 +879,7 @@ def send_friend_request():
                 "message": "Friend request sent",
                 "friendship": existing.serialize()
             }), 201
-    
+
     try:
         friendship = Friendship(
             requester_id=user_id,
@@ -887,12 +888,12 @@ def send_friend_request():
         )
         db.session.add(friendship)
         db.session.commit()
-        
+
         return jsonify({
             "message": "Friend request sent",
             "friendship": friendship.serialize()
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error sending friend request: {str(e)}")
@@ -904,20 +905,20 @@ def send_friend_request():
 def accept_friend_request(friendship_id):
     """Accept a pending friend request. Only the addressee can accept."""
     user_id = int(get_jwt_identity())
-    
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
         return jsonify({"error": "Friend request not found"}), 404
-    
+
     if friendship.addressee_id != user_id:
         return jsonify({"error": "Only the recipient can accept this request"}), 403
-    
+
     if friendship.status != "pending":
         return jsonify({"error": f"Request is already {friendship.status}"}), 400
-    
+
     friendship.status = "accepted"
     db.session.commit()
-    
+
     return jsonify({
         "message": "Friend request accepted",
         "friendship": friendship.serialize()
@@ -929,20 +930,20 @@ def accept_friend_request(friendship_id):
 def decline_friend_request(friendship_id):
     """Decline a pending friend request. Only the addressee can decline."""
     user_id = int(get_jwt_identity())
-    
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
         return jsonify({"error": "Friend request not found"}), 404
-    
+
     if friendship.addressee_id != user_id:
         return jsonify({"error": "Only the recipient can decline this request"}), 403
-    
+
     if friendship.status != "pending":
         return jsonify({"error": f"Request is already {friendship.status}"}), 400
-    
+
     friendship.status = "declined"
     db.session.commit()
-    
+
     return jsonify({
         "message": "Friend request declined",
         "friendship": friendship.serialize()
@@ -954,17 +955,17 @@ def decline_friend_request(friendship_id):
 def remove_friend(friendship_id):
     """Remove a friend. Either party can remove."""
     user_id = int(get_jwt_identity())
-    
+
     friendship = Friendship.query.get(friendship_id)
     if not friendship:
         return jsonify({"error": "Friendship not found"}), 404
-    
+
     if friendship.requester_id != user_id and friendship.addressee_id != user_id:
         return jsonify({"error": "You are not part of this friendship"}), 403
-    
+
     db.session.delete(friendship)
     db.session.commit()
-    
+
     return jsonify({"message": "Friend removed successfully"}), 200
 
 
@@ -973,15 +974,15 @@ def remove_friend(friendship_id):
 def get_pending_requests():
     """Get pending friend requests (both sent and received)."""
     user_id = int(get_jwt_identity())
-    
+
     received = Friendship.query.filter_by(
         addressee_id=user_id, status="pending"
     ).all()
-    
+
     sent = Friendship.query.filter_by(
         requester_id=user_id, status="pending"
     ).all()
-    
+
     return jsonify({
         "received": [
             {
@@ -1007,27 +1008,27 @@ def get_pending_requests():
 def get_friend_debts():
     """Get consolidated debts with all friends."""
     user_id = int(get_jwt_identity())
-    
+
     from api.utils import get_accepted_friends, calculate_friend_debts
     friendships = get_accepted_friends(user_id)
-    
+
     total_owed_to_you = 0.0
     total_you_owe = 0.0
     debts_by_friend = []
-    
+
     for f in friendships:
         friend_id = f.addressee_id if f.requester_id == user_id else f.requester_id
         friend_user = f.addressee if f.requester_id == user_id else f.requester
-        
+
         debt_data = calculate_friend_debts(user_id, friend_id)
         net_bal = debt_data["net_balance"]
-        
+
         # Standard logic: if net > 0, they owe you. If net < 0, you owe them.
         if net_bal > 0:
             total_owed_to_you += net_bal
         elif net_bal < 0:
             total_you_owe += abs(net_bal)
-        
+
         debts_by_friend.append({
             "friend": friend_user.serialize(),
             "friendship_id": f.id,
@@ -1036,9 +1037,9 @@ def get_friend_debts():
             "total_owed_to_you": debt_data["total_owed_to_user"],
             "total_you_owe": debt_data["total_user_owes"]
         })
-    
+
     net_balance = round(total_owed_to_you - total_you_owe, 2)
-    
+
     return jsonify({
         "total_owed_to_you": round(total_owed_to_you, 2),
         "total_you_owe": round(total_you_owe, 2),
@@ -1056,7 +1057,7 @@ def generate_friend_invite():
     user_id = int(get_jwt_identity())
     body = request.get_json() or {}
     email_destinatario = body.get("email")
-    
+
     try:
         nueva_invitacion = FriendInvitation(
             inviter_id=user_id,
@@ -1065,41 +1066,41 @@ def generate_friend_invite():
         )
         db.session.add(nueva_invitacion)
         db.session.commit()
-        
+
         token = nueva_invitacion.token
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         url_aceptacion = f"{frontend_url}/accept-friend?token={token}"
-        
+
         # Send email if provided
         if email_destinatario:
             inviter = User.query.get(user_id)
             inviter_name = inviter.username if inviter else "Someone"
-            
+
             msg = Message(
-                subject=f"¡{inviter_name} quiere ser tu amigo en Splitty!",
+                subject=f"¡{inviter_name} wants to be your friend on Splitty!",
                 recipients=[email_destinatario],
                 sender=current_app.config.get('MAIL_USERNAME')
             )
-            
+
             msg.html = f"""
             <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
                 <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                     <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
                     <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
                     <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
-                        ¡Hola! <strong style="color: #ffffff;">{inviter_name}</strong> quiere agregarte como amigo:
+                        Hi! <strong style="color: #ffffff;">{inviter_name}</strong> wants to add you as a friend:
                     </p>
                     <div style="margin: 40px 0;">
                         <a href="{url_aceptacion}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
-                            Aceptar Solicitud de Amistad
+                            Accept Friend Request
                         </a>
                     </div>
                     <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
-                        Este es un enlace privado.<br>
-                        Si no esperabas este correo, puedes ignorarlo con seguridad.
+                        This is a private link.<br>
+                        If you weren't expecting this email, you can safely ignore it.
                     </p>
                     <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
-                        © 2026 Splitty App. Todos los derechos reservados.
+                        © 2026 Splitty App. All rights reserved.
                     </div>
                 </div>
             </div>
@@ -1107,14 +1108,15 @@ def generate_friend_invite():
             try:
                 current_app.extensions['mail'].send(msg)
             except Exception as mail_err:
-                print(f"Warning: Could not send friend invite email: {mail_err}")
-        
+                print(
+                    f"Warning: Could not send friend invite email: {mail_err}")
+
         return jsonify({
             "msg": "Friend invitation created",
             "link": url_aceptacion,
             "token": token
         }), 201
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error in friends operation: {str(e)}")
@@ -1128,39 +1130,41 @@ def accept_friend_invite():
     user_id = int(get_jwt_identity())
     body = request.get_json()
     token = body.get("token")
-    
+
     if not token:
         return jsonify({"error": "Token is required"}), 400
-    
+
     invitation = FriendInvitation.query.filter_by(token=token).first()
     if not invitation:
         return jsonify({"error": "Invalid invitation"}), 404
-    
+
     if invitation.expires_at and invitation.expires_at < datetime.utcnow():
         return jsonify({"error": "Invitation has expired"}), 410
-    
+
     if invitation.is_used:
         return jsonify({"error": "This invitation has already been used"}), 400
-    
+
     inviter_id = invitation.inviter_id
-    
+
     if inviter_id == user_id:
         return jsonify({"error": "You cannot accept your own invitation"}), 400
-    
+
     # Check if already friends
     from sqlalchemy import or_, and_
     existing = Friendship.query.filter(
         or_(
-            and_(Friendship.requester_id == user_id, Friendship.addressee_id == inviter_id),
-            and_(Friendship.requester_id == inviter_id, Friendship.addressee_id == user_id)
+            and_(Friendship.requester_id == user_id,
+                 Friendship.addressee_id == inviter_id),
+            and_(Friendship.requester_id == inviter_id,
+                 Friendship.addressee_id == user_id)
         )
     ).first()
-    
+
     if existing and existing.status == "accepted":
         invitation.is_used = True
         db.session.commit()
         return jsonify({"message": "You are already friends"}), 200
-    
+
     try:
         if existing:
             existing.status = "accepted"
@@ -1171,15 +1175,15 @@ def accept_friend_invite():
                 status="accepted"
             )
             db.session.add(friendship)
-        
+
         invitation.is_used = True
         db.session.commit()
-        
+
         return jsonify({
             "message": "You are now friends!",
             "friend": User.query.get(inviter_id).serialize()
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error in friends operation: {str(e)}")
@@ -1194,10 +1198,10 @@ def search_users():
     """Search users by username or email. Excludes current user."""
     user_id = int(get_jwt_identity())
     query = request.args.get("q", "").strip()
-    
+
     if not query or len(query) < 2 or len(query) > 100:
         return jsonify({"error": "Search query must be between 2 and 100 characters"}), 400
-    
+
     from sqlalchemy import or_
     results = User.query.filter(
         User.id != user_id,
@@ -1206,7 +1210,7 @@ def search_users():
             User.email.ilike(f"%{query}%")
         )
     ).limit(10).all()
-    
+
     return jsonify({
         "users": [u.serialize() for u in results]
     }), 200
@@ -1306,7 +1310,7 @@ def create_payment(group_id):
     El pago se crea con estado 'pending' y debe ser confirmado por el receptor.
     """
     user_id = int(get_jwt_identity())
-    
+
     # Soporte para JSON o multipart/form-data
     if request.is_json:
         data = request.get_json()
@@ -1333,12 +1337,14 @@ def create_payment(group_id):
         return jsonify({"error": "Group not found"}), 404
 
     # Validar que el usuario pertenece al grupo
-    user_membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
+    user_membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=user_id).first()
     if not user_membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
     # Validar que el receptor existe y pertenece al grupo
-    receiver_membership = GroupMember.query.filter_by(group_id=group_id, user_id=receiver_id).first()
+    receiver_membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=receiver_id).first()
     if not receiver_membership:
         return jsonify({"error": "Receiver is not a member of this group"}), 400
 
@@ -1354,16 +1360,18 @@ def create_payment(group_id):
             amount=amount_decimal,
             status='pending'
         )
-        
+
         # Manejo de comprobante (receipt)
         file = request.files.get('receipt')
         if file and file.filename != '':
             try:
                 import cloudinary.uploader
-                upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+                upload_result = cloudinary.uploader.upload(
+                    file, resource_type="auto")
                 new_payment.receipt_url = upload_result.get('secure_url')
             except Exception as e:
-                current_app.logger.error(f"Error uploading payment receipt: {str(e)}")
+                current_app.logger.error(
+                    f"Error uploading payment receipt: {str(e)}")
                 # Opcional: retornar error o continuar sin recibo
                 return jsonify({"error": "Failed to upload receipt image"}), 500
 
@@ -1400,7 +1408,8 @@ def get_group_payments(group_id):
     user_id = int(get_jwt_identity())
 
     # Validar membresía
-    membership = GroupMember.query.filter_by(group_id=group_id, user_id=user_id).first()
+    membership = GroupMember.query.filter_by(
+        group_id=group_id, user_id=user_id).first()
     if not membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
@@ -1409,7 +1418,8 @@ def get_group_payments(group_id):
         return jsonify({"error": "Group not found"}), 404
 
     # Obtener todos los pagos del grupo
-    payments = Payment.query.filter_by(group_id=group_id).order_by(Payment.created_at.desc()).all()
+    payments = Payment.query.filter_by(group_id=group_id).order_by(
+        Payment.created_at.desc()).all()
 
     return jsonify({
         "group_id": group_id,

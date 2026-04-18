@@ -12,15 +12,12 @@ class Actions {
     body = null,
     isPrivate = true,
   ) => {
-    let backendUrl = import.meta.env.VITE_BACKEND_URL || "";
-    
-    backendUrl = backendUrl.replace(/\/+$/, "");
-
-    if (backendUrl && !backendUrl.endsWith("/api")) {
-      backendUrl += "/api";
-    } else if (!backendUrl && !endpoint.startsWith("/api")) {
-      backendUrl = "/api" + (endpoint.startsWith("/") ? "" : "/");
-    }
+    const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
+    // Aseguramos que el path sea /api si no viene en la URL base
+    const apiPath = baseUrl.includes("/api") ? "" : "/api";
+    // Normalizamos el endpoint para que siempre empiece con /
+    const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const fullUrl = `${baseUrl}${apiPath}${cleanEndpoint}`;
 
     const token = this.store.jwt;
 
@@ -45,7 +42,7 @@ class Actions {
     }
 
     try {
-      const resp = await fetch(backendUrl + endpoint, fetchParams);
+      const resp = await fetch(fullUrl, fetchParams);
 
       if (isPrivate && (resp.status === 401 || resp.status === 422)) {
         console.error("Token expired or invalid. Clearing session...");
@@ -69,8 +66,14 @@ class Actions {
       }
 
       let data = await resp.json();
+
+      if (!resp.ok) {
+        console.error(`Error de API [${resp.status}] en ${endpoint}:`, data);
+      }
+
       return { code: resp.status, ok: resp.ok, data };
     } catch (error) {
+      console.error(`Error de conexión (Fetch) en ${endpoint}:`, error);
       return { code: 0, ok: false, error: error.message, data: null };
     }
   };
@@ -508,4 +511,4 @@ class Actions {
 
 
 
-export default Actions;
+export default Actions;
