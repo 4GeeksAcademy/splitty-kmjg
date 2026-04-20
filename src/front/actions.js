@@ -471,6 +471,14 @@ class Actions {
     return resp;
   };
 
+  acceptGroupInvite = async (token) => {
+    const resp = await this.apiFetch("/groups/accept-invite", "POST", { token });
+    if (resp.ok) {
+      await this.loadUserGroups();
+    }
+    return resp;
+  };
+
   searchUsers = async (query) => {
     if (!query || query.length < 1) return { ok: false, data: { users: [] } };
     const resp = await this.apiFetch(`/users/search?q=${encodeURIComponent(query)}`);
