@@ -40,18 +40,23 @@ Thumbs.db
 *.log
 *.sql
 *.sqlite
+*.sqlite3
+*.db
 
 # ignore markdowns
 *.md
 
-# ignore tests
-test*
-*test*
+# ignore test artifacts (keep test files in repo)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest_cache/
+tests/__pycache__/
+tests/**/*.pyc
 *.test.js
 *.test.jsx
 *.test.ts
 *.test.tsx
-*.test.py
 
 # ignore compiled files
 *.com

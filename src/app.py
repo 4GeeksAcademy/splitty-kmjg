@@ -48,6 +48,17 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+# If running under test mode, force SQLite in-memory to isolate tests from
+# the real Postgres/Supabase instance. This helps achieve deterministic unit tests
+# without requiring a real DB connection during test runs.
+if os.getenv("TESTING") in ("1", "true", "yes"):
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    # Dispose existing engine if already bound to force rebind on next DB operation
+    try:
+        db.engine.dispose()
+    except Exception:
+        pass
+
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')

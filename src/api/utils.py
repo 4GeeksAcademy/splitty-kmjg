@@ -50,76 +50,57 @@ def generate_sitemap(app):
 
 def simplify_debts(balances: dict) -> list:
     """
-    Simplifies a set of net balances into the minimum number of
-    direct peer-to-peer transactions using a greedy algorithm.
+    Simplifies net balances into the minimum number of direct peer-to-peer
+    transactions using a heap-based greedy approach.
 
-    Algorithm (Network Flow / Greedy Max-Heap):
-    1. Filter out users with zero balance (they owe nothing / are owed nothing).
-    2. Separate users into Debtors (negative balance) and Creditors (positive balance).
-    3. Sort both lists by absolute value descending (simulates max-heaps).
-    4. Iteratively pair the largest debtor with the largest creditor:
-       - Transfer the minimum of their absolute balances.
-       - Reduce both balances accordingly.
-       - Remove any user whose balance reaches zero.
-       - Re-sort after each iteration to maintain the greedy invariant.
-    5. Repeat until all balances are zero.
+    This implementation uses two max-heaps (emulated with Python's min-heap
+    by negating values) to continuously pair the largest debtor with the
+    largest creditor, transferring the smaller of the two amounts until all
+    balances are settled.
 
-    Args:
-        balances: dict mapping user_id (str or int) to their net balance (Decimal).
-                  Positive = creditor (is owed money).
-                  Negative = debtor (owes money).
-                  The sum of all values MUST equal 0.
-
-    Returns:
-        list of dicts: [{"from": debtor_id, "to": creditor_id, "amount": float}]
-        Amounts are rounded to 2 decimal places.
+    Balances are expected as Decimal-compatible values and the sum should be 0.
     """
-    transactions = []
+    import heapq
 
-    # --- Step 1: Build debtors and creditors lists ---
-    # Use Decimal throughout for cent-level precision.
-    debtors = []   # (user_id, abs_amount)  — people who OWE money
-    creditors = [] # (user_id, amount)       — people who ARE OWED money
+    transactions: list = []
 
-    for user, balance in balances.items():
-        bal = Decimal(str(balance))
-        if bal < 0:
-            debtors.append([user, abs(bal)])
-        elif bal > 0:
-            creditors.append([user, bal])
-        # bal == 0 → skip (no debt)
+    # Build heaps: store (-amount, user_id) to simulate a max-heap with heapq
+    debt_heap: list = []     # debtors: amount owed (positive values)
+    credit_heap: list = []   # creditors: amount to receive (positive values)
 
-    # --- Step 2: Sort descending by amount (greedy: biggest first) ---
-    debtors.sort(key=lambda x: x[1], reverse=True)
-    creditors.sort(key=lambda x: x[1], reverse=True)
+    for user, bal in balances.items():
+        bal_dec = Decimal(str(bal))
+        if bal_dec == Decimal("0"):
+            continue
+        if bal_dec < 0:
+            amount = -bal_dec  # positive owed amount
+            heapq.heappush(debt_heap, (-amount, user))  # max-heap via negative
+        else:
+            amount = bal_dec
+            heapq.heappush(credit_heap, (-amount, user))  # max-heap via negative
 
-    # --- Step 3: Greedy matching loop ---
-    while debtors and creditors:
-        debtor_id, debt_amount = debtors[0]
-        creditor_id, credit_amount = creditors[0]
+    while debt_heap and credit_heap:
+        debt_neg, debtor = heapq.heappop(debt_heap)
+        debt_amt = -debt_neg
 
-        # Transfer the smaller of the two amounts
-        transfer = min(debt_amount, credit_amount)
+        cred_neg, creditor = heapq.heappop(credit_heap)
+        cred_amt = -cred_neg
+
+        transfer = min(debt_amt, cred_amt)
 
         transactions.append({
-            "from": debtor_id,
-            "to": creditor_id,
-            "amount": float(transfer.quantize(Decimal("0.01")))
+            "from": debtor,
+            "to": creditor,
+            "amount": float(Decimal(str(transfer)).quantize(Decimal("0.01")))
         })
 
-        # Update balances
-        debtors[0][1] -= transfer
-        creditors[0][1] -= transfer
+        debt_amt -= transfer
+        cred_amt -= transfer
 
-        # Remove settled users
-        if debtors[0][1] == 0:
-            debtors.pop(0)
-        if creditors and creditors[0][1] == 0:
-            creditors.pop(0)
-
-        # Re-sort to maintain greedy invariant
-        debtors.sort(key=lambda x: x[1], reverse=True)
-        creditors.sort(key=lambda x: x[1], reverse=True)
+        if debt_amt > Decimal("0"):
+            heapq.heappush(debt_heap, (-debt_amt, debtor))
+        if cred_amt > Decimal("0"):
+            heapq.heappush(credit_heap, (-cred_amt, creditor))
 
     return transactions
 

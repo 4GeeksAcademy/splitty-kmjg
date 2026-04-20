@@ -11,10 +11,15 @@
       "sourceType": "github",
       "computedHash": "7861ab011b5783ef97ac6c00afdb6b6d2b58d302fb17da9dbb492248dd78f96d"
     },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "computedHash": "3bc4f56943a13f4fe355742a4b3b30c56008e6d265ae71f19c592410b5f5a01f"
+    },
     "supabase-postgres-best-practices": {
       "source": "supabase/agent-skills",
       "sourceType": "github",
-      "computedHash": "e3ba3d760c5f4cc43b02a91fb8924f726c7818f95cc35d79d0a606ca622b72f5"
+      "computedHash": "8e41c7417894e6f394614ee7ca3ee5322b1e58d890255d441f42dea98732597f"
     }
   }
 }
