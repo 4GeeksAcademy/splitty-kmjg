@@ -1,4 +1,6 @@
 import os
+import random
+import string
 from decimal import Decimal, InvalidOperation
 from flask import Flask, request, jsonify, url_for, Blueprint, current_app
 from api.models import (
@@ -24,6 +26,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
 import datetime as dt_module # Use an alias to avoid conflict with the name 'datetime' imported from 'datetime'
+from api.mail_utils import send_splitty_mail
 
 bcrypt = Bcrypt()
 api = Blueprint('api', __name__)
@@ -70,24 +73,59 @@ def reg_user():
     if not is_valid:
         return jsonify({"error": msg}), 400
 
-    email_exist = User.query.filter_by(email=email).first()
-    if email_exist:
+    existing_user = User.query.filter_by(email=email).first()
+    if existing_user and existing_user.is_verified:
         return jsonify({"error": "Email already registered"}), 409
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-    new_user = User(
-        username=username,
-        email=email,
-        password=hashed_password,
-        is_active=True,
-    )
+    # Generar código de verificación de 6 dígitos
+    verification_code = ''.join(random.choices(string.digits, k=6))
+    expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+    if existing_user:
+        # Reutilizar y actualizar el registro no verificado
+        current_app.logger.info(f"Refreshing registration for unverified email: {email}")
+        existing_user.username = username
+        existing_user.password = hashed_password
+        existing_user.verification_code = verification_code
+        existing_user.verification_expires_at = expires_at
+        new_user = existing_user
+    else:
+        # Crear un nuevo usuario desde cero
+        new_user = User(
+            username=username,
+            email=email,
+            password=hashed_password,
+            is_active=True,
+            is_verified=False,
+            verification_code=verification_code,
+            verification_expires_at=expires_at
+        )
+        db.session.add(new_user)
 
     try:
-
-        db.session.add(new_user)
         db.session.commit()
-        return jsonify({"message": "Usuario creado con exito"}), 201
+
+        # Enviar email con el código usando la nueva utilidad centralizada
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        verify_link = f"{frontend_url}/verify-email?email={email}&code={verification_code}"
+        
+        success, error_msg = send_splitty_mail(
+            subject="Verify your email - Splitty",
+            recipient=email,
+            template_type='verification',
+            context={
+                "username": username,
+                "code": verification_code,
+                "link": verify_link
+            }
+        )
+
+        if not success:
+            current_app.logger.error(f"Error sending verification mail: {error_msg}")
+
+        return jsonify({"message": "Usuario creado. Por favor, verifica tu email."}), 201
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error in registration: {str(e)}")
@@ -110,6 +148,9 @@ def login_user():
         current_app.logger.warning(
             f"Intento de login fallido para el email: {email}")
         return jsonify({"error": "Incorrect email or password"}), 401
+
+    if not user.is_verified:
+        return jsonify({"error": "Please verify your email first", "not_verified": True}), 403
 
     access_token = create_access_token(
         identity=str(user.id),
@@ -149,45 +190,22 @@ def forgot_password():
     # Usar la url del frontend global definida al inicio de routes.py
     link = f"{frontend_url}/reset-password?token={reset_token}"
 
-    msg = Message("Password Recovery - Splitty",
-                  sender=current_app.config.get('MAIL_USERNAME'),
-                  recipients=[email])
-    
-    msg.html = f"""
-    <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
-        <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
-            <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
-            <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 30px;">
-                Hi {user.username}, do you need to reset your password?
-            </p>
-            <div style="margin: 40px 0;">
-                <a href="{link}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
-                    Reset Password
-                </a>
-            </div>
-            <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
-                This link will expire in 15 minutes. <br>
-                If you didn't request this change, you can safely ignore this email.
-            </p>
-            <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
-                © 2026 Splitty App. All rights reserved.
-            </div>
-        </div>
-    </div>
-    """
-    
-    # Use secure extension access to avoid 500 errors if mail is not configured
-    mail_ext = current_app.extensions.get('mail')
-    if mail_ext:
-        try:
-            mail_ext.send(msg)
-            return jsonify({"msg": "Email sent successfully"}), 200
-        except Exception as e:
-            current_app.logger.error(f"Error sending password reset mail: {str(e)}")
-            return jsonify({"msg": "Error sending email"}), 500
-            
-    return jsonify({"msg": "Email service not configured"}), 503
+    # Enviar email usando la nueva utilidad centralizada
+    success, error_msg = send_splitty_mail(
+        subject="Password Recovery - Splitty",
+        recipient=email,
+        template_type='password_reset',
+        context={
+            "username": user.username,
+            "link": link
+        }
+    )
+
+    if success:
+        return jsonify({"msg": "Email sent successfully"}), 200
+    else:
+        current_app.logger.error(f"Error sending password reset mail: {error_msg}")
+        return jsonify({"msg": "Error sending email"}), 500
 
 
 @api.route('/reset-password', methods=['POST'])
@@ -206,6 +224,83 @@ def reset_password():
     user.password = hashed_password
     db.session.commit()
     return jsonify({"msg": "Password updated successfully"}), 200
+
+
+@api.route('/verify-email', methods=['POST'])
+@limiter.limit("10 per minute")
+def verify_email():
+    data = request.get_json()
+    email = data.get('email')
+    code = data.get('code')
+
+    if not email or not code:
+        return jsonify({"error": "Email and code are required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user.is_verified:
+        return jsonify({"message": "Email already verified"}), 200
+
+    if user.verification_code != code:
+        return jsonify({"error": "Invalid verification code"}), 400
+
+    if user.verification_expires_at < datetime.utcnow():
+        return jsonify({"error": "Verification code expired"}), 400
+
+    user.is_verified = True
+    user.verification_code = None
+    user.verification_expires_at = None
+    db.session.commit()
+
+    return jsonify({"message": "Email verified successfully!"}), 200
+
+
+@api.route('/resend-verification', methods=['POST'])
+@limiter.limit("3 per minute")
+def resend_verification():
+    data = request.get_json()
+    email = data.get('email')
+
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if user.is_verified:
+        return jsonify({"error": "Email already verified"}), 400
+
+    # Generar nuevo código
+    new_code = ''.join(random.choices(string.digits, k=6))
+    user.verification_code = new_code
+    user.verification_expires_at = datetime.utcnow() + timedelta(minutes=30)
+    db.session.commit()
+
+    # Enviar email usando la nueva utilidad
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+    verify_link = f"{frontend_url}/verify-email?email={email}&code={new_code}"
+    
+    success, error_msg = send_splitty_mail(
+        subject="Verify your email - Splitty",
+        recipient=email,
+        template_type='verification',
+        context={
+            "username": user.username,
+            "code": new_code,
+            "link": verify_link
+        }
+    )
+
+    if success:
+        return jsonify({"message": "Verification code resent!"}), 200
+    else:
+        current_app.logger.error(f"Error resending verification mail: {error_msg}")
+        return jsonify({"error": "Error sending email"}), 500
+
+    return jsonify({"error": "Email service not configured"}), 503
 
 # --- ENDPOINTS DE GRUPOS ---
 
@@ -344,47 +439,22 @@ def send_invitation(group_id):
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         url_aceptacion = f"{frontend_url}/accept-invite?token={token}"
 
-        # 2. Secure Email Sending logic
+        # 2. Secure Email Sending logic using centralized utility
         email_status = "not_sent"
         if email_destinatario:
-            try:
-                msg = Message(
-                    subject=f"You've been invited to join {group.name} on Splitty!",
-                    recipients=[email_destinatario],
-                    sender=current_app.config.get('MAIL_USERNAME')
-                )
-
-                msg.html = f"""
-                <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
-                    <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                        <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
-                        <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
-                        <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
-                            Hello! You have been invited to join the group:
-                        </p>
-                        <p style="color: #ffffff; font-size: 24px; font-weight: 600; margin-bottom: 40px;">{group.name}</p>
-                        <div style="margin: 40px 0;">
-                            <a href="{url_aceptacion}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
-                                Accept Invitation
-                            </a>
-                        </div>
-                        <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
-                            This is a private invitation link. <br>
-                            If you weren't expecting this email, you can safely ignore it.
-                        </p>
-                        <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
-                            © 2026 Splitty App. All rights reserved.
-                        </div>
-                    </div>
-                </div>
-                """
-                # Use secure extension access to avoid 500 errors if mail is not configured
-                mail_ext = current_app.extensions.get('mail')
-                if mail_ext:
-                    mail_ext.send(msg)
-                    email_status = "sent"
-            except Exception as mail_err:
-                current_app.logger.error(f"Mail failed: {str(mail_err)}")
+            success, error_msg = send_splitty_mail(
+                subject=f"You've been invited to join {group.name} on Splitty!",
+                recipient=email_destinatario,
+                template_type='invitation',
+                context={
+                    "group_name": group.name,
+                    "link": url_aceptacion
+                }
+            )
+            if success:
+                email_status = "sent"
+            else:
+                current_app.logger.error(f"Error sending group invitation: {error_msg}")
                 email_status = "failed"
 
         # 3. Success response with the link (even if email failed)
@@ -1148,45 +1218,20 @@ def generate_friend_invite():
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
         url_aceptacion = f"{frontend_url}/accept-friend?token={token}"
 
-        # Send email if provided
+        # Send email if provided using centralized utility
         if email_destinatario:
             inviter = User.query.get(user_id)
             inviter_name = inviter.username if inviter else "Someone"
 
-            msg = Message(
+            send_splitty_mail(
                 subject=f"¡{inviter_name} wants to be your friend on Splitty!",
-                recipients=[email_destinatario],
-                sender=current_app.config.get('MAIL_USERNAME')
+                recipient=email_destinatario,
+                template_type='friend_request',
+                context={
+                    "inviter_name": inviter_name,
+                    "link": url_aceptacion
+                }
             )
-
-            msg.html = f"""
-            <div style="background-color: #121212; padding: 40px; font-family: 'Segoe UI', Arial, sans-serif; color: #ffffff; text-align: center;">
-                <div style="max-width: 500px; margin: auto; background-color: #1e1e1e; padding: 40px; border-radius: 24px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                    <h1 style="color: #FF914D; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
-                    <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #FF914D, #FF6B00); margin: 0 auto 30px auto; border-radius: 10px;"></div>
-                    <p style="font-size: 18px; line-height: 1.6; color: #a19b95; margin-bottom: 10px;">
-                        Hi! <strong style="color: #ffffff;">{inviter_name}</strong> wants to add you as a friend:
-                    </p>
-                    <div style="margin: 40px 0;">
-                        <a href="{url_aceptacion}" style="background: linear-gradient(90deg, #FF914D, #FF6B00); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
-                            Accept Friend Request
-                        </a>
-                    </div>
-                    <p style="font-size: 13px; color: #555; margin-top: 40px; line-height: 1.4;">
-                        This is a private link.<br>
-                        If you weren't expecting this email, you can safely ignore it.
-                    </p>
-                    <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: #444;">
-                        © 2026 Splitty App. All rights reserved.
-                    </div>
-                </div>
-            </div>
-            """
-            try:
-                current_app.extensions['mail'].send(msg)
-            except Exception as mail_err:
-                print(
-                    f"Warning: Could not send friend invite email: {mail_err}")
 
         return jsonify({
             "msg": "Friend invitation created",
@@ -1265,6 +1310,44 @@ def accept_friend_invite():
         db.session.rollback()
         current_app.logger.error(f"Error in friends operation: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
+
+@api.route('/test-mail', methods=['GET'])
+@jwt_required()
+def test_mail():
+    """
+    Endpoint de diagnóstico para probar el envío de correos.
+    Envía un correo de prueba al usuario autenticado.
+    """
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+        
+    print(f"[TEST-MAIL] Triggered by user: {user.email}")
+    
+    success, error_msg = send_splitty_mail(
+        subject="Splitty Test Mail",
+        recipient=user.email,
+        template_type='verification', # Usamos el de verificación para probar el branding
+        context={
+            "username": user.username,
+            "code": "123456",
+            "link": f"{frontend_url}/verify-email?email={user.email}&code=123456"
+        }
+    )
+    
+    if success:
+        return jsonify({
+            "message": "Test email sent successfully!",
+            "recipient": user.email
+        }), 200
+    else:
+        return jsonify({
+            "error": "Failed to send test email",
+            "details": error_msg
+        }), 500
 
 
 # --- USER SEARCH ---
