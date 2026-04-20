@@ -95,10 +95,18 @@ def upgrade():
         batch_op.create_foreign_key(None, 'group', ['group_id'], ['id'])
         batch_op.create_foreign_key(None, 'user', ['payer_id'], ['id'])
 
+    # Check existing columns to avoid DuplicateColumn errors
+    conn = op.get_bind()
+    inspector = sa.inspect(conn)
+    existing_columns = [c['name'] for c in inspector.get_columns('user')]
+
     with op.batch_alter_table('user', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_verified', sa.Boolean(), nullable=False))
-        batch_op.add_column(sa.Column('verification_code', sa.String(length=6), nullable=True))
-        batch_op.add_column(sa.Column('verification_expires_at', sa.DateTime(), nullable=True))
+        if 'is_verified' not in existing_columns:
+            batch_op.add_column(sa.Column('is_verified', sa.Boolean(), nullable=False, server_default='false'))
+        if 'verification_code' not in existing_columns:
+            batch_op.add_column(sa.Column('verification_code', sa.String(length=6), nullable=True))
+        if 'verification_expires_at' not in existing_columns:
+            batch_op.add_column(sa.Column('verification_expires_at', sa.DateTime(), nullable=True))
 
     # ### end Alembic commands ###
 
