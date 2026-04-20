@@ -153,6 +153,38 @@ class Actions {
     return { ok: true };
   };
 
+  verifyEmail = async (email, code) => {
+    const resp = await this.apiFetch(
+      "/verify-email",
+      "POST",
+      { email, code },
+      false
+    );
+
+    if (!resp.ok) {
+      const msg = resp.data?.error || "Verification failed.";
+      return { ok: false, error: msg };
+    }
+
+    return { ok: true, message: resp.data.message };
+  };
+
+  resendVerificationCode = async (email) => {
+    const resp = await this.apiFetch(
+      "/resend-verification",
+      "POST",
+      { email },
+      false
+    );
+
+    if (!resp.ok) {
+      const msg = resp.data?.error || "Failed to resend code.";
+      return { ok: false, error: msg };
+    }
+
+    return { ok: true, message: resp.data.message };
+  };
+
   logout = async () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");

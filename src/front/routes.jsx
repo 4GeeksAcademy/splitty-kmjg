@@ -79,6 +79,7 @@ export const router = createBrowserRouter(
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/accept-friend" element={<AcceptFriendInvite />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/verify-email" element={<Register />} />
 
             <Route path="*" element={<h1 style={{ color: "white", textAlign: "center" }}>404 - Page not found</h1>} />
         </Route>

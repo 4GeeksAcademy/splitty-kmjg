@@ -31,6 +31,9 @@ class User(db.Model):
         String(120), unique=True, nullable=False)
     password: Mapped[str] = mapped_column(nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), nullable=False)
+    is_verified: Mapped[bool] = mapped_column(Boolean(), default=False, nullable=False)
+    verification_code: Mapped[str] = mapped_column(String(6), nullable=True)
+    verification_expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
     # relación con grupos que el usuario creó
     groups_created: Mapped[list["Group"]] = relationship(
