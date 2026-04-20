@@ -18,7 +18,7 @@ HTML_TEMPLATE_BASE = f"""
         <h1 style="color: {PRIMARY_ORANGE}; margin-bottom: 10px; font-size: 32px; font-weight: bold;">Splitty</h1>
         <div style="width: 60px; height: 3px; background: linear-gradient(90deg, {PRIMARY_ORANGE}, {SECONDARY_ORANGE}); margin: 0 auto 30px auto; border-radius: 10px;"></div>
         
-        {{{{ content }}}}
+        {{{{ content | safe }}}}
         
         <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 20px; font-size: 11px; color: {FOOTER_TEXT};">
             © 2026 Splitty App. All rights reserved. <br>

@@ -97,15 +97,16 @@ export const Register = () => {
     }
   };
 
-  const handleVerify = async () => {
-    if (verificationCode.length !== 6) {
+  const handleVerify = async (optCode) => {
+    const codeToVerify = optCode || verificationCode;
+    if (codeToVerify.length !== 6) {
       showError("Please enter the 6-digit code.");
       return;
     }
 
     setError("");
     setLoading(true);
-    const verifyResult = await actions.verifyEmail(formData.email, verificationCode);
+    const verifyResult = await actions.verifyEmail(formData.email, codeToVerify);
     
     if (verifyResult.ok) {
       setSuccess("Email verified! Logging you in...");
@@ -122,6 +123,13 @@ export const Register = () => {
       setLoading(false);
     }
   };
+
+  // Auto-verify when 6 digits are entered
+  useEffect(() => {
+    if (isVerifying && verificationCode.length === 6 && !loading) {
+      handleVerify();
+    }
+  }, [verificationCode, isVerifying]);
 
   const handleResend = async () => {
     setResending(true);
