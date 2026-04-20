@@ -41,6 +41,18 @@ Thumbs.db
 *.sql
 *.sqlite
 
+# ignore markdowns
+*.md
+
+# ignore tests
+test*
+*test*
+*.test.js
+*.test.jsx
+*.test.ts
+*.test.tsx
+*.test.py
+
 # ignore compiled files
 *.com
 *.class

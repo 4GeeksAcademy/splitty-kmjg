@@ -448,18 +448,17 @@ def send_invitation(group_id):
                 template_type='invitation',
                 context={
                     "group_name": group.name,
+                    "inviter_name": User.query.get(get_jwt_identity()).username,
                     "link": url_aceptacion
                 }
             )
             if success:
                 email_status = "sent"
             else:
-                current_app.logger.error(f"Error sending group invitation: {error_msg}")
-                email_status = "failed"
+                email_status = f"failed: {error_msg}"
 
-        # 3. Success response with the link (even if email failed)
         return jsonify({
-            "msg": "Invitation processed successfully",
+            "msg": "Invitation created successfully",
             "link": url_aceptacion,
             "token": token,
             "email_status": email_status
@@ -467,8 +466,63 @@ def send_invitation(group_id):
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error processing invitation: {str(e)}")
-        return jsonify({"msg": "Internal server error"}), 500
+        current_app.logger.error(f"Error in send_invitation: {str(e)}")
+        return jsonify({"msg": "Error creating invitation", "error": str(e)}), 500
+
+
+@api.route('/groups/accept-invite', methods=['POST'])
+@jwt_required()
+def accept_group_invite():
+    """
+    Accepts a group invitation using a token.
+    If valid, adds the current user to the group.
+    """
+    body = request.get_json()
+    token = body.get("token")
+    user_id = int(get_jwt_identity())
+
+    if not token:
+        return jsonify({"error": "Token is required"}), 400
+
+    invitation = Invitation.query.filter_by(token=token).first()
+    if not invitation:
+        return jsonify({"error": "Invalid invitation token"}), 404
+
+    if invitation.is_used:
+        return jsonify({"error": "This invitation has already been used"}), 400
+
+    if invitation.expires_at and invitation.expires_at < datetime.utcnow():
+        return jsonify({"error": "This invitation has expired"}), 400
+
+    # Check if user is already a member
+    existing_membership = GroupMember.query.filter_by(
+        group_id=invitation.group_id, user_id=user_id
+    ).first()
+
+    if existing_membership:
+        # Mark as used anyway if they are already in the group
+        invitation.is_used = True
+        db.session.commit()
+        return jsonify({"message": "You are already a member of this group"}), 200
+
+    try:
+        # Add user to group
+        new_member = GroupMember(
+            group_id=invitation.group_id,
+            user_id=user_id
+        )
+        db.session.add(new_member)
+
+        # Mark invitation as used
+        invitation.is_used = True
+
+        db.session.commit()
+        return jsonify({"message": "Successfully joined the group!", "group_id": invitation.group_id}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error accepting invitation: {str(e)}")
+        return jsonify({"error": "Failed to join group"}), 500
 
 # --- GASTOS ---
 

@@ -5,7 +5,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import splittyLogo from "../assets/img/Splitty.ico";
 
 export const AcceptInvite = () => {
-    const { store } = useGlobalReducer();
+    const { store, actions } = useGlobalReducer();
     const [searchParams] = useSearchParams();
     const [status, setStatus] = useState("Procesando tu invitación...");
     const navigate = useNavigate();
@@ -26,28 +26,14 @@ export const AcceptInvite = () => {
             }
 
             try {
-                const baseUrl = (import.meta.env.VITE_BACKEND_URL || "").replace(/\/+$/, "");
-                const apiPath = baseUrl.includes("/api") ? "" : "/api";
-                const endpoint = "/groups/accept-invite";
-                const fullUrl = `${baseUrl}${apiPath}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`;
+                const resp = await actions.acceptGroupInvite(token);
 
-                const response = await fetch(fullUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${store.jwt}`
-                    },
-                    body: JSON.stringify({ token })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
+                if (resp.ok) {
                     setStatus("¡Te has unido con éxito!");
                     localStorage.removeItem("pending_invite_token");
                     setTimeout(() => navigate("/"), 2000);
                 } else {
-                    setStatus(data.error || "No pudiste unirte.");
+                    setStatus(resp.data?.error || "No pudiste unirte.");
                 }
             } catch (error) {
                 setStatus("Error de conexión con el servidor.");
@@ -55,7 +41,7 @@ export const AcceptInvite = () => {
         };
 
         processInvite();
-    }, [token, store.jwt, navigate]);
+    }, [token, store.jwt, navigate, actions]);
 
     return (
         <div className="container d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '80vh' }}>
