@@ -17,7 +17,7 @@ os.environ.setdefault("TESTING", "1")
 from app import app, db  # type: ignore
 from api.models import User, Group, GroupMember, Expense, ExpenseParticipant  # type: ignore
 from api.routes import bcrypt  # type: ignore
-from api.utils import simplify_debts  # type: ignore
+from api.utils import simplify_debts, drop_views  # type: ignore
 
 
 def _create_user(username, email, raw_password):
@@ -30,6 +30,7 @@ def _create_user(username, email, raw_password):
 def test_expense_and_group_creation_and_debt_simplification():
     # Initialize a clean in-memory DB for this test
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
 
@@ -95,6 +96,7 @@ def test_simplify_debts_three_participants():
 
 def test_calculate_friend_debts_basic():
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
 
@@ -132,6 +134,7 @@ def test_calculate_friend_debts_basic():
 def test_api_flow_group_and_expense_complete():
     # API-driven end-to-end for group and expense creation
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
 
@@ -222,6 +225,7 @@ def test_distribute_proportional_costs_basic():
 
 def test_group_invitation_and_accept_flow():
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
 
@@ -261,6 +265,7 @@ def test_group_invitation_and_accept_flow():
 
 def test_confirm_payment_endpoint_updates_expense():
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
         # create users and group
@@ -296,6 +301,7 @@ def test_confirm_payment_endpoint_updates_expense():
 
 def test_group_friend_invitation_flow():
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
         # Create two users
@@ -330,6 +336,7 @@ def test_group_friend_invitation_flow():
 
 def test_api_group_payment_flow_basic():
     with app.app_context():
+        drop_views(db)
         db.drop_all()
         db.create_all()
         # Create two users and a group

@@ -64,6 +64,7 @@ db_url = os.getenv("DATABASE_URL")
 if os.getenv("TESTING") in ("1", "true", "yes"):
     print("[TEST] Forcing in-memory SQLite database")
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['RATELIMIT_ENABLED'] = False
     engine_options = {
         "pool_pre_ping": True,
     }

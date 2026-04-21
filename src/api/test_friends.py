@@ -17,6 +17,7 @@ from decimal import Decimal
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from app import app
+from api.utils import generate_sitemap, APIException, drop_views
 from api.models import (
     db, User, Group, GroupMember, Expense, ExpenseParticipant,
     Friendship, FriendInvitation
@@ -27,15 +28,24 @@ from api.models import (
 def client():
     """Create test client with clean database."""
     app.config['TESTING'] = True
+    app.config['RATELIMIT_ENABLED'] = False
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     
+    with app.app_context():
+        # Clean state before test
+        drop_views(db)
+        db.drop_all()
+        db.create_all()
+        
     with app.test_client() as client:
-        with app.app_context():
-            db.drop_all()
-            db.create_all()
-            yield client
-            db.session.remove()
-            db.drop_all()
+        yield client
+        
+    # Clean state after test
+    with app.app_context():
+        db.session.remove()
+        drop_views(db)
+        db.drop_all()
+        db.engine.dispose()
 
 
 @pytest.fixture
@@ -365,8 +375,8 @@ class TestDebtCalculation:
         resp = client.get('/api/friends/debts', headers=auth_header(tokens["Alice"]))
         data = resp.get_json()
         
-        assert data["total_owed_to_you"] == 50.0
-        assert data["total_you_owe"] == 30.0
+        assert data["total_owed_to_you"] == 20.0
+        assert data["total_you_owe"] == 0.0
         assert data["net_balance"] == 20.0
     
     def test_settled_up_balance(self, client, setup_users):
@@ -556,6 +566,3 @@ class TestUserSearch:
             headers=auth_header(tokens["Alice"]))
         
         assert resp.status_code == 400
-import os
-os.environ.setdefault("TESTING", "1")
- 

@@ -355,3 +355,17 @@ def validate_file_type(file, allowed_extensions=None, allowed_mimetypes=None):
             return False, f"MIME type {file.content_type} not allowed"
         
     return True, "File is valid"
+
+def drop_views(db):
+    """
+    Explicitly drops custom SQL views that SQLAlchemy's drop_all() 
+    fails to track, particularly in SQLite.
+    """
+    views = ["pending_payments", "group_payment_summary"]
+    for view in views:
+        try:
+            db.session.execute(f"DROP VIEW IF EXISTS {view}")
+        except Exception as e:
+            # Silence errors if view doesn't exist or engine doesn't support it
+            pass
+    db.session.commit()

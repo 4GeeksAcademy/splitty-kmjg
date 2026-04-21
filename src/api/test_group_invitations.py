@@ -7,25 +7,31 @@ from datetime import datetime, timedelta
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from app import app
+from api.utils import drop_views
 from api.models import db, User, Group, GroupMember, Invitation
 
 @pytest.fixture
 def client():
+    """Create test client with clean database."""
     app.config['TESTING'] = True
-    # Ensure we use an in-memory database for absolute isolation
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    app.config['RATELIMIT_ENABLED'] = False
     
+    with app.app_context():
+        # Clean state before test
+        drop_views(db)
+        db.drop_all()
+        db.create_all()
+        
     with app.test_client() as client:
-        with app.app_context():
-            # Force rebuild of metadata and disposal of any stale connections
-            db.session.remove()
-            db.drop_all()
-            db.create_all()
-            yield client
-            db.session.remove()
-            db.drop_all()
-            if db.engine:
-                db.engine.dispose()
+        yield client
+        
+    # Clean state after test
+    with app.app_context():
+        db.session.remove()
+        drop_views(db)
+        db.drop_all()
+        db.engine.dispose()
 
 @pytest.fixture
 def setup_users(client):
