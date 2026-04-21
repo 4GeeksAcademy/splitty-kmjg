@@ -22,9 +22,9 @@ export function StoreProvider({ children }) {
     useEffect(() => {
         if (!store.jwt) return;
         const ts = parseInt(localStorage.getItem("token_timestamp") || "0", 10);
-        const fourDays = 4 * 24 * 60 * 60 * 1000;
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
         const now = Date.now();
-        const expiresAt = ts + fourDays;
+        const expiresAt = ts + sevenDays;
 
         if (now >= expiresAt) {
             // already expired

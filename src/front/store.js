@@ -23,7 +23,7 @@ export const initialStore = () => {
   }
 
   
-  if (token && ts && now - ts > 4 * 24 * 60 * 60 * 1000) {
+  if (token && ts && now - ts > 7 * 24 * 60 * 60 * 1000) {
     localStorage.removeItem("token");
     localStorage.removeItem("user_email");
     localStorage.removeItem("user_username");

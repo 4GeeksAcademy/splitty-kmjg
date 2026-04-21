@@ -154,7 +154,7 @@ def login_user():
 
     access_token = create_access_token(
         identity=str(user.id),
-        expires_delta=timedelta(hours=24)
+        expires_delta=timedelta(days=7)
     )
     return jsonify({
         "message": "Login correcto",
