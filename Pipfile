@@ -23,6 +23,7 @@ flask-cors = "*"
 flask-bcrypt = "*"
 flask-mail = "*"
 flask-limiter = "*"
+google-generativeai = "*"
 
 [requires]
 python_version = "3.13"

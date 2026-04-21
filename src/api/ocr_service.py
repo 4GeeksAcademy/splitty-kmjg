@@ -63,11 +63,11 @@ def process_receipt_with_gemini(receipt_url) -> Dict[str, Any]:
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        print("DEBUG: GEMINI_API_KEY is missing from environment")
+        print("CRITICAL: GEMINI_API_KEY is missing from environment. Gemini OCR will be skipped.")
         return None
     
     if not GEMINI_SDK_AVAILABLE:
-        print("DEBUG: Gemini SDK is NOT available (ImportError)")
+        print("CRITICAL: google-generativeai SDK is NOT installed. Gemini OCR will be skipped.")
         return None
 
     try:

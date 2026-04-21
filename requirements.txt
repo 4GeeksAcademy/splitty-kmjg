@@ -33,3 +33,4 @@ azure-ai-documentintelligence>=1.0.0
 azure-core>=1.30.0
 Flask-Limiter==3.7.0
 gunicorn==21.2.0
+google-generativeai>=0.8.0
