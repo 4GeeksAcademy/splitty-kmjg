@@ -378,3 +378,66 @@ def test_api_group_payment_flow_basic():
         from api.models import Payment
         p = Payment.query.get(payment_id)
         assert p is not None and p.status == 'confirmed'
+
+
+def test_delete_expense_with_confirmed_payment_blocked():
+    with app.app_context():
+        drop_views(db)
+        db.drop_all()
+        db.create_all()
+        # Create two users and a group
+        payer = _create_user("payer_del", "payer_del@example.com", "ppass")
+        receiver = _create_user("recv_del", "recv_del@example.com", "rpass")
+        db.session.add_all([payer, receiver])
+        db.session.commit()
+
+        grp = Group(name="DeleteGroupAPI", category="Finance", created_by=payer.id)
+        db.session.add(grp)
+        db.session.flush()
+        db.session.add_all([
+            GroupMember(group_id=grp.id, user_id=payer.id),
+            GroupMember(group_id=grp.id, user_id=receiver.id),
+        ])
+        db.session.commit()
+
+        client = app.test_client()
+        login_resp = client.post("/api/login", json={"email": payer.email, "password": "ppass"})
+        token_payer = login_resp.get_json().get("access_token")
+        headers_payer = {"Authorization": f"Bearer {token_payer}"}
+
+        # Create an expense in the group, payer pays, receiver owes 50
+        exp_payload = {
+            "description": "Lunch to be deleted",
+            "amount": "50.00",
+            "currency": "$",
+            "paid_by": payer.id,
+            "participants": [{"user_id": receiver.id, "amount_owed": 50.0}]
+        }
+        exp_resp = client.post(f"/api/groups/{grp.id}/expenses", json=exp_payload, headers=headers_payer)
+        assert exp_resp.status_code == 201
+        expense_id = exp_resp.get_json()["expense"]["id"]
+
+        # Create a confirmed payment from receiver to payer
+        # Receiver login
+        login_recv = client.post("/api/login", json={"email": receiver.email, "password": "rpass"})
+        token_recv = login_recv.get_json().get("access_token")
+        headers_recv = {"Authorization": f"Bearer {token_recv}"}
+
+        # Receiver initiates payment
+        pay_resp = client.post(
+            f"/api/groups/{grp.id}/payments",
+            json={"receiver_id": payer.id, "amount": 50, "payment_method": "manual"},
+            headers=headers_recv
+        )
+        assert pay_resp.status_code == 201
+        payment_id = pay_resp.get_json()["payment"]["id"]
+
+        # Payer confirms payment
+        conf_resp = client.put(f"/api/payments/{payment_id}/confirm", headers=headers_payer)
+        assert conf_resp.status_code == 200
+
+        # Attempt to delete the expense! It should now be BLOCKED.
+        delete_resp = client.delete(f"/api/expenses/{expense_id}", headers=headers_payer)
+        assert delete_resp.status_code == 400
+        assert "Cannot delete this expense" in delete_resp.get_json()["error"]
+
