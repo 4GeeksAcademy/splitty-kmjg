@@ -43,9 +43,28 @@ def test_no_debts():
     }
     assert len(simplify_debts(balances)) == 0
 
+def test_deleted_expense_with_payment():
+    # Demonstrates the state that occurs if an expense is deleted but its payment isn't.
+    # Ex: A pays 100 for B. B owes A 100.
+    # B pays A 100 in cash. Normal balance: A=0, B=0.
+    # A deletes the original 100 expense. 
+    # Now, B's payment of 100 to A remains, meaning A effectively received 100 from B
+    # without any underlying expense. Thus, A owes B 100.
+    # The API prevents this scenario by blocking expense deletion if there are payments.
+    balances = {
+        "A": Decimal("-100.00"),  # A received 100 from B
+        "B": Decimal("100.00"),   # B paid 100 to A
+    }
+    transactions = simplify_debts(balances)
+    assert len(transactions) == 1
+    assert transactions[0]["from"] == "A"
+    assert transactions[0]["to"] == "B"
+    assert transactions[0]["amount"] == 100.0
+
 if __name__ == "__main__":
     test_simple_split()
     test_chain_debts()
     test_complex_split()
     test_no_debts()
+    test_deleted_expense_with_payment()
     print("All tests passed!")

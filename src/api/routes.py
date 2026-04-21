@@ -848,6 +848,24 @@ def delete_expense(expense_id):
     if not group or group.created_by != user_id:
         return jsonify({"error": "Only the group creator can delete expenses."}), 403
 
+    # Business Logic Fix: Prevent deleting if there are confirmed payments from participants to the payer
+    # Since payments are group-wide, deleting an expense that has already been paid for 
+    # will cause the payer to owe the participant (reverse debt).
+    participants = ExpenseParticipant.query.filter_by(expense_id=expense.id).all()
+    participant_ids = [p.user_id for p in participants if p.user_id != expense.paid_by]
+
+    for pid in participant_ids:
+        payment = Payment.query.filter_by(
+            group_id=expense.group_id,
+            payer_id=pid,
+            receiver_id=expense.paid_by,
+            status='confirmed'
+        ).first()
+        if payment:
+            return jsonify({
+                "error": "Cannot delete this expense because one or more participants have already made confirmed payments to the payer. Please cancel or delete the payments first to avoid negative balances."
+            }), 400
+
     try:
         # Los participantes se eliminan en cascada si está configurado, o manualmente
         ExpenseParticipant.query.filter_by(expense_id=expense.id).delete()
