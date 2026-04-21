@@ -1,7 +1,5 @@
 """
-Test suite for Friends & Debts feature. (Skipped in SQLite harness)
-import pytest
-pytest.skip("Isolated harness: skipping friends tests to keep SQLite test DB clean", allow_module_level=True)
+Test suite for Friends & Debts feature.
 Following TDD Skill: Tests written BEFORE implementation.
 Covers:
   - Friendship CRUD (request, accept, decline, remove)
@@ -47,14 +45,6 @@ def setup_users(client):
         from flask_bcrypt import Bcrypt
         bcrypt = Bcrypt(app)
 
-        # Ensure we start from a clean database for tests
-        try:
-            from api.models import db as _db
-            _db.drop_all()
-            _db.create_all()
-        except Exception:
-            pass
-
         users_data = [
             {"username": "Alice", "email": "alice@test.com", "password": "test123"},
             {"username": "Bob", "email": "bob@test.com", "password": "test123"},
@@ -70,10 +60,15 @@ def setup_users(client):
                 username=udata["username"],
                 email=udata["email"],
                 password=hashed,
-                is_active=True
+                is_active=True,
+                is_verified=True
             )
             db.session.add(user)
-            db.session.flush()
+            try:
+                db.session.flush()
+            except Exception as e:
+                db.session.rollback()
+                pytest.fail(f"Failed to create user {udata['username']}: {e}")
             user_ids[udata["username"]] = user.id
         
         db.session.commit()
@@ -85,6 +80,8 @@ def setup_users(client):
                 "password": udata["password"]
             })
             data = resp.get_json()
+            if not data or "access_token" not in data:
+                pytest.fail(f"Login failed for {udata['username']}: {resp.status_code} - {data}")
             tokens[udata["username"]] = data["access_token"]
         
         return {"tokens": tokens, "user_ids": user_ids}

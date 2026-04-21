@@ -12,14 +12,20 @@ from api.models import db, User, Group, GroupMember, Invitation
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
+    # Ensure we use an in-memory database for absolute isolation
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
     
     with app.test_client() as client:
         with app.app_context():
+            # Force rebuild of metadata and disposal of any stale connections
+            db.session.remove()
+            db.drop_all()
             db.create_all()
             yield client
             db.session.remove()
             db.drop_all()
+            if db.engine:
+                db.engine.dispose()
 
 @pytest.fixture
 def setup_users(client):
@@ -45,7 +51,12 @@ def setup_users(client):
                 is_verified=True
             )
             db.session.add(user)
-            db.session.flush()
+            try:
+                db.session.flush()
+            except Exception as e:
+                db.session.rollback()
+                pytest.fail(f"Failed to create user {udata['username']}: {e}")
+            
             user_ids[udata["username"]] = user.id
         
         db.session.commit()
@@ -56,6 +67,8 @@ def setup_users(client):
                 "password": udata["password"]
             })
             data = resp.get_json()
+            if not data or "access_token" not in data:
+                pytest.fail(f"Login failed for {udata['username']}: {resp.status_code} - {data}")
             tokens[udata["username"]] = data["access_token"]
         
         return {"tokens": tokens, "user_ids": user_ids}

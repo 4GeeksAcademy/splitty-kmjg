@@ -29,8 +29,6 @@ api_secret = os.getenv("CLOUDINARY_API_SECRET")
 
 if not all([cloud_name, api_key, api_secret]):
     print("WARNING: Cloudinary configuration is incomplete. Receipt uploads will FAIL.")
-    print(
-        f"Loaded: cloud_name={bool(cloud_name)}, api_key={bool(api_key)}, api_secret={bool(api_secret)}")
 else:
     print(f"Cloudinary configured successfully for cloud: {cloud_name}")
 
@@ -48,17 +46,6 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# If running under test mode, force SQLite in-memory to isolate tests from
-# the real Postgres/Supabase instance. This helps achieve deterministic unit tests
-# without requiring a real DB connection during test runs.
-if os.getenv("TESTING") in ("1", "true", "yes"):
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    # Dispose existing engine if already bound to force rebind on next DB operation
-    try:
-        db.engine.dispose()
-    except Exception:
-        pass
-
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
 app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
@@ -73,13 +60,19 @@ mail = Mail(app)
 # database configuration
 db_url = os.getenv("DATABASE_URL")
 
-if db_url:
+# Force SQLite for testing environment
+if os.getenv("TESTING") in ("1", "true", "yes"):
+    print("[TEST] Forcing in-memory SQLite database")
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    engine_options = {
+        "pool_pre_ping": True,
+    }
+elif db_url:
     # Estandarizar el prefijo para SQLAlchemy
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
     # Fix para Supabase/PgBouncer: 'prepared_statements' no es reconocido por el driver psycopg2.
-    # Parseamos la URL y eliminamos ese parámetro específico si existe.
     try:
         parsed = urlparse(db_url)
         query = parse_qs(parsed.query)
@@ -88,36 +81,29 @@ if db_url:
             db_url = urlunparse(parsed._replace(
                 query=urlencode(query, doseq=True)))
     except Exception:
-        pass  # Si falla el parseo, continuamos con la original
-
-# Supabase connection string format: postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
-if db_url and db_url.startswith("postgresql://"):
-    # Direct PostgreSQL connection (Supabase or self-hosted)
+        pass
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-elif db_url and db_url.startswith("http"):
-    # HTTP URL means SQLite was mistakenly set - fallback
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
+    engine_options = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
+    if db_url.startswith("postgresql://"):
+        engine_options["connect_args"] = {"sslmode": "require"}
 else:
-    # Default: local SQLite for development
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
-
-# Configuración para evitar errores de conexión con Supabase/Postgres
-# Solo aplica ssl en conexiones PostgreSQL. SQLite (util en tests) no admite sslmode.
-engine_options = {
-    "pool_pre_ping": True,
-    "pool_recycle": 300,
-}
-if db_url and db_url.startswith("postgresql://"):
-    engine_options["connect_args"] = {"sslmode": "require"}
+    engine_options = {
+        "pool_pre_ping": True,
+    }
 
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 
 # Log database type for debugging
-if "supabase" in (db_url or "").lower():
-    print("[OK] Connected to Supabase PostgreSQL")
-elif db_url:
-    print(
-        f"[OK] Connected to: {db_url.split('@')[1] if '@' in db_url else 'custom database'}")
+if os.getenv("TESTING") not in ("1", "true", "yes"):
+    if "supabase" in (db_url or "").lower():
+        print("[OK] Connected to Supabase PostgreSQL")
+    elif db_url:
+        print(f"[OK] Connected to: {db_url.split('@')[1] if '@' in db_url else 'custom database'}")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "any-secret-key")
@@ -125,37 +111,20 @@ MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 jwt = JWTManager(app)
 
-# register a callback function that will check if a JWT exists in the blocklist
-
-
 @jwt.token_in_blocklist_loader
 def check_if_token_revoked(jwt_header, jwt_payload):
     jti = jwt_payload.get("jti")
     return BlockedToken.query.filter_by(jti=jti).first() is not None
 
-
-# add the admin
 setup_admin(app)
-
-# add the commands
 setup_commands(app)
-
-# Inicializar limiter y bcrypt con la aplicación
 limiter.init_app(app)
 bcrypt.init_app(app)
-
-# Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
-
-# Handle/serialize errors like a JSON object
-
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
-
-# Catch-all for unhandled 500 errors — ensures CORS headers are always present
-
 
 @app.errorhandler(500)
 def handle_500(error):
@@ -164,26 +133,19 @@ def handle_500(error):
     response.status_code = 500
     return response
 
-# generate sitemap with all your endpoints
-
-
 @app.route('/')
 def sitemap():
     if ENV == "development":
         return generate_sitemap(app)
     return send_from_directory(static_file_dir, 'index.html')
 
-# any other endpoint will try to serve it like a static file
-
-
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
     if not os.path.isfile(os.path.join(static_file_dir, path)):
         path = 'index.html'
     response = send_from_directory(static_file_dir, path)
-    response.cache_control.max_age = 0  # avoid cache memory
+    response.cache_control.max_age = 0
     return response
-
 
 @app.route('/api/confirm-payment', methods=['POST'])
 def confirm_payment():
@@ -191,23 +153,17 @@ def confirm_payment():
         body = request.get_json()
         order_id = body.get("orderID") 
         expense_id = body.get("expense_id")
-
         if not order_id or not expense_id:
             return jsonify({"msg": "Faltan datos (orderID o expense_id)"}), 400
-
-        # Buscamos el gasto en la DB
         expense = Expense.query.get(expense_id)
-        
         if expense:
-            expense.is_settled = True # Marcamos como pagado
+            expense.is_settled = True
             db.session.commit()
             return jsonify({"msg": "Pago registrado con éxito en la base de datos"}), 200
-        
         return jsonify({"msg": "Gasto no encontrado"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-# this only runs if `$ python src/app.py` is executed
+
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
     app.run(host='0.0.0.0', port=PORT, debug=True)

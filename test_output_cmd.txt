@@ -1,0 +1,469 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Projects\Splitty\splitty-kmjg
+configfile: pytest.ini
+plugins: anyio-4.13.0
+collected 3 items / 2 deselected / 1 selected
+
+src\api\test_group_invitations.py EE                                     [100%]
+
+=================================== ERRORS ====================================
+_______ ERROR at setup of TestGroupInvitation.test_accept_group_invite ________
+
+self = <sqlalchemy.engine.base.Connection object at 0x0000029118B0C050>
+dialect = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x000002911890B950>
+statement = <sqlalchemy.dialects.postgresql.base.PGCompiler object at 0x0000029118B0C2D0>
+parameters = [{'email': 'alice@test.com', 'is_active': True, 'is_verified': True, 'password': '$2b$12$.rhc3Xpbyxs7.rhgermoyuDWqmbREhrpqo0BoW2pfs1RjyIR9UJ1W', ...}]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+cursor = <cursor object at 0x0000029118AFBCA0; closed: -1>
+statement = 'INSERT INTO "user" (username, email, password, is_active, is_verified, verification_code, verification_expires_at) VA... %(password)s, %(is_active)s, %(is_verified)s, %(verification_code)s, %(verification_expires_at)s) RETURNING "user".id'
+parameters = {'email': 'alice@test.com', 'is_active': True, 'is_verified': True, 'password': '$2b$12$.rhc3Xpbyxs7.rhgermoyuDWqmbREhrpqo0BoW2pfs1RjyIR9UJ1W', ...}
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x000002911890B950>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       psycopg2.errors.UniqueViolation: duplicate key value violates unique constraint "user_email_key"
+E       DETAIL:  Key (email)=(alice@test.com) already exists.
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py:952: UniqueViolation
+
+The above exception was the direct cause of the following exception:
+
+client = <FlaskClient <Flask 'app'>>
+
+    @pytest.fixture
+    def setup_users(client):
+        with app.app_context():
+            from flask_bcrypt import Bcrypt
+            bcrypt = Bcrypt(app)
+    
+            users_data = [
+                {"username": "Alice", "email": "alice@test.com", "password": "test123"},
+                {"username": "Bob", "email": "bob@test.com", "password": "test123"},
+            ]
+    
+            tokens = {}
+            user_ids = {}
+    
+            for udata in users_data:
+                hashed = bcrypt.generate_password_hash(udata["password"]).decode("utf-8")
+                user = User(
+                    username=udata["username"],
+                    email=udata["email"],
+                    password=hashed,
+                    is_active=True,
+                    is_verified=True
+                )
+                db.session.add(user)
+>               db.session.flush()
+
+src\api\test_group_invitations.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\scoping.py:924: in flush
+    return self._proxied.flush(objects=objects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py:4331: in flush
+    self._flush(objects)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py:4466: in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\util\langhelpers.py:121: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\session.py:4427: in _flush
+    flush_context.execute()
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\unitofwork.py:466: in execute
+    rec.execute(self)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\persistence.py:93: in save_obj
+    _emit_insert_statements(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\orm\persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1419: in execute
+    return meth(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\elements.py:527: in _execute_on_connection
+    return connection._execute_clauseelement(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1641: in _execute_clauseelement
+    ret = self._execute_context(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1846: in _execute_context
+    return self._exec_single_context(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:2363: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+cursor = <cursor object at 0x0000029118AFBCA0; closed: -1>
+statement = 'INSERT INTO "user" (username, email, password, is_active, is_verified, verification_code, verification_expires_at) VA... %(password)s, %(is_active)s, %(is_verified)s, %(verification_code)s, %(verification_expires_at)s) RETURNING "user".id'
+parameters = {'email': 'alice@test.com', 'is_active': True, 'is_verified': True, 'password': '$2b$12$.rhc3Xpbyxs7.rhgermoyuDWqmbREhrpqo0BoW2pfs1RjyIR9UJ1W', ...}
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x000002911890B950>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.IntegrityError: (psycopg2.errors.UniqueViolation) duplicate key value violates unique constraint "user_email_key"
+E       DETAIL:  Key (email)=(alice@test.com) already exists.
+E       
+E       [SQL: INSERT INTO "user" (username, email, password, is_active, is_verified, verification_code, verification_expires_at) VALUES (%(username)s, %(email)s, %(password)s, %(is_active)s, %(is_verified)s, %(verification_code)s, %(verification_expires_at)s) RETURNING "user".id]
+E       [parameters: {'username': 'Alice', 'email': 'alice@test.com', 'password': '$2b$12$.rhc3Xpbyxs7.rhgermoyuDWqmbREhrpqo0BoW2pfs1RjyIR9UJ1W', 'is_active': True, 'is_verified': True, 'verification_code': None, 'verification_expires_at': None}]
+E       (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py:952: IntegrityError
+______ ERROR at teardown of TestGroupInvitation.test_accept_group_invite ______
+
+self = <sqlalchemy.engine.base.Connection object at 0x0000029118AAE2C0>
+dialect = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x0000029118AE9450>
+statement = <sqlalchemy.dialects.postgresql.base.PGDDLCompiler object at 0x0000029118B0D590>
+parameters = [immutabledict({})]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1967: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+cursor = <cursor object at 0x0000029118B120A0; closed: -1>
+statement = '\nDROP TABLE payment', parameters = immutabledict({})
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x0000029118AE9450>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       psycopg2.errors.DependentObjectsStillExist: cannot drop table payment because other objects depend on it
+E       DETAIL:  view pending_payments depends on table payment
+E       view group_payment_summary depends on table payment
+E       HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py:952: DependentObjectsStillExist
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.fixture
+    def client():
+        app.config['TESTING'] = True
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+    
+        with app.test_client() as client:
+            with app.app_context():
+                db.create_all()
+                yield client
+                db.session.remove()
+>               db.drop_all()
+
+src\api\test_group_invitations.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\flask_sqlalchemy\extension.py:917: in drop_all
+    self._call_for_binds(bind_key, "drop_all")
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\flask_sqlalchemy\extension.py:881: in _call_for_binds
+    getattr(metadata, op_name)(bind=engine)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\schema.py:5956: in drop_all
+    bind._run_ddl_visitor(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:3268: in _run_ddl_visitor
+    conn._run_ddl_visitor(visitorcallable, element, **kwargs)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:2467: in _run_ddl_visitor
+    ).traverse_single(element)
+      ^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+           ^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\ddl.py:1142: in visit_metadata
+    self.traverse_single(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\visitors.py:661: in traverse_single
+    return meth(obj, **kw)
+           ^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\ddl.py:1209: in visit_table
+    DropTable(table)._invoke_with(self.connection)
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\ddl.py:321: in _invoke_with
+    return bind.execute(self)
+           ^^^^^^^^^^^^^^^^^^
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1419: in execute
+    return meth(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\sql\ddl.py:187: in _execute_on_connection
+    return connection._execute_ddl(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1530: in _execute_ddl
+    ret = self._execute_context(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1846: in _execute_context
+    return self._exec_single_context(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1986: in _exec_single_context
+    self._handle_dbapi_exception(
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:2363: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\base.py:1967: in _exec_single_context
+    self.dialect.do_execute(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <sqlalchemy.dialects.postgresql.psycopg2.PGDialect_psycopg2 object at 0x00000291187DB770>
+cursor = <cursor object at 0x0000029118B120A0; closed: -1>
+statement = '\nDROP TABLE payment', parameters = immutabledict({})
+context = <sqlalchemy.dialects.postgresql.psycopg2.PGExecutionContext_psycopg2 object at 0x0000029118AE9450>
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+>       cursor.execute(statement, parameters)
+E       sqlalchemy.exc.InternalError: (psycopg2.errors.DependentObjectsStillExist) cannot drop table payment because other objects depend on it
+E       DETAIL:  view pending_payments depends on table payment
+E       view group_payment_summary depends on table payment
+E       HINT:  Use DROP ... CASCADE to drop the dependent objects too.
+E       
+E       [SQL: 
+E       DROP TABLE payment]
+E       (Background on this error at: https://sqlalche.me/e/20/2j85)
+
+C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\sqlalchemy\engine\default.py:952: InternalError
+============================== warnings summary ===============================
+..\..\..\Users\gusta\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py:1434
+  C:\Users\gusta\AppData\Roaming\Python\Python313\site-packages\_pytest\config\__init__.py:1434: PytestConfigWarning: Unknown config option: env
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+ERROR src/api/test_group_invitations.py::TestGroupInvitation::test_accept_group_invite
+ERROR src/api/test_group_invitations.py::TestGroupInvitation::test_accept_group_invite
+================= 2 deselected, 1 warning, 2 errors in 5.97s ==================
