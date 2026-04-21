@@ -20,8 +20,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest
-      - name: Run debt/algorithm tests (SQLite harness)
+      - name: Run tests (Debt logic + API)
         env:
           TESTING: '1'
         run: |
-          python -m pytest -q src/api/test_algorithm.py src/tests/test_debt_logic.py
+          # Run debt logic tests and API tests in a single matrix to ensure end-to-end stability
+          python -m pytest -q \
+            src/api/test_algorithm.py \
+            src/api/test_group_invitations.py \
+            src/api/test_friends.py \
+            src/tests/test_debt_logic.py \
+            src/tests/test_expense_group_logic.py
