@@ -129,6 +129,45 @@ def send_splitty_mail(subject, recipient, template_type, context):
             </p>
         """
 
+    elif template_type == 'added_to_group':
+        group_name = context.get('group_name')
+        adder_name = context.get('adder_name')
+        link = context.get('link')
+        content_html = f"""
+            <p style="font-size: 18px; line-height: 1.6; color: {TEXT_MUTED}; margin-bottom: 10px;">
+                ¡Hola! <strong style="color: {TEXT_WHITE};">{adder_name}</strong> te ha añadido a un grupo en Splitty.
+            </p>
+            <p style="color: {TEXT_WHITE}; font-size: 24px; font-weight: 600; margin-bottom: 40px;">{group_name}</p>
+            <div style="margin: 40px 0;">
+                <a href="{link}" style="background: linear-gradient(90deg, {PRIMARY_ORANGE}, {SECONDARY_ORANGE}); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                    Ver Grupo
+                </a>
+            </div>
+            <p style="font-size: 13px; color: {FOOTER_TEXT}; margin-top: 40px; line-height: 1.4;">
+                Ya puedes comenzar a dividir gastos en este grupo.
+            </p>
+        """
+
+    elif template_type == 'added_to_expense':
+        group_name = context.get('group_name')
+        payer_name = context.get('payer_name')
+        amount_owed = context.get('amount_owed')
+        expense_description = context.get('expense_description')
+        link = context.get('link')
+        content_html = f"""
+            <p style="font-size: 18px; line-height: 1.6; color: {TEXT_MUTED}; margin-bottom: 10px;">
+                ¡Hola! Te han añadido a un nuevo gasto en el grupo <strong style="color: {TEXT_WHITE};">{group_name}</strong>.
+            </p>
+            <p style="font-size: 16px; line-height: 1.6; color: {TEXT_MUTED}; margin-bottom: 20px;">
+                <strong style="color: {PRIMARY_ORANGE};">{payer_name}</strong> pagó por <strong style="color: {TEXT_WHITE};">{expense_description}</strong> y tu parte es de <strong style="color: #4ade80;">${float(amount_owed):.2f}</strong>.
+            </p>
+            <div style="margin: 40px 0;">
+                <a href="{link}" style="background: linear-gradient(90deg, {PRIMARY_ORANGE}, {SECONDARY_ORANGE}); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(255, 145, 77, 0.3);">
+                    Ver Detalle del Gasto
+                </a>
+            </div>
+        """
+
     else:
         return False, f"Unknown template type: {template_type}"
 

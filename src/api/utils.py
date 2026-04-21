@@ -369,3 +369,157 @@ def drop_views(db):
             # Silence errors if view doesn't exist or engine doesn't support it
             pass
     db.session.commit()
+
+
+
+def calculate_all_friends_debts(user_id):
+    """
+    Optimized version of calculate_friend_debts to compute debts for all accepted friends in bulk.
+    Eliminates N+1 query issue by using aggregated GROUP BY queries across all shared groups.
+    """
+    from api.models import GroupMember, Group, Expense, ExpenseParticipant, Payment, db
+    from sqlalchemy import func
+    from decimal import Decimal
+    from api.utils import get_accepted_friends
+    
+    # 1. Get friends
+    friendships = get_accepted_friends(user_id)
+    if not friendships:
+        return {}
+        
+    friend_ids = []
+    for f in friendships:
+        friend_id = f.addressee_id if f.requester_id == user_id else f.requester_id
+        friend_ids.append(friend_id)
+        
+    # 2. Get shared groups per friend
+    user_group_ids = [gm.group_id for gm in GroupMember.query.filter_by(user_id=user_id).all()]
+    if not user_group_ids:
+        return {fid: {"net_balance": 0.0, "groups": [], "total_owed_to_user": 0.0, "total_user_owes": 0.0} for fid in friend_ids}
+        
+    all_friend_memberships = GroupMember.query.filter(
+        GroupMember.user_id.in_(friend_ids),
+        GroupMember.group_id.in_(user_group_ids)
+    ).all()
+    
+    shared_groups_by_friend = {fid: set() for fid in friend_ids}
+    shared_group_ids_all = set()
+    for gm in all_friend_memberships:
+        shared_groups_by_friend[gm.user_id].add(gm.group_id)
+        shared_group_ids_all.add(gm.group_id)
+        
+    results = {fid: {
+        "net_balance": Decimal("0"),
+        "total_owed_to_user": Decimal("0"),
+        "total_user_owes": Decimal("0"),
+        "group_balances": {} 
+    } for fid in friend_ids}
+
+    if not shared_group_ids_all:
+        for fid in friend_ids:
+            results[fid] = {
+                "net_balance": 0.0,
+                "groups": [],
+                "total_owed_to_user": 0.0,
+                "total_user_owes": 0.0
+            }
+        return results
+
+    # Get group names
+    groups = Group.query.filter(Group.id.in_(shared_group_ids_all)).all()
+    group_names = {g.id: g.name for g in groups}
+
+    # 3. Aggregate Expenses where User Paid -> Friends Owe User
+    friend_owes_user = db.session.query(
+        ExpenseParticipant.user_id,
+        Expense.group_id,
+        func.sum(ExpenseParticipant.amount_owed).label("total")
+    ).join(Expense, ExpenseParticipant.expense_id == Expense.id)\
+     .filter(
+         Expense.paid_by == user_id, 
+         Expense.group_id.in_(shared_group_ids_all),
+         ExpenseParticipant.user_id.in_(friend_ids)
+     ).group_by(ExpenseParticipant.user_id, Expense.group_id).all()
+     
+    for f_id, g_id, amt in friend_owes_user:
+        if f_id in shared_groups_by_friend and g_id in shared_groups_by_friend[f_id]:
+            val = Decimal(str(amt))
+            results[f_id]["total_owed_to_user"] += val
+            results[f_id]["group_balances"][g_id] = results[f_id]["group_balances"].get(g_id, Decimal("0")) + val
+
+    # 4. Aggregate Expenses where Friend Paid -> User Owes Friend
+    user_owes_friend = db.session.query(
+        Expense.paid_by,
+        Expense.group_id,
+        func.sum(ExpenseParticipant.amount_owed).label("total")
+    ).join(Expense, ExpenseParticipant.expense_id == Expense.id)\
+     .filter(
+         ExpenseParticipant.user_id == user_id,
+         Expense.group_id.in_(shared_group_ids_all),
+         Expense.paid_by.in_(friend_ids)
+     ).group_by(Expense.paid_by, Expense.group_id).all()
+     
+    for f_id, g_id, amt in user_owes_friend:
+        if f_id in shared_groups_by_friend and g_id in shared_groups_by_friend[f_id]:
+            val = Decimal(str(amt))
+            results[f_id]["total_user_owes"] += val
+            results[f_id]["group_balances"][g_id] = results[f_id]["group_balances"].get(g_id, Decimal("0")) - val
+
+    # 5. Aggregate Payments from User to Friend -> Reduces User Owes Friend & adjusts group balance
+    pmt_user_to_friend = db.session.query(
+        Payment.receiver_id,
+        Payment.group_id,
+        func.sum(Payment.amount).label("total")
+    ).filter(
+        Payment.payer_id == user_id,
+        Payment.status == 'confirmed',
+        Payment.group_id.in_(shared_group_ids_all),
+        Payment.receiver_id.in_(friend_ids)
+    ).group_by(Payment.receiver_id, Payment.group_id).all()
+    
+    for f_id, g_id, amt in pmt_user_to_friend:
+        if f_id in shared_groups_by_friend and g_id in shared_groups_by_friend[f_id]:
+            val = Decimal(str(amt))
+            results[f_id]["total_user_owes"] -= val
+            results[f_id]["group_balances"][g_id] = results[f_id]["group_balances"].get(g_id, Decimal("0")) + val
+            
+    # 6. Aggregate Payments from Friend to User -> Reduces Friend owes User
+    pmt_friend_to_user = db.session.query(
+        Payment.payer_id,
+        Payment.group_id,
+        func.sum(Payment.amount).label("total")
+    ).filter(
+        Payment.receiver_id == user_id,
+        Payment.status == 'confirmed',
+        Payment.group_id.in_(shared_group_ids_all),
+        Payment.payer_id.in_(friend_ids)
+    ).group_by(Payment.payer_id, Payment.group_id).all()
+    
+    for f_id, g_id, amt in pmt_friend_to_user:
+        if f_id in shared_groups_by_friend and g_id in shared_groups_by_friend[f_id]:
+            val = Decimal(str(amt))
+            results[f_id]["total_owed_to_user"] -= val
+            results[f_id]["group_balances"][g_id] = results[f_id]["group_balances"].get(g_id, Decimal("0")) - val
+
+    # 7. Finalize totals
+    final_results = {}
+    for fid, data in results.items():
+        net = data["total_owed_to_user"] - data["total_user_owes"]
+        
+        group_breakdowns = []
+        for g_id, g_bal in data["group_balances"].items():
+            if g_bal != Decimal("0"):
+                group_breakdowns.append({
+                    "group_id": g_id,
+                    "group_name": group_names.get(g_id, f"Group #{g_id}"),
+                    "balance": float(g_bal)
+                })
+                
+        final_results[fid] = {
+            "net_balance": float(net),
+            "groups": group_breakdowns,
+            "total_owed_to_user": float(data["total_owed_to_user"]),
+            "total_user_owes": float(data["total_user_owes"])
+        }
+        
+    return final_results

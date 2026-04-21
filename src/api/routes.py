@@ -553,12 +553,17 @@ def create_expense(group_id):
     if not current_membership:
         return jsonify({"error": "You do not have access to this group"}), 403
 
+    # Keep track of newly added users so we can notify them
+    new_group_members_ids = []
+
     # Ensure the payer belongs to the group, if not, add them (auto-invite)
     payer_membership = GroupMember.query.filter_by(
         group_id=group_id, user_id=paid_by).first()
     if not payer_membership:
         new_member = GroupMember(group_id=group_id, user_id=paid_by)
         db.session.add(new_member)
+        if paid_by != user_id:
+            new_group_members_ids.append(paid_by)
         # We don't commit yet, we'll commit with the expense
 
     try:
@@ -596,6 +601,8 @@ def create_expense(group_id):
             # Auto-join them to the group
             new_member = GroupMember(group_id=group_id, user_id=p_id)
             db.session.add(new_member)
+            if p_id != user_id and p_id not in new_group_members_ids:
+                new_group_members_ids.append(p_id)
 
     try:
         new_expense = Expense(
@@ -622,6 +629,57 @@ def create_expense(group_id):
             created_participants.append(expense_participant)
 
         db.session.commit()
+
+        # Enviar emails de notificación post-commit
+        try:
+            from api.mail_utils import send_splitty_mail
+            import os
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+            creator_user = User.query.get(user_id)
+            adder_name = creator_user.username if creator_user else "Alguien"
+            group_name = group.name
+
+            # 1. Notify auto-joined group members
+            for uid in new_group_members_ids:
+                u = User.query.get(uid)
+                if u:
+                    send_splitty_mail(
+                        subject=f"¡{adder_name} te ha añadido a {group_name}!",
+                        recipient=u.email,
+                        template_type='added_to_group',
+                        context={
+                            "group_name": group_name,
+                            "adder_name": adder_name,
+                            "link": f"{frontend_url}/"
+                        }
+                    )
+
+            # 2. Notify participants about the new expense
+            payer_user = User.query.get(paid_by)
+            payer_name = payer_user.username if payer_user else "Alguien"
+
+            for p in normalized_participants:
+                p_user_id = p["user_id"]
+                if p_user_id == user_id:
+                    continue  # No notificar a quien crea el gasto
+
+                p_amount = p.get("amount_owed", 0)
+                u = User.query.get(p_user_id)
+                if u and float(p_amount) > 0:
+                    send_splitty_mail(
+                        subject=f"Nuevo gasto en {group_name}: {description}",
+                        recipient=u.email,
+                        template_type='added_to_expense',
+                        context={
+                            "group_name": group_name,
+                            "payer_name": payer_name,
+                            "amount_owed": float(p_amount),
+                            "expense_description": description,
+                            "link": f"{frontend_url}/"
+                        }
+                    )
+        except Exception as email_err:
+            current_app.logger.error(f"Error enviando emails de gasto/grupo: {str(email_err)}")
 
         return jsonify({
             "message": "Expense created successfully",
@@ -1228,8 +1286,11 @@ def get_friend_debts():
     """Get consolidated debts with all friends."""
     user_id = int(get_jwt_identity())
 
-    from api.utils import get_accepted_friends, calculate_friend_debts
+    from api.utils import get_accepted_friends, calculate_all_friends_debts
     friendships = get_accepted_friends(user_id)
+    
+    # Bulk calculate all friendships
+    bulk_debts = calculate_all_friends_debts(user_id)
 
     total_owed_to_you = 0.0
     total_you_owe = 0.0
@@ -1239,7 +1300,13 @@ def get_friend_debts():
         friend_id = f.addressee_id if f.requester_id == user_id else f.requester_id
         friend_user = f.addressee if f.requester_id == user_id else f.requester
 
-        debt_data = calculate_friend_debts(user_id, friend_id)
+        # Provide a default in case the friend isn't in the bulk response (e.g., no shared groups)
+        debt_data = bulk_debts.get(friend_id, {
+            "net_balance": 0.0,
+            "groups": [],
+            "total_owed_to_user": 0.0,
+            "total_user_owes": 0.0
+        })
         net_bal = debt_data["net_balance"]
 
         # Standard logic: if net > 0, they owe you. If net < 0, you owe them.
