@@ -82,14 +82,15 @@ def test_simplify_debts_three_participants():
         "carol": Decimal("-15.00")
     }
     transactions = simplify_debts(balances)
-    # Expect two transactions: bob -> alice (5.00) and carol -> alice (15.00)
+    # For two debtors and one creditor, the algorithm pops the largest debt first
+    # which means: carol -> alice (15.00), then bob -> alice (5.00)
     assert len(transactions) == 2
-    assert transactions[0]["from"] == "bob"
+    assert transactions[0]["from"] == "carol"
     assert transactions[0]["to"] == "alice"
-    assert transactions[0]["amount"] == 5.0
-    assert transactions[1]["from"] == "carol"
+    assert transactions[0]["amount"] == 15.0
+    assert transactions[1]["from"] == "bob"
     assert transactions[1]["to"] == "alice"
-    assert transactions[1]["amount"] == 15.0
+    assert transactions[1]["amount"] == 5.0
 
 
 def test_calculate_friend_debts_basic():

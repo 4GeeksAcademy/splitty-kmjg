@@ -102,13 +102,15 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///test.db"
 
 # Configuración para evitar errores de conexión con Supabase/Postgres
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+# Solo aplica ssl en conexiones PostgreSQL. SQLite (util en tests) no admite sslmode.
+engine_options = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
-    "connect_args": {
-        "sslmode": "require",
-    }
 }
+if db_url and db_url.startswith("postgresql://"):
+    engine_options["connect_args"] = {"sslmode": "require"}
+
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 
 # Log database type for debugging
 if "supabase" in (db_url or "").lower():
