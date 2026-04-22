@@ -73,7 +73,7 @@ def process_receipt_with_gemini(receipt_url) -> Dict[str, Any]:
     try:
         print(f"DEBUG: Initializing Gemini with key: {api_key[:6]}...")
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-flash-latest')
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
         prompt = """
         Extract financial data from this receipt IMAGE or DOCUMENT (like a PDF). Return ONLY a pure JSON object (no markdown code blocks, no text).

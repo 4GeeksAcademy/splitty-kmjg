@@ -989,6 +989,10 @@ def analyze_receipt():
         # 1. Subir a Cloudinary con resource_type="auto" para soportar PDFs
         upload_result = cloudinary.uploader.upload(file, resource_type="auto")
         secure_url = upload_result['secure_url']
+        
+        # Convertir PDF en Imagen (Cloudinary genera la imagen de la primera página on-the-fly)
+        if secure_url.lower().endswith('.pdf'):
+            secure_url = secure_url[:-4] + '.jpg'
 
         # 2. Procesar con IA (priorizando Gemini, luego Azure)
         from api.ocr_service import analyze_receipt_with_ai
@@ -1038,8 +1042,13 @@ def upload_receipt(expense_id):
     try:
         # Subir a Cloudinary con resource_type="auto" para soportar PDFs
         upload_result = cloudinary.uploader.upload(file, resource_type="auto")
+        secure_url = upload_result['secure_url']
+        
+        # Convertir PDF en Imagen para que pueda verse en las etiquetas <img>
+        if secure_url.lower().endswith('.pdf'):
+            secure_url = secure_url[:-4] + '.jpg'
 
-        expense.receipt_url = upload_result['secure_url']
+        expense.receipt_url = secure_url
         db.session.commit()
 
         return jsonify({
