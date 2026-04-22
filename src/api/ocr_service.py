@@ -73,7 +73,7 @@ def process_receipt_with_gemini(receipt_url) -> Dict[str, Any]:
     try:
         print(f"DEBUG: Initializing Gemini with key: {api_key[:6]}...")
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-flash-latest')
 
         prompt = """
         Extract financial data from this receipt IMAGE or DOCUMENT (like a PDF). Return ONLY a pure JSON object (no markdown code blocks, no text).
@@ -90,7 +90,7 @@ def process_receipt_with_gemini(receipt_url) -> Dict[str, Any]:
 
         print(f"DEBUG: Fetching image from URL: {receipt_url}")
         # Fetch image bytes from Cloudinary URL
-        img_response = requests.get(receipt_url, timeout=10)
+        img_response = requests.get(receipt_url, timeout=30)
         img_response.raise_for_status()
         
         # Robust Mime-Type detection
@@ -168,7 +168,7 @@ def process_receipt_with_gemini(receipt_url) -> Dict[str, Any]:
 def analyze_receipt_with_ai(receipt_url) -> Dict[str, Any]:
     """
     Main entry point for AI analysis.
-    Tries Gemini first, then Azure, then falls back to Mock.
+    Tries Gemini first, then Azure, and raises an Exception if both fail.
     """
     # 1. Try Gemini
     result = process_receipt_with_gemini(receipt_url)
@@ -178,8 +178,8 @@ def analyze_receipt_with_ai(receipt_url) -> Dict[str, Any]:
     result = process_receipt_with_azure(receipt_url)
     if result: return result
 
-    # 3. Fallback to Mock
-    return _mock_azure_receipt_response()
+    # 3. Fail if both didn't work instead of using Mock
+    raise Exception("AI Scanner failed: Both Gemini and Azure could not process the receipt.")
 
 
 def _parse_azure_result(result: AnalyzeResult) -> Dict[str, Any]:

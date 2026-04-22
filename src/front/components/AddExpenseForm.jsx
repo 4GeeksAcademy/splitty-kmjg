@@ -104,9 +104,9 @@ export const AddExpenseForm = ({ groupId, groupMembers, onSuccess, onCancel, exp
                         setDescription(resp.data.merchant_name + " Receipt");
                     }
                 } else {
-                    console.warn("AI Analysis failed:", resp.error);
+                    console.log("Error analyzing receipt:", resp.error);
                     setAiAnalysisStatus("failed");
-                    // We don't set a global error here because we want the user to proceed manually
+                    setError(resp.error || "AI Analysis failed. Please enter details manually.");
                 }
             }
         };
