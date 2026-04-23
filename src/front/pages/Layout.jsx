@@ -32,7 +32,7 @@ export const Layout = () => {
             if (navigation.state !== "loading") {
                 hideWithFade();
             }
-        }, 2000);
+        }, 500);
         return () => clearTimeout(timer);
     }, []);
 
@@ -45,7 +45,7 @@ export const Layout = () => {
         } else if (showLoader) {
             // navigation finished, but ensure 2s elapsed
             const elapsed = Date.now() - startTimeRef.current;
-            const remaining = Math.max(0, 2000 - elapsed);
+            const remaining = Math.max(0, 500 - elapsed);
             const timer = setTimeout(() => hideWithFade(), remaining);
             return () => clearTimeout(timer);
         }
@@ -58,7 +58,7 @@ export const Layout = () => {
             ) : (
                 <div className="d-flex flex-column" style={{ minHeight: "100dvh" }}>
                     <Navbar />
-                    <main className="flex-grow-1">
+                    <main className="flex-grow-1" style={{ minHeight: "100dvh" }}>
                         <Outlet />
                     </main>
                     <Footer />

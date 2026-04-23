@@ -40,10 +40,7 @@ export const Login = () => {
     setError("");
     setLoading(true);
 
-    const [result] = await Promise.all([
-      actions.login(email, password),
-      new Promise(resolve => setTimeout(resolve, 2000))
-    ]);
+    const result = await actions.login(email, password);
 
     if (result.ok) {
       navigate("/");

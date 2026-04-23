@@ -22,15 +22,15 @@ export const UserDashboard = () => {
             // Execute sequentially with delays to avoid Cloudflare 429 (TryCloudflare tunnel limits)
             await actions.loadUserGroups();
             if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
 
             await actions.loadFriends();
             if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
 
             await actions.loadPendingRequests();
             if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 250)); // Slow down for tunnel
+            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
 
             await actions.loadFriendDebts();
         };

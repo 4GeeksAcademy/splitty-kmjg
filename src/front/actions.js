@@ -127,7 +127,7 @@ class Actions {
       },
     });
 
-    await this.loadUserGroups();
+
 
     return { ok: true };
   };
