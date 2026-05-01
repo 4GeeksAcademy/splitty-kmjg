@@ -14,14 +14,19 @@ export const Navbar = memo(() => {
     const isLoggedIn = !!store.jwt;
 
     const handleLogout = async () => {
-        setLoading(true);
-        const logout = await actions.logout();
-        if (logout) {
-            navigate("/login");
-        } else {
-            alert("Logout failed. Please try again.");
+        try {
+            setLoading(true);
+            const logout = await actions.logout();
+            if (logout) {
+                navigate("/login");
+            } else {
+                alert("Logout failed. Please try again.");
+            }
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     // Shared styles

@@ -614,7 +614,8 @@ def create_expense(group_id):
             amount=amount_decimal,
             currency=currency,
             group_id=group_id,
-            paid_by=paid_by
+            paid_by=paid_by,
+            created_by=user_id
         )
         db.session.add(new_expense)
         db.session.flush()
@@ -841,10 +842,13 @@ def update_expense(expense_id):
     if not expense:
         return jsonify({"error": "Expense not found"}), 404
 
-    # Verificar que el usuario es el creador del grupo
+    # Verificar permisos
     group = Group.query.get(expense.group_id)
-    if not group or group.created_by != user_id:
-        return jsonify({"error": "Only the group creator can modify expenses."}), 403
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    if group.created_by != user_id and expense.paid_by != user_id and expense.created_by != user_id:
+        return jsonify({"error": "Only the group creator, the person who paid, or the creator of the expense can modify it."}), 403
 
     description = data.get('description')
     amount = data.get('amount')
@@ -914,10 +918,13 @@ def delete_expense(expense_id):
     if not expense:
         return jsonify({"error": "Expense not found"}), 404
 
-    # Verificar que el usuario es el creador del grupo
+    # Verificar permisos
     group = Group.query.get(expense.group_id)
-    if not group or group.created_by != user_id:
-        return jsonify({"error": "Only the group creator can delete expenses."}), 403
+    if not group:
+        return jsonify({"error": "Group not found"}), 404
+
+    if group.created_by != user_id and expense.paid_by != user_id and expense.created_by != user_id:
+        return jsonify({"error": "Only the group creator, the person who paid, or the creator of the expense can delete it."}), 403
 
     # Business Logic Fix: Prevent deleting if there are confirmed payments from participants to the payer
     # Since payments are group-wide, deleting an expense that has already been paid for 

@@ -333,11 +333,12 @@ export const GroupDashboard = () => {
                                             ? new Date(exp.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
                                             : "";
                                         const splitCount = participants.length || 1;
+                                        const canEditExpense = isCreator || store.user?.id === exp.paid_by || store.user?.id === exp.created_by;
                                         return (
                                             <li
                                                 key={exp.id || idx}
                                                 onClick={() => {
-                                                    if (!isCreator) return;
+                                                    if (!canEditExpense) return;
                                                     setSelectedExpense(entry);
                                                     setShowAddForm(true);
                                                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -353,7 +354,7 @@ export const GroupDashboard = () => {
                                                     borderRadius: "18px",
                                                     padding: "1rem",
                                                     backdropFilter: "blur(12px)",
-                                                    cursor: (isCreator && !exp.is_settled) ? "pointer" : "default",
+                                                    cursor: (canEditExpense && !exp.is_settled) ? "pointer" : "default",
                                                     transition: "all 0.3s ease",
                                                     boxShadow: exp.is_settled ? "0 4px 15px rgba(74, 222, 128, 0.1)" : "none"
                                                 }}
@@ -455,7 +456,7 @@ export const GroupDashboard = () => {
                                                                     </button>
                                                                 )}
 
-                                                                {isCreator && (
+                                                                {canEditExpense && (
                                                                     <>
                                                                         <button 
                                                                             className="btn btn-link p-0 text-decoration-none text-danger d-flex align-items-center gap-1"

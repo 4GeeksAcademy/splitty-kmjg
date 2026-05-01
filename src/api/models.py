@@ -47,7 +47,7 @@ class User(db.Model):
 
     # relación con gastos que el usuario pagó
     expenses_paid: Mapped[list["Expense"]] = relationship(
-        "Expense", back_populates="payer"
+        "Expense", foreign_keys="[Expense.paid_by]", back_populates="payer"
     )
 
     # relación con gastos donde el usuario participa
@@ -194,6 +194,9 @@ class Expense(db.Model):
     # usuario que pagó el gasto
     paid_by: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
 
+    # usuario que registró el gasto
+    created_by: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=True)
+
     # url del recibo/comprobante
     receipt_url: Mapped[str] = mapped_column(String(500), nullable=True)
 
@@ -204,7 +207,10 @@ class Expense(db.Model):
     group: Mapped["Group"] = relationship("Group", back_populates="expenses")
 
     payer: Mapped["User"] = relationship(
-        "User", back_populates="expenses_paid")
+        "User", foreign_keys=[paid_by], back_populates="expenses_paid")
+
+    creator: Mapped["User"] = relationship(
+        "User", foreign_keys=[created_by])
 
     participants: Mapped[list["ExpenseParticipant"]] = relationship(
         "ExpenseParticipant", back_populates="expense", cascade="all, delete-orphan"
@@ -219,6 +225,7 @@ class Expense(db.Model):
             "date": self.date.isoformat(),
             "group_id": self.group_id,
             "paid_by": self.paid_by,
+            "created_by": self.created_by,
             "receipt_url": self.receipt_url,
             "is_settled": self.is_settled
         }

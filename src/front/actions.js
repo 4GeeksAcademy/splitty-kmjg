@@ -196,7 +196,8 @@ class Actions {
 
     this.dispatch({ type: "UNSET_USER" });
 
-    await this.apiFetch("/logout", "POST", null, true);
+    // Fire and forget the API call to avoid blocking the UI if network is slow
+    this.apiFetch("/logout", "POST", null, true).catch(e => console.error("Logout API failed", e));
 
     return true;
   };
