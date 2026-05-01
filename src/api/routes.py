@@ -373,9 +373,13 @@ def get_group_by_id(group_id):
     members = GroupMember.query.filter_by(group_id=group_id).all()
 
     # Build member list with full user info (id, username, email)
+    member_user_ids = [m.user_id for m in members]
+    users = User.query.filter(User.id.in_(member_user_ids)).all() if member_user_ids else []
+    user_map = {u.id: u for u in users}
+
     members_with_user_info = []
     for member in members:
-        user = User.query.get(member.user_id)
+        user = user_map.get(member.user_id)
         if user:
             members_with_user_info.append({
                 "id": user.id,
@@ -697,11 +701,16 @@ def create_expense(group_id):
 @jwt_required()
 def get_group_expenses(group_id):
     expenses = Expense.query.filter_by(group_id=group_id).all()
+    expense_ids = [e.id for e in expenses]
+
+    all_participants = ExpenseParticipant.query.filter(ExpenseParticipant.expense_id.in_(expense_ids)).all() if expense_ids else []
+    participants_by_expense = {}
+    for p in all_participants:
+        participants_by_expense.setdefault(p.expense_id, []).append(p)
 
     response = []
     for expense in expenses:
-        participants = ExpenseParticipant.query.filter_by(
-            expense_id=expense.id).all()
+        participants = participants_by_expense.get(expense.id, [])
 
         response.append({
             "expense": expense.serialize(),
@@ -758,12 +767,16 @@ def get_group_balances(group_id):
 
     # Get all expenses in this group
     expenses = Expense.query.filter_by(group_id=group_id).all()
+    expense_ids = [e.id for e in expenses]
+
+    all_participants = ExpenseParticipant.query.filter(ExpenseParticipant.expense_id.in_(expense_ids)).all() if expense_ids else []
+    participants_by_expense = {}
+    for p in all_participants:
+        participants_by_expense.setdefault(p.expense_id, []).append(p)
 
     for expense in expenses:
         payer_id = expense.paid_by
-        participants = ExpenseParticipant.query.filter_by(
-            expense_id=expense.id
-        ).all()
+        participants = participants_by_expense.get(expense.id, [])
 
         for p in participants:
             amount_owed = Decimal(str(p.amount_owed))

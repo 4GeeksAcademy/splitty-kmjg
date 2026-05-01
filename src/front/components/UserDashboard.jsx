@@ -14,25 +14,15 @@ export const UserDashboard = () => {
         let isMounted = true;
 
         const initDashboard = async () => {
-            // Tiny delay to let React Strict Mode's cleanup run before we fetch.
-            // This prevents 2 simultaneous sequences from blasting the server.
-            await new Promise(r => setTimeout(r, 50));
             if (!isMounted) return;
 
-            // Execute sequentially with delays to avoid Cloudflare 429 (TryCloudflare tunnel limits)
-            await actions.loadUserGroups();
-            if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
-
-            await actions.loadFriends();
-            if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
-
-            await actions.loadPendingRequests();
-            if (!isMounted) return;
-            await new Promise(r => setTimeout(r, 100)); // Slow down for tunnel
-
-            await actions.loadFriendDebts();
+            // Execute in parallel for production optimization
+            await Promise.all([
+                actions.loadUserGroups(),
+                actions.loadFriends(),
+                actions.loadPendingRequests(),
+                actions.loadFriendDebts()
+            ]);
         };
 
         if (!store.jwt) return; // safety

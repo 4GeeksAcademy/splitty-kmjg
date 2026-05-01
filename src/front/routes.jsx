@@ -5,19 +5,21 @@ import {
     useRouteError
 } from "react-router-dom";
 
+import { lazy } from "react";
 import { PayPalScriptProvider } from "@paypal/react-paypal-js"; // MODIFICACIÓN 1: Importar PayPal
 import { Layout } from "./pages/Layout";
-import { Home } from "./pages/Home";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import CreateGroupForm from "./components/CreateGroupForm";
-import GroupDashboard from "./components/GroupDashboard";
-import { AcceptInvite } from "./components/AcceptInvite";
-import { PrivateRoute } from "./components/PrivateRoute";
-import FriendsPage from "./pages/FriendsPage";
-import DebtsPage from "./pages/DebtsPage";
-import AcceptFriendInvite from "./pages/AcceptFriendInvite";
-import ResetPassword from "./pages/ResetPassword";
+
+const Home = lazy(() => import("./pages/Home").then(m => ({ default: m.Home })));
+const Login = lazy(() => import("./pages/Login").then(m => ({ default: m.Login })));
+const Register = lazy(() => import("./pages/Register").then(m => ({ default: m.Register })));
+const CreateGroupForm = lazy(() => import("./components/CreateGroupForm"));
+const GroupDashboard = lazy(() => import("./components/GroupDashboard"));
+const AcceptInvite = lazy(() => import("./components/AcceptInvite").then(m => ({ default: m.AcceptInvite })));
+const PrivateRoute = lazy(() => import("./components/PrivateRoute").then(m => ({ default: m.PrivateRoute })));
+const FriendsPage = lazy(() => import("./pages/FriendsPage"));
+const DebtsPage = lazy(() => import("./pages/DebtsPage"));
+const AcceptFriendInvite = lazy(() => import("./pages/AcceptFriendInvite"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 const RootErrorBoundary = () => {
     const error = useRouteError();
